@@ -7,13 +7,18 @@ let
 in
 {
   config = mkIf (cfg.enable) {
-    # Realtek audio driver configuration
+    # PipeWire audio configuration
 
-    # Enable sound with pipewire
+    # Disable PulseAudio in favor of PipeWire
     services.pulseaudio.enable = false;
+
+    # Enable RealtimeKit for low-latency audio
     security.rtkit.enable = true;
+
+    # PipeWire audio server with full feature set
     services.pipewire = {
       enable = true;
+      audio.enable = true;
       alsa.enable = true;
       alsa.support32Bit = true;
       pulse.enable = true;

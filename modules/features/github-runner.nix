@@ -13,13 +13,12 @@ let
   repositories = cfg.repositories;
 
   # Get first user's GitHub username (personal data from my.features.users)
-  firstUser = builtins.head (builtins.attrNames config.my.users);
+  userNames = builtins.attrNames config.my.users;
+  firstUser = if userNames != [] then builtins.head userNames else throw "No users configured in my.users";
   githubUsername = config.my.users.${firstUser}.githubUsername or (throw "githubUsername not set for user ${firstUser}");
 
-  # Auto-detect GPU vendor from hardware configuration
-  hasNvidia = config.hardware.nvidia.modesetting.enable or false;
-  hasAmdgpu = config.hardware.amdgpu.loadInInitrd or false;
-  autoGpuVendor = if hasNvidia then "nvidia" else if hasAmdgpu then "amd" else null;
+  # Auto-detect GPU vendor from mynixos hardware configuration
+  autoGpuVendor = config.my.hardware.gpu or null;
 
   # Use first user as runner user (for pass command)
   autoRunnerUser = firstUser;
@@ -108,7 +107,7 @@ let
 
     echo "$RUNNER_SETS" | ${pkgs.jq}/bin/jq -r '.items[] | @json' | while read -r item; do
         NAME=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.metadata.name')
-        REPO=$(echo "$NAME" | sed 's/^yoga-//')
+        REPO=$(echo "$NAME" | sed 's/^${hostname}-//')
 
         CURRENT=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.status.currentRunners // 0')
         PENDING=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.status.pendingRunners // 0')
@@ -241,7 +240,7 @@ let
         if [ -n "$RUNNER_DATA" ]; then
             echo "$RUNNER_DATA" | ${pkgs.jq}/bin/jq -c '.items[]' | while read -r item; do
                 NAME=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.metadata.name')
-                REPO=$(echo "$NAME" | sed 's/^yoga-//')
+                REPO=$(echo "$NAME" | sed 's/^${hostname}-//')
 
                 CURRENT=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.status.currentRunners // 0')
                 PENDING=$(echo "$item" | ${pkgs.jq}/bin/jq -r '.status.pendingRunners // 0')

@@ -108,6 +108,7 @@
             ./modules/features/streaming.nix
             ./modules/features/development.nix
             ./modules/features/system.nix
+            ./modules/features/audio.nix
             ./modules/features/performance.nix
             ./modules/features/impermanence.nix
             ./modules/features/motd.nix
@@ -143,10 +144,19 @@
             ./modules/apps/utils/calculator.nix
             ./modules/apps/utils/imagemagick.nix
             ./modules/apps/dev/direnv.nix
+            ./modules/apps/dev/devenv.nix
             ./modules/apps/dev/github-desktop.nix
             ./modules/apps/dev/kdiff3.nix
+            ./modules/apps/dev/jq.nix
             ./modules/apps/media/pipewire-tools.nix
             ./modules/apps/media/musikcube.nix
+            ./modules/apps/media/audacious.nix
+            ./modules/apps/media/audio-utils.nix
+            ./modules/apps/communication/element.nix
+            ./modules/apps/communication/signal.nix
+            ./modules/apps/communication/slack.nix
+            ./modules/apps/terminals/warp.nix
+            ./modules/apps/finance/cointop.nix
             ./modules/apps/art/mypaint.nix
             ./modules/apps/network/termscp.nix
             ./modules/apps/fun/pipes.nix
@@ -163,7 +173,6 @@
             ./modules/hardware/cpu/intel.nix
             ./modules/hardware/gpu/amd.nix
             ./modules/hardware/gpu/nvidia.nix
-            ./modules/hardware/audio/realtek.nix
             ./modules/hardware/bluetooth/realtek.nix
             ./modules/hardware/boot/uefi.nix
             ./modules/hardware/boot/dual-boot.nix
@@ -610,6 +619,7 @@
                     kitty = lib.mkEnableOption "Kitty";
                     ghostty = lib.mkEnableOption "Ghostty";
                     alacritty = lib.mkEnableOption "Alacritty terminal";
+                    warp = lib.mkEnableOption "Warp terminal";
                   };
 
                   editors = {
@@ -623,12 +633,12 @@
                   };
 
                   shells = {
-                    bash = lib.mkEnableOption "Bash shell";
-                    fish = lib.mkOption {
+                    bash = lib.mkOption {
                       type = lib.types.bool;
                       default = true;
-                      description = "Fish shell (opinionated default: enabled)";
+                      description = "Bash shell (default shell)";
                     };
+                    fish = lib.mkEnableOption "Fish shell";
                   };
 
                   prompts = {
@@ -723,8 +733,14 @@
                       default = true;
                       description = "direnv environment manager (opinionated default: enabled)";
                     };
+                    devenv = lib.mkEnableOption "devenv development environment manager";
                     githubDesktop = lib.mkEnableOption "GitHub Desktop";
                     kdiff3 = lib.mkEnableOption "KDiff3 diff tool";
+                    jq = lib.mkOption {
+                      type = lib.types.bool;
+                      default = true;
+                      description = "jq JSON processor (opinionated default: enabled)";
+                    };
                   };
 
                   media = {
@@ -734,6 +750,12 @@
                       description = "PipeWire CLI tools (opinionated default: enabled)";
                     };
                     musikcube = lib.mkEnableOption "musikcube music player";
+                    audacious = lib.mkEnableOption "Audacious music player";
+                    audioUtils = lib.mkOption {
+                      type = lib.types.bool;
+                      default = true;
+                      description = "Audio utilities (pavucontrol, pamixer) (opinionated default: enabled)";
+                    };
                   };
 
                   art = {
@@ -746,6 +768,16 @@
 
                   fun = {
                     pipes = lib.mkEnableOption "Terminal eye candy (pipes, neo, asciiquarium)";
+                  };
+
+                  finance = {
+                    cointop = lib.mkEnableOption "Cointop cryptocurrency tracker";
+                  };
+
+                  communication = {
+                    element = lib.mkEnableOption "Element Matrix client";
+                    signal = lib.mkEnableOption "Signal Desktop messenger";
+                    slack = lib.mkEnableOption "Slack communication tool";
                   };
 
                   # New apps

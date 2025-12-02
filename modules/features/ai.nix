@@ -60,7 +60,8 @@ in
 
       # Environment variables for ROCm and Ollama
       environment.variables = {
-        HSA_OVERRIDE_GFX_VERSION = "11.0.2";
+        HSA_OVERRIDE_GFX_VERSION = "11.0.2"; # AMD GPU override for ROCm compatibility
+        ROC_ENABLE_PRE_VEGA = "1"; # Enable older AMD GPU support
         OLLAMA_HOST = "127.0.0.1:11434";
         OLLAMA_NUM_PARALLEL = "1";
         OLLAMA_MAX_LOADED_MODELS = "1";
@@ -91,6 +92,12 @@ in
       };
 
       users.groups.ollama = { };
+
+      # Override systemd service to add ROCm environment variables
+      systemd.services.ollama.environment = {
+        HSA_OVERRIDE_GFX_VERSION = "11.0.2";
+        ROC_ENABLE_PRE_VEGA = "1";
+      };
     }
 
     # MCP Servers (Model Context Protocol)

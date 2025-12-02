@@ -21,7 +21,6 @@ in
               --add-flags "--disable-password-manager" \
               --add-flags "--enable-features=UseOzonePlatform" \
               --add-flags "--ozone-platform=wayland" \
-              --add-flags "--force-device-scale-factor=1.25" \
               --set GNOME_KEYRING_CONTROL "" \
               --set DISABLE_GNOME_KEYRING "1" \
               --set SSH_AUTH_SOCK "$(gpgconf --list-dirs agent-ssh-socket)"

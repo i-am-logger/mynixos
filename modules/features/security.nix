@@ -30,8 +30,10 @@ in
         };
       };
 
-      # Add persistence for secure boot keys (if impermanence is used)
-      environment.persistence."/persist".directories = [ "/var/lib/sbctl" ];
+      # Add persistence for secure boot keys (if impermanence is enabled)
+      environment.persistence = mkIf config.my.storage.impermanence.enable {
+        ${config.my.storage.impermanence.persistPath}.directories = [ "/var/lib/sbctl" ];
+      };
 
       # Add sbctl for debugging and troubleshooting Secure Boot
       environment.systemPackages = with pkgs; [ sbctl ];

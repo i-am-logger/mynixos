@@ -21,11 +21,10 @@ in
         # Use new settings namespace
         settings = {
           # Pull user data from my.users (if available)
-          user = {
-            name = mkIf (config.my.users.${name}.fullName or null != null)
-              config.my.users.${name}.fullName;
-            email = mkIf (config.my.users.${name}.email or null != null)
-              config.my.users.${name}.email;
+          user = optionalAttrs (config.my.users.${name}.fullName or null != null) {
+            name = config.my.users.${name}.fullName;
+          } // optionalAttrs (config.my.users.${name}.email or null != null) {
+            email = config.my.users.${name}.email;
           };
 
           # Opinionated aliases

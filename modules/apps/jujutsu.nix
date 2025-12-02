@@ -12,15 +12,12 @@ in
         enable = true;
 
         settings = {
-          # Pull user data from my.features.users (if available)
-          user = mkMerge [
-            (mkIf (config.my.users.${name}.fullName or null != null) {
-              name = config.my.users.${name}.fullName;
-            })
-            (mkIf (config.my.users.${name}.email or null != null) {
-              email = config.my.users.${name}.email;
-            })
-          ];
+          # Pull user data from my.users (if available)
+          user = optionalAttrs (config.my.users.${name}.fullName or null != null) {
+            name = config.my.users.${name}.fullName;
+          } // optionalAttrs (config.my.users.${name}.email or null != null) {
+            email = config.my.users.${name}.email;
+          };
 
           # Opinionated aliases
           aliases = {
@@ -33,10 +30,10 @@ in
             a = [ "squash" ];
           };
 
-          # Opinionated settings
+          # Opinionated settings (with mkDefault for easy override)
           git = {
-            auto-local-bookmark = true;
-            push-bookmark-prefix = "logger/push-";
+            auto-local-bookmark = mkDefault true;
+            push-bookmark-prefix = mkDefault "${name}/push-";
           };
 
           signing = {

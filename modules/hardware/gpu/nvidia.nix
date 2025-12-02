@@ -4,26 +4,21 @@ with lib;
 
 let
   cfg = config.my.hardware.gpu;
-  cpuVendor = config.my.hardware.cpu;
 in
 {
   config = mkIf (cfg == "nvidia") {
-    # NVIDIA GPU driver configuration with Prime support
+    # NVIDIA GPU driver configuration
     hardware.graphics = {
       enable = true;
       enable32Bit = true;
       extraPackages = with pkgs; [
-        intel-media-driver
         libva-vdpau-driver
         libvdpau-va-gl
-        vpl-gpu-rt
       ];
     };
 
-    services.xserver.videoDrivers =
-      if cpuVendor == "intel"
-      then [ "intel" "nvidia" ]
-      else [ "nvidia" ];
+    # Video drivers (can be extended by hardware-specific configs)
+    services.xserver.videoDrivers = mkDefault [ "nvidia" ];
 
     nixpkgs.config.cudaSupport = true;
 
@@ -34,12 +29,8 @@ in
       nvidiaPersistenced = true;
       dynamicBoost.enable = true;
 
-      # Prime configuration for Intel/NVIDIA hybrid systems
-      prime = mkIf (cpuVendor == "intel") {
-        offload.enable = mkForce false;
-        offload.enableOffloadCmd = mkForce false;
-        sync.enable = true;
-      };
+      # Prime configuration should be set by hardware-specific configs
+      # (e.g., laptop modules that know they have hybrid graphics)
 
       package = config.boot.kernelPackages.nvidiaPackages.stable;
     };
@@ -50,11 +41,8 @@ in
       nvtopPackages.full
     ];
 
-    boot.kernelModules =
-      if cpuVendor == "intel"
-      then [ "i915" "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ]
-      else [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
-
+    # NVIDIA kernel modules
+    boot.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
     boot.extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
 
     boot.kernelParams = [

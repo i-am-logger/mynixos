@@ -23,30 +23,29 @@ in
         enable = true;
 
         shellAliases = {
+          # Navigation
           ".." = "cd ..";
           c = "clear";
+
+          # File finding utilities
           ff = "fd --type file --color always | fzf --ansi"; # find file
-          ffd = "fd --type directory --color always | fzf --ansi"; # find file
-          eff = "$EDITOR (ff)"; # edit find file
-          cdf = "cd (ffd)"; # cd find dir
-          cf = "find . -type f | wc -l"; # count files in dir recursivley
+          ffd = "fd --type directory --color always | fzf --ansi"; # find directory
+          eff = "$EDITOR (ff)"; # edit found file
+          cdf = "cd (ffd)"; # cd to found directory
+          cf = "find . -type f | wc -l"; # count files recursively
 
+          # System info
           f = "free -h"; # memory usage
-          # df = "df -h"; # disk usage
           g = "git";
-          # t = "LS_COLORS=false tree -Cd -L 2 --gitignore";
           t = "tree -C --gitignore";
-          # r = "ranger";
-          y = "yazi";
-          h = "hx";
-          za = "zellij attach";
-          zz = "zellij -l layout.kdl";
-          et = "emacsclient -nw -c";
-          e = "emacsclient -c";
 
+          # Utilities
           mnt = "mount | awk -F' ' '{ printf \"%s\t%s\n\",\$1,\$3; }' | column -t | egrep ^/dev/ | sort";
-          cpv = "rsync - ah - -info=progress2";
+          cpv = "rsync -ah --info=progress2";
           weather = "curl wttr.in";
+
+          # Add your personal aliases in your system-specific configuration
+          # Example: y = "yazi"; h = "hx"; etc.
         };
 
         interactiveShellInit = ''

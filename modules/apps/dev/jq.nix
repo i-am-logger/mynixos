@@ -6,12 +6,11 @@ let
   cfg = config.my.apps.dev;
 in
 {
-  config = mkIf cfg.direnv {
+  config = mkIf cfg.jq {
     home-manager.users = mapAttrs (name: userCfg: {
-      programs.direnv = {
-        enable = true;
-        nix-direnv.enable = true;
-      };
+      home.packages = with pkgs; [
+        jq
+      ];
     }) config.my.users;
   };
 }
