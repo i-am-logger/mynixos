@@ -487,11 +487,8 @@ in
 
       # Home packages
       home.packages = with pkgs; [
-        swappy
-        wlr-randr
-        xdg-desktop-portal
-        xdg-desktop-portal-hyprland
-        xdg-desktop-portal-gtk
+        # XDG portals are provided by programs.hyprland.enable in graphical.nix
+        # Don't add xdg-desktop-portal-hyprland here to avoid conflicts
         brightnessctl
         swww
         waypaper
