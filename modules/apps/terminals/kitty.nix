@@ -38,7 +38,6 @@ let
   '';
 in
 {
-  options.my.apps.terminals.kitty = mkEnableOption "Kitty terminal emulator";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -71,6 +70,6 @@ in
 
       # Additional kitty config file
       xdg.configFile."kitty/kitty.conf".text = kittyConf;
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

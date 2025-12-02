@@ -10,7 +10,7 @@ in
     # Realtek audio driver configuration
 
     # Enable sound with pipewire
-    hardware.pulseaudio.enable = false;
+    services.pulseaudio.enable = false;
     security.rtkit.enable = true;
     services.pipewire = {
       enable = true;
@@ -18,6 +18,13 @@ in
       alsa.support32Bit = true;
       pulse.enable = true;
       jack.enable = true;
+      wireplumber.enable = true;
     };
+
+    # Audio utilities
+    environment.systemPackages = with pkgs; [
+      alsa-tools
+      alsa-utils
+    ];
   };
 }

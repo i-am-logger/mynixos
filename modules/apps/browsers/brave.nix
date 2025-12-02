@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.browsers.brave;
 in
 {
-  options.my.apps.browsers.brave = mkEnableOption "Brave browser with gopass and GPG support";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -53,6 +52,6 @@ in
           "x-scheme-handler/https"
         ];
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.apps.windowManagers.hyprland;
+  cfg = config.my.features.graphical;
 
   # Swappy config
   swappyConfig = ''
@@ -387,9 +387,8 @@ let
   };
 in
 {
-  options.my.apps.windowManagers.hyprland = mkEnableOption "Hyprland window manager with full configuration";
-
-  config = mkIf cfg {
+  # Option is declared in flake.nix
+  config = mkIf (cfg.enable && cfg.windowManagers.hyprland) {
     home-manager.users = mapAttrs (name: userCfg: {
       # GTK configuration
       gtk = {
@@ -535,6 +534,6 @@ in
           bindings
         ];
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

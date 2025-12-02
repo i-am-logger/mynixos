@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.fileManagers.mc;
 in
 {
-  options.my.apps.fileManagers.mc = mkEnableOption "Midnight Commander file manager";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -20,6 +19,6 @@ in
       #   source = ./config;  # Adjust path to your mc config location
       #   recursive = true;
       # };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

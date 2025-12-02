@@ -10,18 +10,24 @@ let
   cfg = config.my.features.github-runner;
 
   # List of repositories to create runner sets for
-  repositories = [
-    "flake"
-    "loial"
-    "logger"
-    "pds"
-  ];
+  repositories = cfg.repositories;
 
-  githubUsername = "i-am-logger";
+  # Get first user's GitHub username (personal data from my.features.users)
+  firstUser = builtins.head (builtins.attrNames config.my.users);
+  githubUsername = config.my.users.${firstUser}.githubUsername or (throw "githubUsername not set for user ${firstUser}");
+
+  # Auto-detect GPU vendor from hardware configuration
+  hasNvidia = config.hardware.nvidia.modesetting.enable or false;
+  hasAmdgpu = config.hardware.amdgpu.loadInInitrd or false;
+  autoGpuVendor = if hasNvidia then "nvidia" else if hasAmdgpu then "amd" else null;
+
+  # Use first user as runner user (for pass command)
+  autoRunnerUser = firstUser;
+
   hostname = config.networking.hostName;
 
   # Custom NixOS runner image from GHCR
-  runnerImageName = "ghcr.io/i-am-logger/github-runner:latest";
+  runnerImageName = "ghcr.io/${githubUsername}/github-runner:latest";
 
   # Generate runner set services for each repository
   mkRunnerSetService = repo: {
@@ -310,12 +316,12 @@ in
                 echo "Creating GitHub runner token file..."
                 mkdir -p /persist/etc
 
-                # Try to get PAT from pass (run as logger user)
-                if ${pkgs.sudo}/bin/sudo -u logger ${pkgs.pass}/bin/pass show github/runner-pat &>/dev/null; then
-                  GITHUB_TOKEN=$(${pkgs.sudo}/bin/sudo -u logger ${pkgs.pass}/bin/pass show github/runner-pat)
+                # Try to get PAT from pass (run as configured user)
+                if ${pkgs.sudo}/bin/sudo -u ${autoRunnerUser} ${pkgs.pass}/bin/pass show github/runner-pat &>/dev/null; then
+                  GITHUB_TOKEN=$(${pkgs.sudo}/bin/sudo -u ${autoRunnerUser} ${pkgs.pass}/bin/pass show github/runner-pat)
                   cat > /persist/etc/github-runner-token << EOF
         GITHUB_TOKEN=$GITHUB_TOKEN
-        GITHUB_USERNAME=i-am-logger
+        GITHUB_USERNAME=${githubUsername}
         EOF
                   chmod 644 /persist/etc/github-runner-token
                   chown root:root /persist/etc/github-runner-token
@@ -402,7 +408,7 @@ in
           echo "RBAC permissions patched for ARC controller"
 
           ${optionalString cfg.enableGpu (
-            if cfg.gpuVendor == "amd" then ''
+            if autoGpuVendor == "amd" then ''
           # Install AMD GPU device plugin
           echo "Installing AMD GPU device plugin..."
           ${pkgs.kubectl}/bin/kubectl apply -f https://raw.githubusercontent.com/ROCm/k8s-device-plugin/master/k8s-ds-amdgpu-dp.yaml

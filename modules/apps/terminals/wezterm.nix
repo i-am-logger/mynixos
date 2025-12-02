@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.terminals.wezterm;
 in
 {
-  options.my.apps.terminals.wezterm = mkEnableOption "WezTerm terminal emulator";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -39,6 +38,6 @@ in
           return config
         '';
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

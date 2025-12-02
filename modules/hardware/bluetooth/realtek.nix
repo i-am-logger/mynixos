@@ -10,8 +10,23 @@ in
     # Realtek Bluetooth configuration
     hardware.bluetooth = {
       enable = true;
-      powerOnBoot = lib.mkDefault true;
+      powerOnBoot = false; # Don't power on by default to save battery
+      settings = {
+        General = {
+          Enable = "Source,Sink,Media,Socket";
+          ControllerMode = "dual";
+        };
+      };
     };
+
     services.blueman.enable = true;
+
+    # Restart bluetooth service on failure
+    systemd.services.bluetooth = {
+      serviceConfig = {
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+    };
   };
 }

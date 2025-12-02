@@ -6,12 +6,11 @@ let
   cfg = config.my.apps.shells.fish;
 in
 {
-  options.my.apps.shells.fish = mkEnableOption "Fish shell with plugins and configuration";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
       home.packages = with pkgs; [
-        thefuck
+        # thefuck has been removed, using pay-respects instead
         grc
         fzf
         fd
@@ -111,6 +110,6 @@ in
           }
         ];
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

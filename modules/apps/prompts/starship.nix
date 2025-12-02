@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.prompts.starship;
 in
 {
-  options.my.apps.prompts.starship = mkEnableOption "Starship prompt with custom configuration";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -503,6 +502,6 @@ in
           };
         };
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

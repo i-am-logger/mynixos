@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.multiplexers.zellij;
 in
 {
-  options.my.apps.multiplexers.zellij = mkEnableOption "Zellij terminal multiplexer";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -27,6 +26,6 @@ in
 
         # };
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

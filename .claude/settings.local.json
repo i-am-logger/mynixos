@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(fastfetch:*)",
+      "Read(//nix/store/**)",
+      "Bash(nix-shell -p jp2a --run \"jp2a --width=40 /home/logger/Media/Pictures/logger.jpg\")",
+      "Bash(nix-shell:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

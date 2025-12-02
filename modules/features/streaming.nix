@@ -58,7 +58,7 @@ in
             ];
           };
         })
-        config.my.features.users;
+        config.my.users;
     })
 
     # StreamDeck support
@@ -97,7 +97,7 @@ in
             qt6.qtwayland
           ];
         })
-        config.my.features.users;
+        config.my.users;
 
       # Fix Qt platform plugin issues for streamdeck-ui
       environment.sessionVariables = {

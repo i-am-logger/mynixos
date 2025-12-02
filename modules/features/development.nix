@@ -6,7 +6,7 @@ let
   cfg = config.my.features.development;
 
   # Get list of all user names from my.features.users
-  userNames = attrNames config.my.features.users;
+  userNames = attrNames config.my.users;
 in
 {
   config = mkIf cfg.enable (mkMerge [
@@ -54,8 +54,8 @@ in
       };
     })
 
-    # AppImage support
-    (mkIf cfg.appimage.enable {
+    # AppImage support (now under binfmt)
+    (mkIf cfg.binfmt.appimage {
       boot.binfmt.registrations.appimage = {
         wrapInterpreterInShell = false;
         interpreter = "${pkgs.appimage-run}/bin/appimage-run";

@@ -58,7 +58,7 @@ my.stacks.users.bob.passkey = solokey {
 - `my.features` - Functional feature bundles
   - `users` - User configurations with packages, passkeys
   - `security` - Secure boot, yubikey, audit rules
-  - `graphical` - Graphical environment (Hyprland, greetd, warp, vscode, brave)
+  - `graphical` - Graphical environment (Hyprland, greetd, vscode, brave)
   - `github-runner` - GitHub Actions runners on k3s with GPU
   - `ai` - AI infrastructure (Ollama with ROCm + MCP servers)
   - `webapps` - Browser-based and Electron applications (Slack, Signal, 1Password)

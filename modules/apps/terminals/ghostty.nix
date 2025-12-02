@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.terminals.ghostty;
 in
 {
-  options.my.apps.terminals.ghostty = mkEnableOption "Ghostty terminal emulator";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -46,6 +45,6 @@ in
           # custom-shader-animation = true;
         };
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

@@ -6,7 +6,6 @@ let
   cfg = config.my.apps.editors.helix;
 in
 {
-  options.my.apps.editors.helix = mkEnableOption "Helix editor with language servers";
 
   config = mkIf cfg {
     home-manager.users = mapAttrs (name: userCfg: {
@@ -357,6 +356,6 @@ in
           ];
         };
       };
-    }) config.my.stacks.users;
+    }) config.my.users;
   };
 }

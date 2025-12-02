@@ -3,18 +3,11 @@
 with lib;
 
 let
-  cfg = config.my.hardware.boot;
+  cfg = config.my.boot;
 in
 {
-  options.my.hardware.boot = {
-    secure = mkEnableOption "Secure Boot with Lanzaboote";
-
-    uefi = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Enable UEFI boot";
-    };
-  };
+  # Options are defined in flake.nix under my.boot namespace
+  # This module only provides the implementation
 
   config = mkMerge [
     # Common UEFI settings
