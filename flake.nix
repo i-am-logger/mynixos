@@ -313,35 +313,6 @@
                     };
                   };
 
-                  # GitHub Runner stack
-                  github-runner = lib.mkOption {
-                    description = "GitHub Actions Runner Controller stack";
-                    default = { };
-                    type = lib.types.submodule {
-                      options = {
-                        enable = lib.mkEnableOption "GitHub Actions runners with k3s and ARC";
-
-                        enableGpu = lib.mkOption {
-                          type = lib.types.bool;
-                          default = false;
-                          description = "Enable GPU passthrough to runners (vendor auto-detected from hardware)";
-                        };
-
-                        useCustomImage = lib.mkOption {
-                          type = lib.types.bool;
-                          default = true;
-                          description = "Use custom GitHub runner image from GHCR";
-                        };
-
-                        repositories = lib.mkOption {
-                          type = lib.types.listOf lib.types.str;
-                          default = [ ];
-                          description = "List of repository names to create runner sets for";
-                        };
-                      };
-                    };
-                  };
-
                   # Performance tuning
                   performance = lib.mkOption {
                     description = "Performance optimizations (kernel tunables, zram, vmtouch)";
@@ -484,6 +455,34 @@
                                 type = lib.types.bool;
                                 default = true;
                                 description = "Make kubeconfig readable by non-root users";
+                              };
+                            };
+                          };
+                        };
+
+                        github-runner = lib.mkOption {
+                          description = "GitHub Actions Runner Controller stack (requires k3s)";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkEnableOption "GitHub Actions runners with k3s and ARC";
+
+                              enableGpu = lib.mkOption {
+                                type = lib.types.bool;
+                                default = false;
+                                description = "Enable GPU passthrough to runners (vendor auto-detected from hardware)";
+                              };
+
+                              useCustomImage = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Use custom GitHub runner image from GHCR";
+                              };
+
+                              repositories = lib.mkOption {
+                                type = lib.types.listOf lib.types.str;
+                                default = [ ];
+                                description = "List of repository names to create runner sets for";
                               };
                             };
                           };
