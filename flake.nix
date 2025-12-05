@@ -82,6 +82,13 @@
             legion-16irx8h = ./modules/hardware/laptops/lenovo/legion-16irx8h;
           };
         };
+        cooling = {
+          nzxt = {
+            kraken-elite-rgb = {
+              elite-240-rgb = ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix;
+            };
+          };
+        };
       };
 
       # Main NixOS module providing the `my.*` namespace
@@ -174,6 +181,7 @@
             ./modules/hardware/gpu/amd.nix
             ./modules/hardware/gpu/nvidia.nix
             ./modules/hardware/bluetooth/realtek.nix
+            ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
             ./modules/hardware/boot/uefi.nix
             ./modules/hardware/boot/dual-boot.nix
             # Motherboard/laptop configs are in /etc/nixos/Hardware/ and imported via mkSystem's hardware parameter
