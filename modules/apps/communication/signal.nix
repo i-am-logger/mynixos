@@ -2,15 +2,16 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.communication;
-in
 {
-  config = mkIf cfg.signal {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        signal-desktop
-      ];
-    }) config.my.users;
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.communication.signal {
+          home.packages = with pkgs; [
+            signal-desktop
+          ];
+        }
+      )
+      config.my.users;
   };
 }

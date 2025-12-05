@@ -704,6 +704,8 @@
                       options = {
                         communication = {
                           element = lib.mkEnableOption "Element Matrix client";
+                          signal = lib.mkEnableOption "Signal Desktop messenger";
+                          slack = lib.mkEnableOption "Slack communication tool";
                         };
                       };
                     };
