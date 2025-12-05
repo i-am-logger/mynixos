@@ -673,6 +673,50 @@
                       kraken-elite-rgb = {
                         elite-240-rgb = {
                           enable = lib.mkEnableOption "NZXT Kraken Elite 240 RGB AIO cooler";
+
+                          lcd = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable LCD screen support";
+                            };
+
+                            brightness = lib.mkOption {
+                              type = lib.types.int;
+                              default = 100;
+                              description = "LCD screen brightness (0-100)";
+                            };
+                          };
+
+                          rgb = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable RGB ring around LCD screen";
+                            };
+                          };
+
+                          liquidctl = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Install liquidctl CLI tool";
+                            };
+
+                            autoInitialize = lib.mkOption {
+                              type = lib.types.bool;
+                              default = false;
+                              description = "Automatically run liquidctl initialize on boot";
+                            };
+                          };
+
+                          monitoring = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Install lm_sensors for monitoring";
+                            };
+                          };
                         };
                       };
                     };
