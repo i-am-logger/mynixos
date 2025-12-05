@@ -181,6 +181,9 @@
             ./modules/hardware/gpu/amd.nix
             ./modules/hardware/gpu/nvidia.nix
             ./modules/hardware/bluetooth/realtek.nix
+            ./modules/hardware/storage
+            ./modules/hardware/usb
+            ./modules/hardware/memory
             ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
             ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
             ./modules/hardware/laptops/lenovo/legion-16irx8h
@@ -555,6 +558,104 @@
                     gigabyte = {
                       x870e-aorus-elite-wifi7 = {
                         enable = lib.mkEnableOption "Gigabyte X870E AORUS Elite WiFi7 motherboard";
+
+                        bluetooth = {
+                          enable = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Enable bluetooth hardware";
+                          };
+                        };
+
+                        networking = {
+                          enable = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Enable network hardware";
+                          };
+
+                          useDHCP = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Use DHCP for network configuration";
+                          };
+
+                          wireless = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = false;
+                              description = "Enable wireless networking (use NetworkManager instead)";
+                            };
+
+                            useDHCP = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Use DHCP for wireless interface";
+                            };
+                          };
+                        };
+
+                        storage = {
+                          nvme = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable NVMe storage support";
+                            };
+                          };
+
+                          sata = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = false;
+                              description = "Enable SATA/AHCI storage support";
+                            };
+                          };
+
+                          usb = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable USB storage support";
+                            };
+                          };
+                        };
+
+                        usb = {
+                          xhci = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable xHCI (USB 3.0) support";
+                            };
+                          };
+
+                          thunderbolt = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable Thunderbolt support";
+                            };
+                          };
+
+                          hid = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable USB HID support";
+                            };
+                          };
+                        };
+
+                        memory = {
+                          optimization = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = true;
+                              description = "Enable memory optimizations";
+                            };
+                          };
+                        };
                       };
                     };
                   };

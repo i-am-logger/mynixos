@@ -12,16 +12,8 @@ in
     # Import laptop-specific boot configuration
     (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
 
-    # Additional configuration
+    # Additional laptop configuration
     {
-      # Hardware specification for this laptop
-      my.hardware = {
-        cpu = "intel"; # Hardcoded - this laptop has Intel CPU
-        gpu = "nvidia"; # Hardcoded - this laptop has NVIDIA GPU
-        bluetooth.enable = lib.mkDefault true; # Can be disabled via my.hardware.bluetooth.enable = false
-        audio.enable = lib.mkDefault true; # Can be disabled via my.hardware.audio.enable = false
-      };
-
       # Boot configuration for this laptop hardware
       boot = {
       initrd = {
@@ -49,14 +41,15 @@ in
       sync.enable = true; # Use PRIME sync mode for better performance
     };
 
-      # Intel microcode updates
-      hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+        # Intel microcode updates
+        hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-      # Networking - enable DHCP by default
-      networking.useDHCP = lib.mkDefault true;
+        # Networking - enable DHCP by default
+        networking.useDHCP = lib.mkDefault true;
 
-      # Platform architecture
-      nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-    }
-  ]);
+        # Platform architecture
+        nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+      }
+    ]))
+  ];
 }

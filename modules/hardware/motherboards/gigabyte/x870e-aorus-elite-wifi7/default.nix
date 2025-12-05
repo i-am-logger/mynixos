@@ -8,22 +8,43 @@ in
     ./hardware-configuration.nix
   ];
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    # Import motherboard-specific boot configuration
-    (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
+  config = lib.mkMerge [
+    # Import motherboard-specific boot configuration (conditionally)
+    (lib.mkIf cfg.enable (import ./drivers/uefi-boot.nix { inherit config lib pkgs; }))
 
-    # Additional configuration
-    {
-      # Hardware specification for this motherboard
-      my.hardware = {
-        cpu = "amd"; # Hardcoded - this motherboard has AMD CPU
-        gpu = "amd"; # Hardcoded - this motherboard has AMD GPU
-        bluetooth.enable = lib.mkDefault true; # Can be disabled via my.hardware.bluetooth.enable = false
-        audio.enable = lib.mkDefault true; # Can be disabled via my.hardware.audio.enable = false
-      };
-
-      # Platform architecture
+    # Platform architecture (conditionally)
+    (lib.mkIf cfg.enable {
       nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+
+      # Networking configuration
+      networking.useDHCP = lib.mkIf cfg.networking.enable (lib.mkDefault cfg.networking.useDHCP);
+      networking.wireless.enable = lib.mkIf cfg.networking.enable cfg.networking.wireless.enable;
+    })
+
+    # Set hardware types and component options (unconditionally to avoid recursion)
+    {
+      # Set hardware types (triggers AMD CPU/GPU modules when motherboard is enabled)
+      my.hardware.cpu = lib.mkIf cfg.enable "amd";
+      my.hardware.gpu = lib.mkIf cfg.enable "amd";
+
+      # Bluetooth configuration
+      my.hardware.bluetooth.enable = lib.mkIf cfg.enable cfg.bluetooth.enable;
+
+      # Storage configuration
+      my.hardware.storage.nvme.enable = lib.mkIf cfg.enable cfg.storage.nvme.enable;
+      my.hardware.storage.sata.enable = lib.mkIf cfg.enable cfg.storage.sata.enable;
+      my.hardware.storage.usb.enable = lib.mkIf cfg.enable cfg.storage.usb.enable;
+
+      # USB configuration
+      my.hardware.usb.xhci.enable = lib.mkIf cfg.enable cfg.usb.xhci.enable;
+      my.hardware.usb.thunderbolt.enable = lib.mkIf cfg.enable cfg.usb.thunderbolt.enable;
+      my.hardware.usb.hid.enable = lib.mkIf cfg.enable cfg.usb.hid.enable;
+
+      # Memory optimization
+      my.hardware.memory.optimization.enable = lib.mkIf cfg.enable cfg.memory.optimization.enable;
+
+      # AMD GPU ROCm support (enabled by default for this motherboard)
+      my.hardware.gpu.amd.rocm.enable = lib.mkIf cfg.enable (lib.mkDefault true);
     }
-  ]);
+  ];
 }

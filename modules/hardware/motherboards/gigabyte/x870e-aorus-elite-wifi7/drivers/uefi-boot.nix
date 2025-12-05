@@ -1,6 +1,12 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
+  # TODO: these shoudl move to the right section in hardware or system
   # UEFI boot configuration for Gigabyte X870E motherboard
 
   # Bootloader - disabled for lanzaboote (Secure Boot)

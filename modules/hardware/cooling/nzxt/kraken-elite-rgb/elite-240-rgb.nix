@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -74,15 +79,17 @@ in
     services.udev.packages = mkIf cfg.liquidctl.enable [ pkgs.liquidctl ];
 
     # Systemd service to automatically initialize liquidctl on boot
-    systemd.services.liquidctl-kraken-elite = mkIf (cfg.liquidctl.enable && cfg.liquidctl.autoInitialize) {
-      description = "NZXT Kraken Elite 240 RGB liquidctl initialization";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "systemd-udev-settle.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${pkgs.liquidctl}/bin/liquidctl initialize";
-      };
-    };
+    systemd.services.liquidctl-kraken-elite =
+      mkIf (cfg.liquidctl.enable && cfg.liquidctl.autoInitialize)
+        {
+          description = "NZXT Kraken Elite 240 RGB liquidctl initialization";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "systemd-udev-settle.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.liquidctl}/bin/liquidctl initialize";
+          };
+        };
   };
 }
