@@ -286,12 +286,15 @@ let
 in
 {
   config = mkIf cfg.enable {
-    # Enable k3s via Infra service
-    my.infra.services.k3s = {
+    # Enable k3s via development feature
+    my.features.development = {
       enable = true;
-      role = "server";
-      disableTraefik = true;
-      kubeconfigReadable = true;
+      k3s = {
+        enable = true;
+        role = "server";
+        disableTraefik = true;
+        kubeconfigReadable = true;
+      };
     };
 
     # Install additional packages for GitHub Actions

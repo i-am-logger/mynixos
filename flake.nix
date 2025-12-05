@@ -221,12 +221,12 @@
                       options = {
                         enable = lib.mkEnableOption "graphical environment (Hyprland + greetd)";
 
-                        vscode = {
-                          enable = lib.mkEnableOption "Visual Studio Code";
-                        };
-
                         browser = {
-                          enable = lib.mkEnableOption "browser (brave)";
+                          enable = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Browser (brave) - opinionated default: enabled";
+                          };
                         };
 
                         # Window managers
@@ -270,7 +270,11 @@
                           default = { };
                           type = lib.types.submodule {
                             options = {
-                              enable = lib.mkEnableOption "webapps stack";
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Webapps stack - opinionated default: enabled";
+                              };
 
                               # Individual webapps - all enabled by default when webapps.enable = true
                               gmail = lib.mkOption { type = lib.types.bool; default = true; description = "Gmail webapp"; };
@@ -432,6 +436,48 @@
                             type = lib.types.bool;
                             default = true;
                             description = "AppImage support via binfmt (opinionated default: enabled)";
+                          };
+                        };
+
+                        vscode = {
+                          enable = lib.mkEnableOption "Visual Studio Code (requires graphical.enable = true)";
+                        };
+
+                        k3s = lib.mkOption {
+                          description = "k3s Kubernetes cluster for local development";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "k3s Kubernetes cluster (opinionated default: enabled)";
+                              };
+
+                              role = lib.mkOption {
+                                type = lib.types.enum [ "server" "agent" ];
+                                default = "server";
+                                description = "k3s role - server or agent";
+                              };
+
+                              disableTraefik = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Disable built-in Traefik ingress controller";
+                              };
+
+                              apiPort = lib.mkOption {
+                                type = lib.types.port;
+                                default = 6443;
+                                description = "k3s API server port";
+                              };
+
+                              kubeconfigReadable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Make kubeconfig readable by non-root users";
+                              };
+                            };
                           };
                         };
                       };

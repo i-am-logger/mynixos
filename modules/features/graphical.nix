@@ -44,8 +44,6 @@ in
       nixpkgs.config.allowUnfreePredicate =
         pkg:
         builtins.elem (pkg.pname or pkg.name or (lib.getName pkg)) [
-          "vscode"
-          "vscode-with-extensions"
           "1password-gui"
           "1password"
           "1password-cli"
@@ -53,14 +51,6 @@ in
           "chromium-unwrapped"
         ];
     }
-
-    # VSCode configuration
-    (mkIf cfg.vscode.enable {
-      environment.systemPackages = with pkgs; [
-        libsecret # For keyring integration
-        libxkbcommon
-      ];
-    })
 
     # Browser configuration
     (mkIf cfg.browser.enable {
