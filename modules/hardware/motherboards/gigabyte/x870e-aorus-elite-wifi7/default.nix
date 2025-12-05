@@ -42,9 +42,6 @@ in
 
       # Memory optimization
       my.hardware.memory.optimization.enable = lib.mkIf cfg.enable cfg.memory.optimization.enable;
-
-      # AMD GPU ROCm support (enabled by default for this motherboard)
-      my.hardware.gpu.amd.rocm.enable = lib.mkIf cfg.enable (lib.mkDefault true);
     }
   ];
 }
