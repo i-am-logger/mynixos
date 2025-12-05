@@ -304,23 +304,6 @@ in
       trustedInterfaces = [ "cni0" "flannel.1" ];
     };
 
-    # Make kubeconfig readable by users
-    systemd.services.k3s-kubeconfig-permissions = {
-      description = "Set k3s kubeconfig permissions";
-      after = [ "k3s.service" ];
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do
-          sleep 1
-        done
-        chmod 644 /etc/rancher/k3s/k3s.yaml
-      '';
-    };
-
     # Prevent NetworkManager from managing k3s interfaces
     environment.etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
       [keyfile]
@@ -370,8 +353,25 @@ in
       ];
     };
 
-    # Setup ARC controller after k3s is ready and deploy runner scale sets
+    # Setup ARC controller and k3s kubeconfig permissions
     systemd.services = lib.listToAttrs (map mkRunnerSetService repositories) // {
+      # Make kubeconfig readable by users
+      k3s-kubeconfig-permissions = {
+        description = "Set k3s kubeconfig permissions";
+        after = [ "k3s.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do
+            sleep 1
+          done
+          chmod 644 /etc/rancher/k3s/k3s.yaml
+        '';
+      };
+
       arc-setup = {
         description = "Setup GitHub Actions Runner Controller";
         after = [ "k3s.service" ];
