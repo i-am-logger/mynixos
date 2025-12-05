@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -88,7 +93,11 @@ in
         };
 
         fix-audio-speaker = {
-          after = [ "sound.target" "pipewire.service" "wireplumber.service" ];
+          after = [
+            "sound.target"
+            "pipewire.service"
+            "wireplumber.service"
+          ];
           wants = [ "pipewire.service" ];
         };
       };
@@ -114,24 +123,23 @@ in
         useXkbConfig = true;
       };
 
-      # Boot configuration
-      boot.loader.grub.configurationLimit = 100;
-      boot.tmp.cleanOnBoot = true;
+      # Boot configuration (with mkDefault for user override)
+      boot.loader.grub.configurationLimit = mkDefault 100;
+      boot.tmp.cleanOnBoot = mkDefault true;
 
       # SSD TRIM support
-      services.fstrim.enable = true;
+      services.fstrim.enable = mkDefault true;
 
       # Opinionated system services (can be disabled with mkForce)
-      services.usbmuxd.enable = lib.mkDefault true;  # iOS device support
-      services.fwupd.enable = lib.mkDefault true;    # Firmware updates
-      services.trezord.enable = lib.mkDefault true;  # Trezor hardware wallet
+      services.usbmuxd.enable = lib.mkDefault true; # iOS device support
+      services.fwupd.enable = lib.mkDefault true; # Firmware updates
+      services.trezord.enable = lib.mkDefault true; # Trezor hardware wallet
 
       # Graphics hardware support
       hardware.graphics.enable = true;
 
       # Network configuration (NetworkManager is a system service, not hardware)
       networking.networkmanager.enable = lib.mkDefault true;
-      networking.wireless.enable = lib.mkDefault false;
 
       # Prevent NetworkManager from managing container interfaces
       environment.etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
@@ -169,39 +177,39 @@ in
 
       # Auto-upgrade configuration
       system.autoUpgrade = {
-        enable = true;
-        channel = "https://nixos.org/channels/nixos-unstable";
+        enable = mkDefault true;
+        channel = mkDefault "https://nixos.org/channels/nixos-unstable";
       };
 
       # Nix configuration
       nix = {
         settings = {
-          max-jobs = "auto";
-          cores = 0; # auto detect
-          build-cores = 0;
-          sandbox = true;
-          system-features = [
+          max-jobs = mkDefault "auto";
+          cores = mkDefault 0; # auto detect
+          build-cores = mkDefault 0;
+          sandbox = mkDefault true;
+          system-features = mkDefault [
             "big-parallel"
           ];
 
-          extra-platforms = [
+          extra-platforms = mkDefault [
             "x86_64-linux"
           ];
 
           # Add all users as trusted
           trusted-users = [ "root" ] ++ userNames;
 
-          substituters = [
+          substituters = mkDefault [
             "https://cache.nixos.org/"
           ];
 
-          auto-optimise-store = true;
+          auto-optimise-store = mkDefault true;
         };
 
         gc = {
-          automatic = true;
-          dates = "weekly";
-          options = "--delete-older-than 7d";
+          automatic = mkDefault true;
+          dates = mkDefault "weekly";
+          options = mkDefault "--delete-older-than 7d";
         };
 
         package = pkgs.nixVersions.latest;

@@ -20,17 +20,47 @@ in
     (mkIf (usersToCreate != {}) {
       users.users = mapAttrs (name: userCfg: {
         isNormalUser = true;
-        description = userCfg.fullName;
-        extraGroups = [ "wheel" "networkmanager" "video" "audio" ];
+        description = userCfg.description or userCfg.fullName;
+        hashedPassword = userCfg.hashedPassword;
+        extraGroups = [ "wheel" "networkmanager" ];  # Base groups, features add more
         shell = if userCfg.shell == "fish" then pkgs.fish
                 else if userCfg.shell == "zsh" then pkgs.zsh
-                else pkgs.bash;
+                else if userCfg.shell == "bash" then pkgs.bash
+                else pkgs.bash;  # Default to bash
         packages = userCfg.packages;
       }) usersToCreate;
 
       # Enable required programs based on user shells
       programs.fish.enable = mkIf (any (u: u.shell or null == "fish") (attrValues usersToCreate)) true;
       programs.zsh.enable = mkIf (any (u: u.shell or null == "zsh") (attrValues usersToCreate)) true;
+
+      # Set up user avatars for AccountsService (display manager)
+      system.activationScripts = listToAttrs (
+        flatten (mapAttrsToList (name: userCfg:
+          optional (userCfg.avatar != null) {
+            name = "userAvatar-${name}";
+            value = {
+              text = ''
+                # Create directory for user icons if it doesn't exist
+                mkdir -p /var/lib/AccountsService/icons
+                mkdir -p /var/lib/AccountsService/users
+
+                # Copy the user avatar to the standard location
+                cp ${userCfg.avatar} /var/lib/AccountsService/icons/${name}
+                chmod 644 /var/lib/AccountsService/icons/${name}
+
+                # Create AccountsService user configuration
+                cat > /var/lib/AccountsService/users/${name} << EOF
+                [User]
+                Icon=/var/lib/AccountsService/icons/${name}
+                EOF
+                chmod 644 /var/lib/AccountsService/users/${name}
+              '';
+              deps = [ "users" ];
+            };
+          }
+        ) usersToCreate)
+      );
     })
 
     # Create filesystem mounts for all users (regardless of how they're defined)

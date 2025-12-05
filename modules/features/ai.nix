@@ -60,7 +60,7 @@ in
 
       # Environment variables for ROCm and Ollama
       environment.variables = {
-        HSA_OVERRIDE_GFX_VERSION = "11.0.2"; # AMD GPU override for ROCm compatibility
+        HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion; # AMD GPU override for ROCm compatibility
         ROC_ENABLE_PRE_VEGA = "1"; # Enable older AMD GPU support
         OLLAMA_HOST = "127.0.0.1:11434";
         OLLAMA_NUM_PARALLEL = "1";
@@ -95,7 +95,7 @@ in
 
       # Override systemd service to add ROCm environment variables
       systemd.services.ollama.environment = {
-        HSA_OVERRIDE_GFX_VERSION = "11.0.2";
+        HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
         ROC_ENABLE_PRE_VEGA = "1";
       };
     }

@@ -54,7 +54,7 @@ let
     bind = [
       "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
       "$mainMod SHIFT, Space, exec, walker --modules ssh -w 1000 -h 700"
-      "$mainMod, E, exec, brave"
+      "$mainMod, E, exec, ${cfg.hyprland.defaultBrowser}"
       "$mainMod SHIFT, E, exec, google-chrome-stable"
       "SHIFT, Print, exec, grimblast save area - | swappy -f -"
       ", Print, exec, grimblast --notify copy area"
@@ -73,7 +73,7 @@ let
       "$mainMod, semicolon, exec, walker -p 'Emojis… (type : then emoji name)' -w 1000 -h 700 -q ':'"
 
       # general bindings
-      "$mainMod, T, exec, wezterm"
+      "$mainMod, T, exec, ${cfg.hyprland.defaultTerminal}"
       "$mainMod, Q, killactive,"
       "$mainMod, Y, togglefloating,"
       "$mainMod, F, fullscreen"
@@ -277,7 +277,7 @@ let
     #kb_rules =
     #repeat_rate = 30
     repeat_delay = 200;
-    left_handed = true;
+    left_handed = cfg.hyprland.input.leftHanded;
     #follow_mouse = 2 # 0|1|2|3
     float_switch_override_focus = 2;
     numlock_by_default = "off";
@@ -291,7 +291,7 @@ let
       scroll_factor = 0.3;
     };
 
-    sensitivity = -0.3; # -1.0 - 1.0, 0 means no modification.
+    sensitivity = cfg.hyprland.input.sensitivity;
   };
 
   layouts = {

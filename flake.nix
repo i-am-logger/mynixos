@@ -238,6 +238,32 @@
                           };
                         };
 
+                        # Hyprland configuration
+                        hyprland = {
+                          input = {
+                            leftHanded = lib.mkOption {
+                              type = lib.types.bool;
+                              default = false;
+                              description = "Left-handed mouse mode (opinionated default: false)";
+                            };
+                            sensitivity = lib.mkOption {
+                              type = lib.types.float;
+                              default = 0.0;
+                              description = "Mouse sensitivity (opinionated default: 0.0, range: -1.0 to 1.0)";
+                            };
+                          };
+                          defaultBrowser = lib.mkOption {
+                            type = lib.types.str;
+                            default = "brave";
+                            description = "Default browser for Super+E keybind (opinionated default: brave)";
+                          };
+                          defaultTerminal = lib.mkOption {
+                            type = lib.types.str;
+                            default = "wezterm";
+                            description = "Default terminal for Super+T keybind (opinionated default: wezterm)";
+                          };
+                        };
+
                         # Webapps (browser-based and Electron applications)
                         webapps = lib.mkOption {
                           description = "Browser-based and Electron applications";
@@ -334,6 +360,12 @@
                     type = lib.types.submodule {
                       options = {
                         enable = lib.mkEnableOption "AI infrastructure with Ollama and ROCm support";
+
+                        rocmGfxVersion = lib.mkOption {
+                          type = lib.types.str;
+                          default = "11.0.2";
+                          description = "ROCm GFX version override for AMD GPU compatibility (opinionated default: 11.0.2 for RDNA3)";
+                        };
 
                         mcpServers = {
                           enable = lib.mkEnableOption "Model Context Protocol servers";
@@ -495,6 +527,12 @@
                     description = "Full name for git, etc (required if user is fully managed by mynixos)";
                   };
 
+                  description = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = "User account description (displayed in login manager)";
+                  };
+
                   email = lib.mkOption {
                     type = lib.types.nullOr lib.types.str;
                     default = null;
@@ -519,10 +557,22 @@
                     description = "Default shell (fish, bash, zsh)";
                   };
 
+                  hashedPassword = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = "Hashed password for user account (if null, user must set password manually)";
+                  };
+
                   editor = lib.mkOption {
                     type = lib.types.nullOr lib.types.str;
                     default = null;
                     description = "Default editor (helix, vim, neovim)";
+                  };
+
+                  avatar = lib.mkOption {
+                    type = lib.types.nullOr lib.types.path;
+                    default = null;
+                    description = "Path to user avatar/icon image (PNG recommended, will be set up for AccountsService)";
                   };
 
                   yubikeys = lib.mkOption {

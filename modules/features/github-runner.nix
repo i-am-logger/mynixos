@@ -1,8 +1,4 @@
-{ config
-, pkgs
-, lib
-, ...
-}:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -13,8 +9,8 @@ let
   repositories = cfg.repositories;
 
   # Get first user's GitHub username (personal data from my.features.users)
-  userNames = builtins.attrNames config.my.users;
-  firstUser = if userNames != [] then builtins.head userNames else throw "No users configured in my.users";
+  userNames = attrNames config.my.users;
+  firstUser = if userNames != [] then head userNames else throw "No users configured in my.users";
   githubUsername = config.my.users.${firstUser}.githubUsername or (throw "githubUsername not set for user ${firstUser}");
 
   # Auto-detect GPU vendor from mynixos hardware configuration
