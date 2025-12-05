@@ -5,21 +5,21 @@
 
   # Bootloader - GRUB for EFI (overrides systemd-boot from common modules)
   boot.loader.grub = {
-    enable = true;
-    device = "nodev";
-    efiSupport = true;
+    enable = lib.mkDefault true;
+    device = lib.mkDefault "nodev";
+    efiSupport = lib.mkDefault true;
     # Conservative default for laptops - can be overridden by system config
     configurationLimit = lib.mkOverride 1500 10;
   };
   boot.loader.systemd-boot.enable = lib.mkForce false;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
   boot.loader.timeout = lib.mkDefault 2; # Fast boot
 
-  # Use latest kernel
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Use latest kernel (can be overridden)
+  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
 
   # Hardware detected kernel modules
-  boot.initrd.availableKernelModules = [
+  boot.initrd.availableKernelModules = lib.mkDefault [
     "xhci_pci"
     "nvme"
     "thunderbolt"
@@ -28,9 +28,9 @@
     "sd_mod"
   ];
 
-  boot.extraModulePackages = [ ];
+  boot.extraModulePackages = lib.mkDefault [ ];
 
   # Mask audit-rules service (cosmetic fix for this hardware)
   # Rules are loaded early via kernel cmdline
-  systemd.services.audit-rules.enable = false;
+  systemd.services.audit-rules.enable = lib.mkDefault false;
 }

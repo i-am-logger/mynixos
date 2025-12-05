@@ -1,27 +1,29 @@
 { config, lib, pkgs, modulesPath, ... }:
 
-with lib;
-
 let
   cfg = config.my.hardware.laptops.lenovo.legion-16irx8h;
 in
 {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./drivers/uefi-boot.nix # Laptop-specific kernel config
   ];
 
-  config = mkIf cfg.enable {
-    # Hardware specification for this laptop
-    my.hardware = {
-      cpu = "intel";
-      gpu = "nvidia";
-      bluetooth.enable = true;
-      audio.enable = true;
-    };
+  config = lib.mkIf cfg.enable (lib.mkMerge [
+    # Import laptop-specific boot configuration
+    (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
 
-    # Boot configuration for this laptop hardware
-    boot = {
+    # Additional configuration
+    {
+      # Hardware specification for this laptop
+      my.hardware = {
+        cpu = "intel"; # Hardcoded - this laptop has Intel CPU
+        gpu = "nvidia"; # Hardcoded - this laptop has NVIDIA GPU
+        bluetooth.enable = lib.mkDefault true; # Can be disabled via my.hardware.bluetooth.enable = false
+        audio.enable = lib.mkDefault true; # Can be disabled via my.hardware.audio.enable = false
+      };
+
+      # Boot configuration for this laptop hardware
+      boot = {
       initrd = {
         availableKernelModules = [ "xhci_pci" "nvme" "thunderbolt" "usbhid" "usb_storage" "sd_mod" ];
         kernelModules = [ ];
@@ -47,13 +49,14 @@ in
       sync.enable = true; # Use PRIME sync mode for better performance
     };
 
-    # Intel microcode updates
-    hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+      # Intel microcode updates
+      hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-    # Networking - enable DHCP by default
-    networking.useDHCP = lib.mkDefault true;
+      # Networking - enable DHCP by default
+      networking.useDHCP = lib.mkDefault true;
 
-    # Platform architecture
-    nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  };
+      # Platform architecture
+      nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+    }
+  ]);
 }
