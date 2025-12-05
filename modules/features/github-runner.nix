@@ -286,11 +286,53 @@ let
 in
 {
   config = mkIf cfg.enable {
-    # Ensure development is enabled (for k3s)
-    assertions = [{
-      assertion = config.my.features.development.enable && config.my.features.development.k3s.enable;
-      message = "github-runner requires development.enable = true and development.k3s.enable = true";
-    }];
+    # Directly enable and configure k3s (bypass development feature to avoid recursion)
+    services.k3s = {
+      enable = true;
+      role = "server";
+      extraFlags = toString [ "--disable=traefik" ];
+    };
+
+    # Install essential k8s tools
+    environment.systemPackages = with pkgs; [
+      kubectl
+      kubernetes-helm
+      k3s
+    ];
+
+    # Set KUBECONFIG environment variable
+    environment.variables = {
+      KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+    };
+
+    # Open API port and trust k3s network interfaces
+    networking.firewall = {
+      allowedTCPPorts = [ 6443 ];
+      trustedInterfaces = [ "cni0" "flannel.1" ];
+    };
+
+    # Make kubeconfig readable by users
+    systemd.services.k3s-kubeconfig-permissions = {
+      description = "Set k3s kubeconfig permissions";
+      after = [ "k3s.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do
+          sleep 1
+        done
+        chmod 644 /etc/rancher/k3s/k3s.yaml
+      '';
+    };
+
+    # Prevent NetworkManager from managing k3s interfaces
+    environment.etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
+      [keyfile]
+      unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
+    '';
 
     # Install additional packages for GitHub Actions
     environment.systemPackages = with pkgs; [
