@@ -7,11 +7,13 @@ let
 in
 {
   config = mkIf cfg.pipewireTools {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        # PipeWire CLI tools
-        pipewire
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          # PipeWire CLI tools
+          pipewire
+        ];
+      })
+      config.my.users;
   };
 }

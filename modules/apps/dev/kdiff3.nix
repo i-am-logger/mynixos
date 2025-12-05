@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.kdiff3 {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        kdiff3
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          kdiff3
+        ];
+      })
+      config.my.users;
   };
 }

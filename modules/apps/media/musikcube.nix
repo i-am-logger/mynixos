@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.musikcube {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        musikcube
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          musikcube
+        ];
+      })
+      config.my.users;
   };
 }

@@ -27,9 +27,11 @@ in
     };
 
     # Add users to audio group
-    users.users = mapAttrs (name: userCfg: {
-      extraGroups = [ "audio" ];
-    }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+    users.users = mapAttrs
+      (name: userCfg: {
+        extraGroups = [ "audio" ];
+      })
+      (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
 
     # Audio utilities
     environment.systemPackages = with pkgs; [

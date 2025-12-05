@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.rclone {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        rclone
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          rclone
+        ];
+      })
+      config.my.users;
   };
 }

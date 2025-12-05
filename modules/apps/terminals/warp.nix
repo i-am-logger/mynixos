@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.warp {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        warp-terminal
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          warp-terminal
+        ];
+      })
+      config.my.users;
   };
 }

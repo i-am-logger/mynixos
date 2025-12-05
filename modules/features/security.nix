@@ -110,9 +110,11 @@ in
       users.groups.pcscd = { };
 
       # Add users to security-related groups
-      users.users = mapAttrs (name: userCfg: {
-        extraGroups = [ "plugdev" "pcscd" ];
-      }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      users.users = mapAttrs
+        (name: userCfg: {
+          extraGroups = [ "plugdev" "pcscd" ];
+        })
+        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
 
       environment.sessionVariables = {
         GNOME_KEYRING_CONTROL = "";

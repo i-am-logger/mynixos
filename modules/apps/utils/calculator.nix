@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.calculator {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        qalculate-gtk # Calculator with qalc CLI
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          qalculate-gtk # Calculator with qalc CLI
+        ];
+      })
+      config.my.users;
   };
 }

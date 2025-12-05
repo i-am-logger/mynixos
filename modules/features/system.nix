@@ -1,8 +1,7 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ config
+, lib
+, pkgs
+, ...
 }:
 
 with lib;
@@ -331,9 +330,11 @@ in
 
     # Set home.stateVersion for all users (opinionated)
     {
-      home-manager.users = mapAttrs (name: userCfg: {
-        home.stateVersion = mkDefault "25.05";
-      }) config.my.users;
+      home-manager.users = mapAttrs
+        (name: userCfg: {
+          home.stateVersion = mkDefault "25.05";
+        })
+        config.my.users;
     }
   ]);
 }

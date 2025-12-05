@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.cointop {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        cointop
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          cointop
+        ];
+      })
+      config.my.users;
   };
 }

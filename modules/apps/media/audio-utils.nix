@@ -7,12 +7,14 @@ let
 in
 {
   config = mkIf cfg.audioUtils {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        # Audio utilities
-        pavucontrol
-        pamixer
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          # Audio utilities
+          pavucontrol
+          pamixer
+        ];
+      })
+      config.my.users;
   };
 }

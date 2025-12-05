@@ -775,6 +775,28 @@
                             description = "feh image viewer (opinionated default: enabled)";
                           };
                         };
+
+                        fileUtils = {
+                          lsd = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "lsd directory lister (opinionated default: enabled)";
+                          };
+                        };
+
+                        sysinfo = {
+                          btop = lib.mkEnableOption "btop system monitor";
+                          neofetch = lib.mkEnableOption "neofetch system info";
+                          fastfetch = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "fastfetch system info (opinionated default: enabled)";
+                          };
+                        };
+
+                        visualizers = {
+                          cava = lib.mkEnableOption "cava audio visualizer";
+                        };
                       };
                     };
                     default = { };

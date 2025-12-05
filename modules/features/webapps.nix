@@ -56,58 +56,130 @@ in
 
     # Browser-based webapps
     {
-      home-manager.users = mapAttrs (name: userCfg: {
-        # Allow chromium unfree in home-manager context
-        nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-          "chromium"
-          "chromium-unwrapped"
-          "widevine-cdm"
-        ];
-
-        # Icon theme packages
-        home.packages = with pkgs; [
-          papirus-icon-theme
-          adwaita-icon-theme
-        ];
-
-        # Configure webApps
-        programs.webApps = {
-          enable = true;
-          browser = chromiumWithWidevine;
-
-          apps = mkMerge [
-            (mkWebapp { name = "gmail"; url = "https://mail.google.com"; icon = "gmail";
-                        categories = [ "Network" "Email" "Office" ];
-                        mimeTypes = [ "x-scheme-handler/mailto" ]; enabled = cfg.gmail; })
-            (mkWebapp { name = "vscode"; url = "https://vscode.dev"; icon = "code";
-                        categories = [ "Development" "TextEditor" ]; enabled = cfg.vscode; })
-            (mkWebapp { name = "github"; url = "https://github.com"; icon = "github-desktop";
-                        categories = [ "Development" "Network" ]; enabled = cfg.github; })
-            (mkWebapp { name = "spotify"; url = "https://open.spotify.com"; icon = "spotify";
-                        categories = [ "Audio" "Music" "AudioVideo" ]; enabled = cfg.spotify; })
-            (mkWebapp { name = "discord"; url = "https://discord.com/app"; icon = "discord";
-                        categories = [ "Network" "Chat" "Game" ]; enabled = cfg.discord; })
-            (mkWebapp { name = "whatsapp"; url = "https://web.whatsapp.com"; icon = "whatsapp";
-                        categories = [ "Network" "Chat" "InstantMessaging" ]; enabled = cfg.whatsapp; })
-            (mkWebapp { name = "youtube"; url = "https://youtube.com"; icon = "youtube";
-                        categories = [ "AudioVideo" "Network" "Video" ]; enabled = cfg.youtube; })
-            (mkWebapp { name = "netflix"; url = "https://netflix.com"; icon = "netflix";
-                        categories = [ "AudioVideo" "Video" "Network" ]; enabled = cfg.netflix; })
-            (mkWebapp { name = "twitch"; url = "https://twitch.tv"; icon = "twitch";
-                        categories = [ "AudioVideo" "Video" "Network" "Game" ]; enabled = cfg.twitch; })
-            (mkWebapp { name = "zoom"; url = "https://zoom.us/signin"; icon = "zoom";
-                        categories = [ "Network" "VideoConference" "Office" ]; enabled = cfg.zoom; })
-            (mkWebapp { name = "chatgpt"; url = "https://chat.openai.com"; icon = "openai";
-                        categories = [ "Network" "Office" "Education" ]; enabled = cfg.chatgpt; })
-            (mkWebapp { name = "claude"; url = "https://claude.ai"; icon = "anthropic";
-                        categories = [ "Network" "Office" "Education" ]; enabled = cfg.claude; })
-            (mkWebapp { name = "grok"; url = "https://grok.com"; icon = "x";
-                        categories = [ "Network" "Office" "Education" ]; enabled = cfg.grok; })
-            (mkWebapp { name = "x"; url = "https://x.com"; icon = "twitter";
-                        categories = [ "Network" "News" ]; enabled = cfg.x; })
+      home-manager.users = mapAttrs
+        (name: userCfg: {
+          # Allow chromium unfree in home-manager context
+          nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+            "chromium"
+            "chromium-unwrapped"
+            "widevine-cdm"
           ];
-        };
-      }) config.my.users;
+
+          # Icon theme packages
+          home.packages = with pkgs; [
+            papirus-icon-theme
+            adwaita-icon-theme
+          ];
+
+          # Configure webApps
+          programs.webApps = {
+            enable = true;
+            browser = chromiumWithWidevine;
+
+            apps = mkMerge [
+              (mkWebapp {
+                name = "gmail";
+                url = "https://mail.google.com";
+                icon = "gmail";
+                categories = [ "Network" "Email" "Office" ];
+                mimeTypes = [ "x-scheme-handler/mailto" ];
+                enabled = cfg.gmail;
+              })
+              (mkWebapp {
+                name = "vscode";
+                url = "https://vscode.dev";
+                icon = "code";
+                categories = [ "Development" "TextEditor" ];
+                enabled = cfg.vscode;
+              })
+              (mkWebapp {
+                name = "github";
+                url = "https://github.com";
+                icon = "github-desktop";
+                categories = [ "Development" "Network" ];
+                enabled = cfg.github;
+              })
+              (mkWebapp {
+                name = "spotify";
+                url = "https://open.spotify.com";
+                icon = "spotify";
+                categories = [ "Audio" "Music" "AudioVideo" ];
+                enabled = cfg.spotify;
+              })
+              (mkWebapp {
+                name = "discord";
+                url = "https://discord.com/app";
+                icon = "discord";
+                categories = [ "Network" "Chat" "Game" ];
+                enabled = cfg.discord;
+              })
+              (mkWebapp {
+                name = "whatsapp";
+                url = "https://web.whatsapp.com";
+                icon = "whatsapp";
+                categories = [ "Network" "Chat" "InstantMessaging" ];
+                enabled = cfg.whatsapp;
+              })
+              (mkWebapp {
+                name = "youtube";
+                url = "https://youtube.com";
+                icon = "youtube";
+                categories = [ "AudioVideo" "Network" "Video" ];
+                enabled = cfg.youtube;
+              })
+              (mkWebapp {
+                name = "netflix";
+                url = "https://netflix.com";
+                icon = "netflix";
+                categories = [ "AudioVideo" "Video" "Network" ];
+                enabled = cfg.netflix;
+              })
+              (mkWebapp {
+                name = "twitch";
+                url = "https://twitch.tv";
+                icon = "twitch";
+                categories = [ "AudioVideo" "Video" "Network" "Game" ];
+                enabled = cfg.twitch;
+              })
+              (mkWebapp {
+                name = "zoom";
+                url = "https://zoom.us/signin";
+                icon = "zoom";
+                categories = [ "Network" "VideoConference" "Office" ];
+                enabled = cfg.zoom;
+              })
+              (mkWebapp {
+                name = "chatgpt";
+                url = "https://chat.openai.com";
+                icon = "openai";
+                categories = [ "Network" "Office" "Education" ];
+                enabled = cfg.chatgpt;
+              })
+              (mkWebapp {
+                name = "claude";
+                url = "https://claude.ai";
+                icon = "anthropic";
+                categories = [ "Network" "Office" "Education" ];
+                enabled = cfg.claude;
+              })
+              (mkWebapp {
+                name = "grok";
+                url = "https://grok.com";
+                icon = "x";
+                categories = [ "Network" "Office" "Education" ];
+                enabled = cfg.grok;
+              })
+              (mkWebapp {
+                name = "x";
+                url = "https://x.com";
+                icon = "twitter";
+                categories = [ "Network" "News" ];
+                enabled = cfg.x;
+              })
+            ];
+          };
+        })
+        config.my.users;
     }
   ]);
 }

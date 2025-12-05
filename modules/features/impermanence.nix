@@ -68,50 +68,52 @@ in
       ++ (optionals (config.my.features.security.yubikey.enable or false) [
         "/yubikey"
       ])
-      ++ cfg.extraSystemDirectories;  # Allow custom additions
+      ++ cfg.extraSystemDirectories; # Allow custom additions
 
       # Per-user persistence
-      users = mkMerge (map (userName: {
-        ${userName} = {
-          directories = [
-            ".local"
-            ".cache"
-            ".config"
-            ".secrets"
-            "Documents"
-            "Downloads"
-          ]
-          ++ (optionals cfg.persistUserData [
-            "Media"
-            "Code"
-          ])
-          ++ (optionals (config.my.apps.browsers.firefox or false) [
-            ".mozilla"
-          ])
-          ++ (optionals (config.my.features.development.enable or false) [
-            ".docker"
-            ".npm"
-            ".cargo"
-            ".rustup"
-            ".gradle"
-            ".m2"
-          ])
-          ++ (optionals (config.my.features.graphical.vscode.enable or false) [
-            ".vscode"
-          ])
-          ++ (optionals (config.my.features.security.yubikey.enable or false) [
-            ".gnupg"
-            ".password-store"
-            ".yubico"
-            ".ssh"
-          ])
-          ++ cfg.extraUserDirectories;  # Custom additions (applied to all users)
+      users = mkMerge (map
+        (userName: {
+          ${userName} = {
+            directories = [
+              ".local"
+              ".cache"
+              ".config"
+              ".secrets"
+              "Documents"
+              "Downloads"
+            ]
+            ++ (optionals cfg.persistUserData [
+              "Media"
+              "Code"
+            ])
+            ++ (optionals (config.my.apps.browsers.firefox or false) [
+              ".mozilla"
+            ])
+            ++ (optionals (config.my.features.development.enable or false) [
+              ".docker"
+              ".npm"
+              ".cargo"
+              ".rustup"
+              ".gradle"
+              ".m2"
+            ])
+            ++ (optionals (config.my.features.graphical.vscode.enable or false) [
+              ".vscode"
+            ])
+            ++ (optionals (config.my.features.security.yubikey.enable or false) [
+              ".gnupg"
+              ".password-store"
+              ".yubico"
+              ".ssh"
+            ])
+            ++ cfg.extraUserDirectories; # Custom additions (applied to all users)
 
-          files = [
-            ".bash_history"
-          ] ++ cfg.extraUserFiles;  # Custom files (applied to all users)
-        };
-      }) userNames);
+            files = [
+              ".bash_history"
+            ] ++ cfg.extraUserFiles; # Custom files (applied to all users)
+          };
+        })
+        userNames);
     };
 
     # Optional: Clone NixOS config on first boot

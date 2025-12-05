@@ -13,9 +13,11 @@ in
     # Base development groups
     {
       # Add users to development-related groups
-      users.users = mapAttrs (name: userCfg: {
-        extraGroups = [ "disk" "dialout" ];
-      }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      users.users = mapAttrs
+        (name: userCfg: {
+          extraGroups = [ "disk" "dialout" ];
+        })
+        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
     # Docker support
@@ -31,9 +33,11 @@ in
       users.groups.docker.members = userNames;
 
       # Also add created users to docker group
-      users.users = mapAttrs (name: userCfg: {
-        extraGroups = [ "docker" ];
-      }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      users.users = mapAttrs
+        (name: userCfg: {
+          extraGroups = [ "docker" ];
+        })
+        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
 
       virtualisation.docker = {
         enable = true;

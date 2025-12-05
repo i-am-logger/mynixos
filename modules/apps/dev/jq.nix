@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.jq {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        jq
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          jq
+        ];
+      })
+      config.my.users;
   };
 }

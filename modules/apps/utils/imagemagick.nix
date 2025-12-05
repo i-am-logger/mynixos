@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.imagemagick {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        imagemagick
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          imagemagick
+        ];
+      })
+      config.my.users;
   };
 }

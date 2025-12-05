@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.termscp {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        termscp
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          termscp
+        ];
+      })
+      config.my.users;
   };
 }

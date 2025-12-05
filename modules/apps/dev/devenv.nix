@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.devenv {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        devenv
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          devenv
+        ];
+      })
+      config.my.users;
   };
 }

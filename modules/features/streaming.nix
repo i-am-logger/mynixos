@@ -35,9 +35,11 @@ in
       services.usbmuxd.enable = true;
 
       # Add users to streaming-related groups
-      users.users = mapAttrs (name: userCfg: {
-        extraGroups = [ "udev" "usb" "audio" ];
-      }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      users.users = mapAttrs
+        (name: userCfg: {
+          extraGroups = [ "udev" "usb" "audio" ];
+        })
+        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
     # OBS Studio with plugins (applied to all users)

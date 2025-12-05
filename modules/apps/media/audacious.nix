@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.audacious {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        audacious
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          audacious
+        ];
+      })
+      config.my.users;
   };
 }

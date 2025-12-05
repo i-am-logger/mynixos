@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.mypaint {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        mypaint
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          mypaint
+        ];
+      })
+      config.my.users;
   };
 }

@@ -7,11 +7,13 @@ let
 in
 {
   config = mkIf cfg.direnv {
-    home-manager.users = mapAttrs (name: userCfg: {
-      programs.direnv = {
-        enable = true;
-        nix-direnv.enable = true;
-      };
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        programs.direnv = {
+          enable = true;
+          nix-direnv.enable = true;
+        };
+      })
+      config.my.users;
   };
 }

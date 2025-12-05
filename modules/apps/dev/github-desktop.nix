@@ -7,10 +7,12 @@ let
 in
 {
   config = mkIf cfg.githubDesktop {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        github-desktop
-      ];
-    }) config.my.users;
+    home-manager.users = mapAttrs
+      (name: userCfg: {
+        home.packages = with pkgs; [
+          github-desktop
+        ];
+      })
+      config.my.users;
   };
 }
