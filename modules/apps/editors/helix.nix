@@ -2,13 +2,11 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.editors.helix;
-in
 {
-
-  config = mkIf cfg {
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.editors.helix {
       home.packages = with pkgs; [
         helix
         alejandra
@@ -356,6 +354,8 @@ in
           ];
         };
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }

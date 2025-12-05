@@ -735,6 +735,15 @@
                           };
                           firefox = lib.mkEnableOption "Firefox browser";
                         };
+
+                        editors = {
+                          helix = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Helix editor (opinionated default: enabled)";
+                          };
+                          marktext = lib.mkEnableOption "MarkText markdown editor";
+                        };
                       };
                     };
                     default = { };

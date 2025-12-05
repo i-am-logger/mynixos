@@ -2,15 +2,16 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.editors;
-in
 {
-  config = mkIf cfg.marktext {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        marktext
-      ];
-    }) config.my.users;
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.editors.marktext {
+          home.packages = with pkgs; [
+            marktext
+          ];
+        }
+      )
+      config.my.users;
   };
 }
