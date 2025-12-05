@@ -2,13 +2,11 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.browsers.brave;
-in
 {
-
-  config = mkIf cfg {
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.browsers.brave {
       # Wrap Brave to use gopass via secret service and GPG agent
       home.packages = let
         brave-with-gopass = pkgs.symlinkJoin {
@@ -51,6 +49,8 @@ in
           "x-scheme-handler/https"
         ];
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }

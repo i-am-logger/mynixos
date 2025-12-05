@@ -726,6 +726,15 @@
                         prompts = {
                           starship = lib.mkEnableOption "Starship prompt";
                         };
+
+                        browsers = {
+                          brave = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Brave browser (opinionated default: enabled)";
+                          };
+                          firefox = lib.mkEnableOption "Firefox browser";
+                        };
                       };
                     };
                     default = { };
