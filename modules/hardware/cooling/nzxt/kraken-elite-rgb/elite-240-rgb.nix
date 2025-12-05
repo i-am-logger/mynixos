@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.hardware.cooling.nzxt.kraken-elite-240-rgb;
+  myCfg = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb;
 in
 {
   options.hardware.cooling.nzxt.kraken-elite-240-rgb = {
@@ -54,7 +55,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf (cfg.enable || myCfg.enable) {
     # Load kernel module for NZXT Kraken hardware control (built into kernel since Linux 5.13)
     boot.kernelModules = [ "nzxt_kraken3" ];
 

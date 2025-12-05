@@ -182,9 +182,10 @@
             ./modules/hardware/gpu/nvidia.nix
             ./modules/hardware/bluetooth/realtek.nix
             ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
+            ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7.nix
+            ./modules/hardware/laptops/lenovo/legion-16irx8h.nix
             ./modules/hardware/boot/uefi.nix
             ./modules/hardware/boot/dual-boot.nix
-            # Motherboard/laptop configs are in /etc/nixos/Hardware/ and imported via mkSystem's hardware parameter
 
             # System
             # (filesystem configuration is handled directly in mkSystem based on my.system.filesystem)
@@ -194,6 +195,12 @@
           ];
 
           options.my = {
+            # Hostname configuration
+            hostname = lib.mkOption {
+              type = lib.types.str;
+              description = "System hostname";
+            };
+
             # Features namespace
             features = lib.mkOption {
               type = lib.types.submodule {
@@ -541,6 +548,32 @@
                       type = lib.types.bool;
                       default = true;
                       description = "Enable audio";
+                    };
+                  };
+
+                  motherboards = {
+                    gigabyte = {
+                      x870e-aorus-elite-wifi7 = {
+                        enable = lib.mkEnableOption "Gigabyte X870E AORUS Elite WiFi7 motherboard";
+                      };
+                    };
+                  };
+
+                  laptops = {
+                    lenovo = {
+                      legion-16irx8h = {
+                        enable = lib.mkEnableOption "Lenovo Legion 16IRX8H laptop";
+                      };
+                    };
+                  };
+
+                  cooling = {
+                    nzxt = {
+                      kraken-elite-rgb = {
+                        elite-240-rgb = {
+                          enable = lib.mkEnableOption "NZXT Kraken Elite 240 RGB AIO cooler";
+                        };
+                      };
                     };
                   };
                 };

@@ -2,9 +2,9 @@
 
 {
   mkSystem =
-    { hostname
+    { hostname ? null
     , hardware ? [ ]
-    , # List of hardware modules from mynixos.hardware.*
+    , # List of hardware modules from mynixos.hardware.* (deprecated, use my.hardware)
       machine ? null
     , # Deprecated: use hardware instead
       users ? [ ]
@@ -77,8 +77,8 @@
       ])
         ++ [
 
-        # Set hostname
-        { networking.hostName = hostname; }
+        # Set hostname (from parameter or my.hostname)
+        { networking.hostName = if hostname != null then hostname else my.hostname; }
 
         # NixOS users
         {
