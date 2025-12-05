@@ -2,13 +2,12 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.terminals.ghostty;
 in
 {
-
-  config = mkIf cfg {
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.terminals.ghostty {
       home.packages = with pkgs; [
         ghostty
       ];
@@ -45,6 +44,8 @@ in
           # custom-shader-animation = true;
         };
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }

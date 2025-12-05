@@ -707,6 +707,16 @@
                           signal = lib.mkEnableOption "Signal Desktop messenger";
                           slack = lib.mkEnableOption "Slack communication tool";
                         };
+
+                        terminals = {
+                          wezterm = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "WezTerm terminal (opinionated default: enabled)";
+                          };
+                          kitty = lib.mkEnableOption "Kitty terminal";
+                          ghostty = lib.mkEnableOption "Ghostty terminal";
+                        };
                       };
                     };
                     default = { };
