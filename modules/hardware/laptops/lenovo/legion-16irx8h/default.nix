@@ -50,6 +50,6 @@ in
         # Platform architecture
         nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
       }
-    ]))
+    ])
   ];
 }
