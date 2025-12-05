@@ -220,11 +220,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1761961700,
-        "narHash": "sha256-2qYru7uhiqhP4Zy6dldLdzJzQPgBA5NR+f+UtUuu7nQ=",
+        "lastModified": 1764909176,
+        "narHash": "sha256-/I1BCMvHCrlT/AsUznkXy5L5Y6sNSX9epPUWVy8PiVc=",
         "owner": "i-am-logger",
         "repo": "home-manager",
-        "rev": "415153929c1e2f6df6859219e2feec91a5f9fc88",
+        "rev": "2f33cd14dd86c52f0909e6595d311afcbbbe9375",
         "type": "github"
       },
       "original": {

@@ -10,6 +10,7 @@ in
     home-manager.users = mapAttrs (name: userCfg: {
       programs.ssh = {
         enable = true;
+        enableDefaultConfig = false;
 
         # Opinionated host configurations with SSH multiplexing
         matchBlocks = {

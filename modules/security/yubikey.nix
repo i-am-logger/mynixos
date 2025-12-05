@@ -216,7 +216,7 @@ in
             # Use email - smart wrapper will choose the right key
             key = userCfg.email;
           };
-          extraConfig = {
+          settings = {
             gpg = {
               # Use smart wrapper that detects available YubiKey
               program = "gpg-smart";
