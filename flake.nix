@@ -182,8 +182,8 @@
             ./modules/hardware/gpu/nvidia.nix
             ./modules/hardware/bluetooth/realtek.nix
             ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
-            ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7.nix
-            ./modules/hardware/laptops/lenovo/legion-16irx8h.nix
+            ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
+            ./modules/hardware/laptops/lenovo/legion-16irx8h
             ./modules/hardware/boot/uefi.nix
             ./modules/hardware/boot/dual-boot.nix
 
