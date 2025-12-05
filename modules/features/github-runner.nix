@@ -293,13 +293,6 @@ in
       extraFlags = toString [ "--disable=traefik" ];
     };
 
-    # Install essential k8s tools
-    environment.systemPackages = with pkgs; [
-      kubectl
-      kubernetes-helm
-      k3s
-    ];
-
     # Set KUBECONFIG environment variable
     environment.variables = {
       KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
@@ -334,8 +327,11 @@ in
       unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
     '';
 
-    # Install additional packages for GitHub Actions
+    # Install k8s tools and GitHub Actions packages
     environment.systemPackages = with pkgs; [
+      kubectl
+      kubernetes-helm
+      k3s
       git
       jq
       arc-status-script
