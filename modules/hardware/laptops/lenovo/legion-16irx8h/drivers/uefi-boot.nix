@@ -8,7 +8,8 @@
     enable = true;
     device = "nodev";
     efiSupport = true;
-    configurationLimit = lib.mkDefault 10;
+    # Conservative default for laptops - can be overridden by system config
+    configurationLimit = lib.mkOverride 1500 10;
   };
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = true;
