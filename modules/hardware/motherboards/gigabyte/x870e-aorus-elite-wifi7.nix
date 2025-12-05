@@ -2,12 +2,11 @@
 
 with lib;
 
+let
+  cfg = config.my.hardware.motherboards.gigabyte.x870e-aorus-elite-wifi7;
+in
 {
-  imports = [
+  imports = mkIf cfg.enable [
     ./x870e-aorus-elite-wifi7
   ];
-
-  config = mkIf config.my.hardware.motherboards.gigabyte.x870e-aorus-elite-wifi7.enable {
-    # The actual hardware configuration is in the directory module
-  };
 }

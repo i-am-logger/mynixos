@@ -2,12 +2,11 @@
 
 with lib;
 
+let
+  cfg = config.my.hardware.laptops.lenovo.legion-16irx8h;
+in
 {
-  imports = [
+  imports = mkIf cfg.enable [
     ./legion-16irx8h
   ];
-
-  config = mkIf config.my.hardware.laptops.lenovo.legion-16irx8h.enable {
-    # The actual hardware configuration is in the directory module
-  };
 }
