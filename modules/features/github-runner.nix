@@ -288,17 +288,9 @@ in
   config = mkIf cfg.enable {
     # Ensure development is enabled (for k3s)
     assertions = [{
-      assertion = config.my.features.development.enable;
-      message = "github-runner requires development.enable = true (for k3s support)";
+      assertion = config.my.features.development.enable && config.my.features.development.k3s.enable;
+      message = "github-runner requires development.enable = true and development.k3s.enable = true";
     }];
-
-    # Configure k3s for github runners
-    my.features.development.k3s = {
-      enable = true;
-      role = "server";
-      disableTraefik = true;
-      kubeconfigReadable = true;
-    };
 
     # Install additional packages for GitHub Actions
     environment.systemPackages = with pkgs; [
