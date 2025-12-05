@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.dev;
-in
 {
-  config = mkIf cfg.kdiff3 {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.dev.kdiff3 {
         home.packages = with pkgs; [
           kdiff3
         ];

@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.dev;
-in
 {
-  config = mkIf cfg.devenv {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.dev.devenv {
         home.packages = with pkgs; [
           devenv
         ];

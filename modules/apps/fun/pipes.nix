@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.fun;
-in
 {
-  config = mkIf cfg.pipes {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.fun.pipes {
         home.packages = with pkgs; [
           pipes
           neo

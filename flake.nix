@@ -822,6 +822,53 @@
                             description = "ImageMagick image manipulation (opinionated default: enabled)";
                           };
                         };
+
+                        dev = {
+                          direnv = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "direnv environment manager (opinionated default: enabled)";
+                          };
+                          devenv = lib.mkEnableOption "devenv development environment manager";
+                          githubDesktop = lib.mkEnableOption "GitHub Desktop";
+                          kdiff3 = lib.mkEnableOption "KDiff3 diff tool";
+                          jq = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "jq JSON processor (opinionated default: enabled)";
+                          };
+                        };
+
+                        media = {
+                          pipewireTools = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "PipeWire CLI tools (opinionated default: enabled)";
+                          };
+                          musikcube = lib.mkEnableOption "musikcube music player";
+                          audacious = lib.mkEnableOption "Audacious music player";
+                          audioUtils = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Audio utilities (pavucontrol, pamixer) (opinionated default: enabled)";
+                          };
+                        };
+
+                        art = {
+                          mypaint = lib.mkEnableOption "MyPaint drawing application";
+                        };
+
+                        network = {
+                          termscp = lib.mkEnableOption "termscp TUI file transfer";
+                        };
+
+                        fun = {
+                          pipes = lib.mkEnableOption "Terminal eye candy (pipes, neo, asciiquarium)";
+                        };
+
+                        finance = {
+                          cointop = lib.mkEnableOption "Cointop cryptocurrency tracker";
+                        };
                       };
                     };
                     default = { };

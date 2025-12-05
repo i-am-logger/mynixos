@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.media;
-in
 {
-  config = mkIf cfg.audioUtils {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.media.audioUtils {
         home.packages = with pkgs; [
           # Audio utilities
           pavucontrol

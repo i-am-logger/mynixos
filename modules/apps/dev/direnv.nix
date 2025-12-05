@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.dev;
-in
 {
-  config = mkIf cfg.direnv {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.dev.direnv {
         programs.direnv = {
           enable = true;
           nix-direnv.enable = true;

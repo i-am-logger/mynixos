@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.finance;
-in
 {
-  config = mkIf cfg.cointop {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.finance.cointop {
         home.packages = with pkgs; [
           cointop
         ];

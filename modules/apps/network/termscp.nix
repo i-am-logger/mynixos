@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.network;
-in
 {
-  config = mkIf cfg.termscp {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.network.termscp {
         home.packages = with pkgs; [
           termscp
         ];

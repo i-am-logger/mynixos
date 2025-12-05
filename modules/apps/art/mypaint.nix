@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.art;
-in
 {
-  config = mkIf cfg.mypaint {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.art.mypaint {
         home.packages = with pkgs; [
           mypaint
         ];
