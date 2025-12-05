@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.launchers;
-in
 {
-  config = mkIf cfg.walker {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.launchers.walker {
         home.packages = with pkgs; [
           walker
           wshowkeys # For screencasting - show keypresses

@@ -797,6 +797,31 @@
                         visualizers = {
                           cava = lib.mkEnableOption "cava audio visualizer";
                         };
+
+                        launchers = {
+                          walker = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Walker application launcher (opinionated default: enabled)";
+                          };
+                        };
+
+                        sync = {
+                          rclone = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "rclone cloud sync (opinionated default: enabled)";
+                          };
+                        };
+
+                        utils = {
+                          calculator = lib.mkEnableOption "Calculator (qalculate)";
+                          imagemagick = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "ImageMagick image manipulation (opinionated default: enabled)";
+                          };
+                        };
                       };
                     };
                     default = { };

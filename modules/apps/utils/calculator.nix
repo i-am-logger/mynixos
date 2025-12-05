@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.utils;
-in
 {
-  config = mkIf cfg.calculator {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.utils.calculator {
         home.packages = with pkgs; [
           qalculate-gtk # Calculator with qalc CLI
         ];

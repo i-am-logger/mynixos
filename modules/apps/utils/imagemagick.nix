@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.utils;
-in
 {
-  config = mkIf cfg.imagemagick {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.utils.imagemagick {
         home.packages = with pkgs; [
           imagemagick
         ];

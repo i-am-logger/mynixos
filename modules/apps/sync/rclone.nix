@@ -2,13 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.sync;
-in
 {
-  config = mkIf cfg.rclone {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg: mkIf userCfg.apps.sync.rclone {
         home.packages = with pkgs; [
           rclone
         ];
