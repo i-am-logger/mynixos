@@ -22,6 +22,8 @@ in
         isNormalUser = true;
         description = userCfg.description or userCfg.fullName;
         hashedPassword = userCfg.hashedPassword;
+        home = "/home/${name}";
+        group = name;  # Create a group with the same name as the user
         extraGroups = [ "wheel" "networkmanager" ];  # Base groups, features add more
         shell = if userCfg.shell == "fish" then pkgs.fish
                 else if userCfg.shell == "zsh" then pkgs.zsh
@@ -29,6 +31,9 @@ in
                 else pkgs.bash;  # Default to bash
         packages = userCfg.packages;
       }) usersToCreate;
+
+      # Create matching groups for each user
+      users.groups = mapAttrs (name: _: { }) usersToCreate;
 
       # Enable required programs based on user shells
       programs.fish.enable = mkIf (any (u: u.shell or null == "fish") (attrValues usersToCreate)) true;
