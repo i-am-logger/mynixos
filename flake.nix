@@ -744,6 +744,37 @@
                           };
                           marktext = lib.mkEnableOption "MarkText markdown editor";
                         };
+
+                        fileManagers = {
+                          mc = lib.mkEnableOption "Midnight Commander";
+                          yazi = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Yazi TUI file manager (opinionated default: enabled)";
+                          };
+                        };
+
+                        multiplexers = {
+                          zellij = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Zellij multiplexer (opinionated default: enabled)";
+                          };
+                          tmux = lib.mkEnableOption "tmux multiplexer";
+                        };
+
+                        viewers = {
+                          bat = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "bat syntax highlighter (opinionated default: enabled)";
+                          };
+                          feh = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "feh image viewer (opinionated default: enabled)";
+                          };
+                        };
                       };
                     };
                     default = { };

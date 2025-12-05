@@ -2,22 +2,23 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.fileManagers;
-in
 {
-  config = mkIf cfg.yazi {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        yazi
-      ];
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.fileManagers.yazi {
+          home.packages = with pkgs; [
+            yazi
+          ];
 
-      programs.yazi = {
-        enable = true;
-        enableBashIntegration = true;
-        enableFishIntegration = true;
-        enableZshIntegration = true;
-      };
-    }) config.my.users;
+          programs.yazi = {
+            enable = true;
+            enableBashIntegration = true;
+            enableFishIntegration = true;
+            enableZshIntegration = true;
+          };
+        }
+      )
+      config.my.users;
   };
 }

@@ -2,17 +2,18 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.viewers;
-in
 {
-  config = mkIf cfg.feh {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        feh
-      ];
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.viewers.feh {
+          home.packages = with pkgs; [
+            feh
+          ];
 
-      programs.feh.enable = true;
-    }) config.my.users;
+          programs.feh.enable = true;
+        }
+      )
+      config.my.users;
   };
 }
