@@ -697,6 +697,19 @@
                     default = [ ];
                     description = "User-specific filesystem mounts";
                   };
+
+                  # Apps namespace (per-user application preferences)
+                  apps = lib.mkOption {
+                    type = lib.types.submodule {
+                      options = {
+                        communication = {
+                          element = lib.mkEnableOption "Element Matrix client";
+                        };
+                      };
+                    };
+                    default = { };
+                    description = "Per-user application configurations";
+                  };
                 };
               }));
             };

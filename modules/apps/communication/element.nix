@@ -2,15 +2,16 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.communication;
-in
 {
-  config = mkIf cfg.element {
-    home-manager.users = mapAttrs (name: userCfg: {
-      home.packages = with pkgs; [
-        element-desktop
-      ];
-    }) config.my.users;
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.communication.element {
+          home.packages = with pkgs; [
+            element-desktop
+          ];
+        }
+      )
+      config.my.users;
   };
 }
