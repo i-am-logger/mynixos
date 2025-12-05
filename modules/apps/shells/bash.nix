@@ -2,13 +2,11 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.shells.bash;
-in
 {
-  config = mkIf cfg {
-    # Enable bash for all users
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.shells.bash {
       programs.bash = {
         enable = true;
         enableCompletion = true;
@@ -27,6 +25,8 @@ in
           "checkjobs"
         ];
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }

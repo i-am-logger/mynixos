@@ -3,8 +3,6 @@
 with lib;
 
 let
-  cfg = config.my.apps.terminals.kitty;
-
   kittyConf = ''
     window_layouts = false
     confirm_os_window_close           0

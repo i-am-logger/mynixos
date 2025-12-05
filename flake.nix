@@ -717,6 +717,15 @@
                           kitty = lib.mkEnableOption "Kitty terminal";
                           ghostty = lib.mkEnableOption "Ghostty terminal";
                         };
+
+                        shells = {
+                          bash = lib.mkEnableOption "Bash shell";
+                          fish = lib.mkEnableOption "Fish shell";
+                        };
+
+                        prompts = {
+                          starship = lib.mkEnableOption "Starship prompt";
+                        };
                       };
                     };
                     default = { };

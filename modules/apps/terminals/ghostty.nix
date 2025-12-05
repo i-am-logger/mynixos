@@ -2,7 +2,6 @@
 
 with lib;
 
-in
 {
   config = {
     home-manager.users = mapAttrs

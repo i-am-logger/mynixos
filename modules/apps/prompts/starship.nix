@@ -2,13 +2,11 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.prompts.starship;
-in
 {
-
-  config = mkIf cfg {
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.prompts.starship {
       programs.starship = {
         enable = true;
         settings = {
@@ -502,6 +500,8 @@ in
           };
         };
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }

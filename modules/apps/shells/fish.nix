@@ -2,13 +2,11 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.shells.fish;
-in
 {
-
-  config = mkIf cfg {
-    home-manager.users = mapAttrs (name: userCfg: {
+  config = {
+    home-manager.users = mapAttrs
+      (name: userCfg:
+        mkIf userCfg.apps.shells.fish {
       home.packages = with pkgs; [
         # thefuck has been removed, using pay-respects instead
         grc
@@ -109,6 +107,8 @@ in
           }
         ];
       };
-    }) config.my.users;
+        }
+      )
+      config.my.users;
   };
 }
