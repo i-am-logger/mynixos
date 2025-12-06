@@ -399,20 +399,6 @@
               default = { };
               type = lib.types.submodule {
                 options = {
-                  docker = lib.mkOption {
-                    description = "Docker container runtime";
-                    default = { };
-                    type = lib.types.submodule {
-                      options = {
-                        enable = lib.mkOption {
-                          type = lib.types.bool;
-                          default = false;
-                          description = "Docker with rootless support (auto-enabled by user dev feature)";
-                        };
-                      };
-                    };
-                  };
-
                   k3s = lib.mkOption {
                     description = "k3s Kubernetes cluster configuration";
                     default = { };
@@ -924,6 +910,14 @@
                     type = lib.types.bool;
                     default = false;
                     description = "Enable AI tools for this user (MCP servers, requires system-level my.ai.enable)";
+                  };
+
+                  docker = {
+                    enable = lib.mkOption {
+                      type = lib.types.bool;
+                      default = false;
+                      description = "Enable Docker with rootless support (auto-enabled by dev = true)";
+                    };
                   };
 
                   # Webapps submodule (flattened from my.users.<name>.features.webapps)

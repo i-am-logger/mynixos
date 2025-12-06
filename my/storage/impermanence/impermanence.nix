@@ -45,7 +45,7 @@ in
       ++ (optionals (config.my.hardware.bluetooth.enable or false) [
         "/var/lib/bluetooth"
       ])
-      ++ (optionals (config.my.infra.docker.enable or false) [
+      ++ (optionals (any (u: (u.dev or false) || (u.docker.enable or false)) (attrValues config.my.users)) [
         "/var/lib/docker"
         "/var/lib/containers"
       ])
