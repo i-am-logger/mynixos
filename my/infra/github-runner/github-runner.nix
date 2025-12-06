@@ -5,13 +5,34 @@ with lib;
 let
   cfg = config.my.infra.github-runner;
 
-  # List of repositories to create runner sets for
-  repositories = cfg.repositories;
+  # Collect all repositories from all users with github.username set
+  userRepositories = lib.flatten (
+    lib.mapAttrsToList (username: userCfg:
+      let
+        # Support both new github.username and deprecated githubUsername
+        githubUser = userCfg.github.username or userCfg.githubUsername or null;
+      in
+      lib.optionals (githubUser != null) (
+        map (repo: {
+          inherit repo username;
+          githubUsername = githubUser;
+        }) (userCfg.github.repositories or [])
+      )
+    ) config.my.users
+  );
 
-  # Get first user's GitHub username (personal data from my.features.users)
+  # List of repositories to create runner sets for (combined from users and legacy cfg.repositories)
+  repositories = (map (item: item.repo) userRepositories) ++ cfg.repositories;
+
+  # Get first user's GitHub username (personal data from my.users) - for legacy support
   userNames = attrNames config.my.users;
   firstUser = if userNames != [ ] then head userNames else throw "No users configured in my.users";
-  githubUsername = config.my.users.${firstUser}.githubUsername or (throw "githubUsername not set for user ${firstUser}");
+  # Support both new github.username and deprecated githubUsername for backward compatibility
+  githubUsername =
+    let
+      firstUserCfg = config.my.users.${firstUser};
+    in
+    firstUserCfg.github.username or firstUserCfg.githubUsername or (throw "github.username not set for user ${firstUser}");
 
   # Auto-detect GPU vendor from mynixos hardware configuration
   autoGpuVendor = config.my.hardware.gpu or null;
