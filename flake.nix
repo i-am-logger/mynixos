@@ -115,7 +115,7 @@
             ./modules/features/webapps.nix
             ./modules/features/streaming.nix
             ./modules/features/development.nix
-            ./modules/features/system.nix
+            ./modules/features/core.nix
             ./modules/features/audio.nix
             ./modules/features/performance.nix
             ./modules/features/impermanence.nix
@@ -527,13 +527,24 @@
                     };
                   };
 
-                  # System feature
-                  system = lib.mkOption {
+                  # Core system feature (renamed from 'system')
+                  core = lib.mkOption {
                     description = "Core system utilities and configuration (boot, kernel, nix)";
                     default = { };
                     type = lib.types.submodule {
                       options = {
-                        enable = lib.mkEnableOption "system utilities (console, nix, boot configuration)";
+                        enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration)";
+                      };
+                    };
+                  };
+
+                  # DEPRECATED: Use my.features.core instead
+                  system = lib.mkOption {
+                    description = "DEPRECATED: Use my.features.core instead. Core system utilities and configuration (boot, kernel, nix)";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkEnableOption "system utilities (console, nix, boot configuration) - DEPRECATED: use my.features.core";
                       };
                     };
                   };
@@ -578,6 +589,23 @@
 
                         xdg = {
                           enable = lib.mkEnableOption "XDG portal support for Wayland";
+                        };
+
+                        # Message of the Day (moved from my.features.motd)
+                        motd = lib.mkOption {
+                          description = "Message of the day configuration";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkEnableOption "message of the day";
+
+                              content = lib.mkOption {
+                                type = lib.types.str;
+                                default = "";
+                                description = "MOTD content to display on login";
+                              };
+                            };
+                          };
                         };
                       };
                     };

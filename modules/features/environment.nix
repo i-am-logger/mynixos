@@ -4,9 +4,26 @@ with lib;
 
 let
   cfg = config.my.features.environment;
+  motdCfg = cfg.motd;
+
+  # Backward compatibility: support old my.features.motd path
+  oldMotdCfg = config.my.features.motd;
 in
 {
-  config = mkIf cfg.enable (mkMerge [
+  config = mkMerge [
+    # Deprecation warning for old motd path
+    (mkIf oldMotdCfg.enable {
+      warnings = [
+        "my.features.motd is deprecated. Use my.features.environment.motd instead."
+      ];
+    })
+
+    # MOTD configuration (from environment.motd or deprecated motd)
+    (mkIf (motdCfg.enable || oldMotdCfg.enable) {
+      users.motd = if motdCfg.enable then motdCfg.content else oldMotdCfg.content;
+    })
+
+    (mkIf cfg.enable {
     # Base environment configuration
     {
       # Environment variables (from mynixos defaults in flake.nix)
@@ -124,5 +141,6 @@ in
         })
         config.my.users;
     }
-  ]);
+    })
+  ];
 }
