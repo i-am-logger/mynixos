@@ -205,6 +205,7 @@
             ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
             ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
             ./my/hardware/laptops/lenovo/legion-16irx8h
+            ./my/hardware/peripherals
             ./my/hardware/boot/uefi.nix
             ./my/hardware/boot/dual-boot.nix
           ];
@@ -384,20 +385,6 @@
                           type = lib.types.bool;
                           default = false;
                           description = "Enable v4l2loopback kernel module for virtual webcam (auto-enabled by user streaming)";
-                        };
-                      };
-                    };
-                  };
-
-                  streamdeck = lib.mkOption {
-                    description = "Elgato Stream Deck support";
-                    default = { };
-                    type = lib.types.submodule {
-                      options = {
-                        enable = lib.mkOption {
-                          type = lib.types.bool;
-                          default = false;
-                          description = "Enable Elgato Stream Deck support with udev rules and streamdeck-ui";
                         };
                       };
                     };
@@ -687,6 +674,26 @@
                               description = "Install lm_sensors for monitoring";
                             };
                           };
+                        };
+                      };
+                    };
+                  };
+
+                  peripherals = {
+                    elgato = {
+                      streamdeck = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = ''
+                            Enable Elgato Stream Deck support (all models).
+
+                            Provides udev rules, streamdeck-ui package, and Qt/Wayland integration
+                            for Stream Deck programmable macro pads (Original, Mini, XL, V2, MK.2, Plus).
+
+                            Vendor: Elgato Systems (0fd9)
+                            Device type: USB HID programmable control surface
+                          '';
                         };
                       };
                     };
