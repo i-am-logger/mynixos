@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.performance;
+  cfg = config.my.performance;
 in
 {
   config = mkIf cfg.enable {

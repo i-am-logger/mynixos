@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.environment;
+  cfg = config.my.environment;
   motdCfg = cfg.motd;
 in
 {

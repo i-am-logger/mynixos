@@ -3,7 +3,8 @@
 with lib;
 
 let
-  cfg = config.my.features.graphical;
+  # Auto-enable when any user has graphical = true
+  anyUserGraphical = any (userCfg: userCfg.graphical or false) (attrValues config.my.users);
 
   # Swappy config
   swappyConfig = ''
@@ -398,12 +399,12 @@ let
 in
 {
   # Option is declared in flake.nix
-  config = mkIf (cfg.enable && cfg.windowManagers.hyprland) {
+  config = mkIf anyUserGraphical {
     home-manager.users = mapAttrs
       (name: userCfg:
         let
           # Get user-level hyprland config (with mynixos opinionated defaults)
-          userHyprland = userCfg.features.hyprland or { };
+          userHyprland = userCfg.hyprland or { };
         in
         mkIf userHyprland.enable {
         # GTK configuration

@@ -3,7 +3,13 @@
 with lib;
 
 let
-  cfg = config.my.features.graphical.webapps;
+  # Auto-enable when any user has webapps.enable = true
+  anyUserWebapps = any (userCfg: (userCfg.webapps.enable or false)) (attrValues config.my.users);
+
+  # Check if any user has specific apps enabled
+  anyUserSlack = any (userCfg: (userCfg.webapps.slack or false)) (attrValues config.my.users);
+  anyUserSignal = any (userCfg: (userCfg.webapps.signal or false)) (attrValues config.my.users);
+  anyUser1Password = any (userCfg: (userCfg.webapps.onePassword or false)) (attrValues config.my.users);
 
   # mynixos opinionated defaults for webapps
   defaults = {
@@ -60,7 +66,7 @@ let
     };
 in
 {
-  config = mkIf cfg.enable (mkMerge [
+  config = mkIf anyUserWebapps (mkMerge [
     # Allow unfree packages for webapps (chromium, widevine, etc.)
     # Use allowUnfree = true instead of predicate to ensure it works at all evaluation levels
     {
@@ -68,14 +74,14 @@ in
     }
 
     # Electron apps
-    (mkIf (cfg.slack || cfg.signal) {
+    (mkIf (anyUserSlack || anyUserSignal) {
       environment.systemPackages =
-        (optional cfg.slack (wrapElectronApp pkgs.slack "slack")) ++
-        (optional cfg.signal (wrapElectronApp pkgs.signal-desktop "signal-desktop"));
+        (optional anyUserSlack (wrapElectronApp pkgs.slack "slack")) ++
+        (optional anyUserSignal (wrapElectronApp pkgs.signal-desktop "signal-desktop"));
     })
 
     # 1Password
-    (mkIf cfg.onePassword {
+    (mkIf anyUser1Password {
       programs._1password.enable = true;
       programs._1password-gui.enable = true;
     })
@@ -86,9 +92,9 @@ in
         (name: userCfg:
           let
             # Get user-level webapp config (with mynixos opinionated defaults)
-            userWebapps = userCfg.features.webapps or { };
+            userWebapps = userCfg.webapps or { };
           in
-          mkIf userWebapps.enable {
+          mkIf (userWebapps.enable or false) {
             # Allow chromium unfree in home-manager context
             nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
               "chromium"

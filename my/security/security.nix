@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.security;
+  cfg = config.my.security;
 
   # Check if any user has yubikeys configured
   hasYubikey = any (user: (length user.yubikeys) > 0)

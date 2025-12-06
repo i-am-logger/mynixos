@@ -3,10 +3,11 @@
 with lib;
 
 let
-  cfg = config.my.features.graphical;
+  # Auto-enable graphical when any user has graphical = true
+  anyUserGraphical = any (userCfg: userCfg.graphical or false) (attrValues config.my.users);
 in
 {
-  config = mkIf cfg.enable (mkMerge [
+  config = mkIf anyUserGraphical (mkMerge [
     # Base desktop configuration with Hyprland
     {
       # System-level Hyprland setup

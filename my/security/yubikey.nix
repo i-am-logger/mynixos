@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.security;
+  cfg = config.my.security;
 in
 {
   config = mkIf (cfg.enable && cfg.yubikey.enable) {

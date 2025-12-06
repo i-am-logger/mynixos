@@ -3,15 +3,16 @@
 with lib;
 
 let
-  cfg = config.my.features.streaming;
+  # Auto-enable streaming when any user has streaming = true
+  anyUserStreaming = any (userCfg: userCfg.streaming or false) (attrValues config.my.users);
 
   # mynixos opinionated defaults for streaming
   defaults = {
-    obs = true; # OBS enabled by default when system streaming is enabled
+    obs = true; # OBS enabled by default when user streaming is enabled
   };
 in
 {
-  config = mkIf cfg.enable (mkMerge [
+  config = mkIf anyUserStreaming (mkMerge [
     # Base streaming configuration
     {
       security.polkit.enable = true;
@@ -37,8 +38,10 @@ in
         (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
-    # v4l2loopback kernel module for virtual webcam (conditional)
-    (mkIf cfg.v4l2loopback.enable {
+    # v4l2loopback kernel module for virtual webcam (auto-enabled by user streaming)
+    {
+      # Auto-enable video.virtual infrastructure
+      my.video.virtual.enable = mkDefault true;
       boot.kernelModules = [ "v4l2loopback" ];
 
       boot.extraModulePackages = [
@@ -48,17 +51,14 @@ in
       boot.extraModprobeConfig = ''
         options v4l2loopback devices=1 video_nr=1 card_label="My OBS Virt Cam" exclusive_caps=1
       '';
-    })
+    }
 
     # OBS Studio with plugins (per-user configuration)
     {
       home-manager.users = mapAttrs
         (name: userCfg:
-          let
-            # Get user-level streaming config (with mynixos opinionated defaults)
-            userStreaming = userCfg.features.streaming or { };
-          in
-          mkIf (userStreaming.obs or defaults.obs) {
+          # Enable OBS for users with streaming = true
+          mkIf (userCfg.streaming or false) {
             home.packages = with pkgs; [
               ffmpeg-full
               twitch-tui # twitch chat in terminal

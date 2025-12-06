@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.ai;
+  cfg = config.my.ai;
 
   # mynixos opinionated defaults for AI features
   defaults = {
@@ -111,7 +111,7 @@ in
         (name: userCfg:
           let
             # Get user-level AI config (with mynixos opinionated defaults)
-            userAI = userCfg.features.ai or { };
+            userAI = userCfg.ai or { };
           in
           mkIf (userAI.mcpServers or defaults.mcpServers) {
             home.packages = lib.attrValues mcp-packages;

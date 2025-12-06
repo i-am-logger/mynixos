@@ -35,7 +35,7 @@ in
         "/var/lib/systemd"
         "/var/log"
       ]
-      ++ (optionals (config.my.features.graphical.enable or false) [
+      ++ (optionals (any (u: u.graphical or false) (attrValues config.my.users)) [
         "/var/lib/gnome"
         "/var/lib/AccountsService"
         "/var/lib/colord"
@@ -45,11 +45,11 @@ in
       ++ (optionals (config.my.hardware.bluetooth.enable or false) [
         "/var/lib/bluetooth"
       ])
-      ++ (optionals (config.my.features.development.docker.enable or false) [
+      ++ (optionals (config.my.infra.docker.enable or false) [
         "/var/lib/docker"
         "/var/lib/containers"
       ])
-      ++ (optionals (config.my.features.ai.enable or false) [
+      ++ (optionals (config.my.ai.enable or false) [
         {
           directory = "/var/lib/ollama";
           user = "ollama";
@@ -57,7 +57,7 @@ in
           mode = "0755";
         }
       ])
-      ++ (optionals (config.my.features.github-runner.enable or false) [
+      ++ (optionals (config.my.infra.github-runner.enable or false) [
         "/var/lib/rancher"
         "/var/lib/kubelet"
         "/var/lib/cni"
@@ -65,7 +65,7 @@ in
       ++ (optionals ((config.my.hardware.gpu or null) == "nvidia") [
         "/var/lib/nvidia-persistenced"
       ])
-      ++ (optionals (config.my.features.security.yubikey.enable or false) [
+      ++ (optionals (config.my.security.yubikey.enable or false) [
         "/yubikey"
       ])
       ++ cfg.extraSystemDirectories; # Allow custom additions
@@ -89,7 +89,7 @@ in
             ++ (optionals (config.my.apps.browsers.firefox or false) [
               ".mozilla"
             ])
-            ++ (optionals (config.my.features.development.enable or false) [
+            ++ (optionals (any (u: u.dev or false) (attrValues config.my.users)) [
               ".docker"
               ".npm"
               ".cargo"
@@ -97,10 +97,10 @@ in
               ".gradle"
               ".m2"
             ])
-            ++ (optionals (config.my.features.graphical.vscode.enable or false) [
+            ++ (optionals (any (u: u.apps.dev.vscode or false) (attrValues config.my.users)) [
               ".vscode"
             ])
-            ++ (optionals (config.my.features.security.yubikey.enable or false) [
+            ++ (optionals (config.my.security.yubikey.enable or false) [
               ".gnupg"
               ".password-store"
               ".yubico"

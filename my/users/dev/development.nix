@@ -3,13 +3,17 @@
 with lib;
 
 let
-  cfg = config.my.features.development;
+  # Auto-enable dev tools when any user has dev = true
+  anyUserDev = any (userCfg: userCfg.dev or false) (attrValues config.my.users);
 
-  # Get list of all user names from my.features.users
+  # Get list of all user names
   userNames = attrNames config.my.users;
+
+  # Auto-enable Docker infrastructure when any user has dev = true
+  dockerCfg = config.my.infra.docker;
 in
 {
-  config = mkIf cfg.enable (mkMerge [
+  config = mkIf anyUserDev (mkMerge [
     # Base development groups
     {
       # Add users to development-related groups
@@ -20,8 +24,10 @@ in
         (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
-    # Docker support
-    (mkIf cfg.docker.enable {
+    # Docker support (auto-enabled by user dev feature)
+    (mkIf (dockerCfg.enable or anyUserDev) {
+      # Auto-enable Docker infrastructure
+      my.infra.docker.enable = mkDefault true;
       environment.systemPackages = with pkgs; [
         docker-compose
         minikube
