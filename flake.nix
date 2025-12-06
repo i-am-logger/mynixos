@@ -385,6 +385,20 @@
                       };
                     };
                   };
+
+                  streamdeck = lib.mkOption {
+                    description = "Elgato Stream Deck support";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Enable Elgato Stream Deck support with udev rules and streamdeck-ui";
+                        };
+                      };
+                    };
+                  };
                 };
               };
             };

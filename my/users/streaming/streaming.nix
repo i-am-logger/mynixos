@@ -82,7 +82,7 @@ in
     }
 
     # StreamDeck support
-    (mkIf cfg.streamdeck.enable {
+    (mkIf config.my.video.streamdeck.enable {
       # Add Stream Deck udev rules for hardware access
       services.udev.packages = [
         pkgs.streamdeck-ui
