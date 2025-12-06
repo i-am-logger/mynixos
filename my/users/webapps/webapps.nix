@@ -3,13 +3,13 @@
 with lib;
 
 let
-  # Auto-enable when any user has webapps.enable = true
-  anyUserWebapps = any (userCfg: (userCfg.webapps.enable or false)) (attrValues config.my.users);
+  # Auto-enable when any user has graphical.webapps.enable = true
+  anyUserWebapps = any (userCfg: (userCfg.graphical.webapps.enable or false)) (attrValues config.my.users);
 
   # Check if any user has specific apps enabled
-  anyUserSlack = any (userCfg: (userCfg.webapps.slack or false)) (attrValues config.my.users);
-  anyUserSignal = any (userCfg: (userCfg.webapps.signal or false)) (attrValues config.my.users);
-  anyUser1Password = any (userCfg: (userCfg.webapps.onePassword or false)) (attrValues config.my.users);
+  anyUserSlack = any (userCfg: (userCfg.graphical.webapps.slack or false)) (attrValues config.my.users);
+  anyUserSignal = any (userCfg: (userCfg.graphical.webapps.signal or false)) (attrValues config.my.users);
+  anyUser1Password = any (userCfg: (userCfg.graphical.webapps.onePassword or false)) (attrValues config.my.users);
 
   # mynixos opinionated defaults for webapps
   defaults = {
@@ -92,9 +92,9 @@ in
         (name: userCfg:
           let
             # Get user-level webapp config (with mynixos opinionated defaults)
-            userWebapps = userCfg.webapps or { };
+            userWebapps = userCfg.graphical.webapps or { };
           in
-          mkIf (userWebapps.enable or false) {
+          mkIf (userCfg.graphical.webapps.enable or false) {
             # Allow chromium unfree in home-manager context
             nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
               "chromium"

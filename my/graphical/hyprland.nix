@@ -3,8 +3,8 @@
 with lib;
 
 let
-  # Auto-enable when any user has graphical = true
-  anyUserGraphical = any (userCfg: userCfg.graphical or false) (attrValues config.my.users);
+  # Auto-enable when any user has graphical.enable = true
+  anyUserGraphical = any (userCfg: userCfg.graphical.enable or false) (attrValues config.my.users);
 
   # Swappy config
   swappyConfig = ''

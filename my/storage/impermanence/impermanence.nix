@@ -35,7 +35,7 @@ in
         "/var/lib/systemd"
         "/var/log"
       ]
-      ++ (optionals (any (u: u.graphical or false) (attrValues config.my.users)) [
+      ++ (optionals config.my.graphical.enable [
         "/var/lib/gnome"
         "/var/lib/AccountsService"
         "/var/lib/colord"
@@ -45,7 +45,7 @@ in
       ++ (optionals (config.my.hardware.bluetooth.enable or false) [
         "/var/lib/bluetooth"
       ])
-      ++ (optionals (any (u: (u.dev or false) || (u.docker.enable or false)) (attrValues config.my.users)) [
+      ++ (optionals config.my.dev.enable [
         "/var/lib/docker"
         "/var/lib/containers"
       ])
@@ -89,15 +89,13 @@ in
             ++ (optionals (config.my.apps.browsers.firefox or false) [
               ".mozilla"
             ])
-            ++ (optionals (any (u: u.dev or false) (attrValues config.my.users)) [
+            ++ (optionals config.my.dev.enable [
               ".docker"
               ".npm"
               ".cargo"
               ".rustup"
               ".gradle"
               ".m2"
-            ])
-            ++ (optionals (any (u: u.apps.dev.vscode or false) (attrValues config.my.users)) [
               ".vscode"
             ])
             ++ (optionals (config.my.security.yubikey.enable or false) [

@@ -3,11 +3,11 @@
 with lib;
 
 let
-  # Auto-enable dev tools when any user has dev = true
-  anyUserDev = any (userCfg: userCfg.dev or false) (attrValues config.my.users);
+  # Auto-enable dev tools when any user has dev.enable = true
+  anyUserDev = any (userCfg: userCfg.dev.enable or false) (attrValues config.my.users);
 
-  # Docker enabled if any user has dev OR explicitly enables docker
-  anyUserDocker = any (u: (u.dev or false) || (u.docker.enable or false)) (attrValues config.my.users);
+  # Docker enabled if any user has dev enabled AND docker not explicitly disabled
+  anyUserDocker = any (u: (u.dev.enable or false) && (u.dev.docker.enable or true)) (attrValues config.my.users);
 in
 {
   config = mkMerge [
@@ -34,9 +34,9 @@ in
         };
       };
 
-      # Add users with dev or docker.enable to docker group
+      # Add users with dev enabled (and docker not disabled) to docker group
       users.users = mapAttrs (name: userCfg: {
-        extraGroups = mkIf ((userCfg.dev or false) || (userCfg.docker.enable or false)) [ "docker" ];
+        extraGroups = mkIf ((userCfg.dev.enable or false) && (userCfg.dev.docker.enable or true)) [ "docker" ];
       }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
 
       # Docker tools

@@ -3,8 +3,8 @@
 with lib;
 
 let
-  # Auto-enable streaming when any user has streaming = true
-  anyUserStreaming = any (userCfg: userCfg.streaming or false) (attrValues config.my.users);
+  # Auto-enable streaming when any user has graphical.streaming.enable = true
+  anyUserStreaming = any (userCfg: userCfg.graphical.streaming.enable or false) (attrValues config.my.users);
 
   # mynixos opinionated defaults for streaming
   defaults = {
@@ -52,8 +52,8 @@ in
     {
       home-manager.users = mapAttrs
         (name: userCfg:
-          # Enable OBS for users with streaming = true
-          mkIf (userCfg.streaming or false) {
+          # Enable OBS for users with graphical.streaming.enable = true
+          mkIf (userCfg.graphical.streaming.enable or false) {
             home.packages = with pkgs; [
               ffmpeg-full
               twitch-tui # twitch chat in terminal

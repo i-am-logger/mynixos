@@ -1,0 +1,171 @@
+{
+  "user_id": "logger",
+  "last_updated": "2025-12-06T00:00:00Z",
+  "confidence_threshold": 0.75,
+  "version": "0.1.0",
+
+  "api_design": {
+    "nesting_preference": {
+      "pattern": "nest_dependent_features",
+      "confidence": 0.95,
+      "examples": [
+        "streaming nested under graphical because streaming IS graphical (OBS, video tools)",
+        "my.users.<name>.graphical.streaming.enable = true"
+      ],
+      "learned_from": ["2025-12-06 streaming refactor discussion"],
+      "rationale": "If feature B requires feature A, nest B under A"
+    },
+    "enable_options": {
+      "pattern": "always_have_enable_for_user_control",
+      "confidence": 1.0,
+      "examples": [
+        "my.users.<name>.graphical.enable = true",
+        "my.users.<name>.graphical.streaming.enable = true"
+      ],
+      "learned_from": ["2025-12-06 explicit user statement"],
+      "rationale": "User always wants enable option for features to give user control"
+    },
+    "derived_system_flags": {
+      "pattern": "use_derived_readonly_flags",
+      "confidence": 0.95,
+      "examples": [
+        "my.graphical.enable = anyUserGraphical (derived)",
+        "Other modules check config.my.graphical.enable, not user properties"
+      ],
+      "learned_from": ["2025-12-06 impermanence architecture violation fix"],
+      "rationale": "Modules shouldn't check user properties directly - use system-level derived flags"
+    },
+    "naming_convention": {
+      "pattern": "descriptive_kebab_case",
+      "confidence": 0.9,
+      "examples": [
+        "x870e-aorus-elite-wifi7",
+        "legion-16irx8h",
+        "kraken-elite-rgb"
+      ],
+      "learned_from": ["observed hardware module naming"],
+      "rationale": "Lowercase with hyphens, descriptive model names"
+    }
+  },
+
+  "architecture": {
+    "opinionated_defaults": {
+      "preference": "strong",
+      "confidence": 0.95,
+      "rationale": "mynixos provides opinionated defaults, users only override when needed",
+      "examples": ["OBS enabled by default when streaming = true"]
+    },
+    "backward_compatibility": {
+      "preference": "low_priority_during_unstable",
+      "confidence": 1.0,
+      "rationale": "API is unstable, backwards compatibility isn't important, breaking changes acceptable",
+      "learned_from": ["2025-12-06 CLAUDE.md states 'mynixos is unstable api'"]
+    },
+    "separation_of_concerns": {
+      "preference": "strict",
+      "confidence": 1.0,
+      "rationale": "Modules respect boundaries - impermanence shouldn't check user properties directly",
+      "examples": ["impermanence uses system flags, not user property checks"]
+    },
+    "single_source_of_truth": {
+      "preference": "mandatory",
+      "confidence": 1.0,
+      "rationale": "User properties drive system flags, system flags drive module config",
+      "examples": ["user.graphical = true → my.graphical.enable = true → modules use flag"]
+    }
+  },
+
+  "technology": {
+    "graphical_environment": {
+      "preference": "hyprland",
+      "confidence": 1.0,
+      "rationale": "Primary Wayland compositor"
+    },
+    "display_manager": {
+      "preference": "greetd",
+      "confidence": 1.0,
+      "rationale": "Minimal, replaced GDM"
+    },
+    "container_runtime": {
+      "preference": "docker_rootless",
+      "confidence": 1.0,
+      "rationale": "User-level Docker, not system-level"
+    },
+    "ai_backend": {
+      "preference": "ollama_with_rocm",
+      "confidence": 1.0,
+      "rationale": "AMD GPU acceleration for AI workloads"
+    }
+  },
+
+  "communication": {
+    "response_style": {
+      "preference": "concise",
+      "confidence": 0.9,
+      "rationale": "User prefers brief, to-the-point responses"
+    },
+    "emoji_usage": {
+      "preference": "minimal",
+      "confidence": 1.0,
+      "rationale": "Only use emojis if user explicitly requests",
+      "learned_from": ["2025-12-06 CLAUDE.md instruction"]
+    },
+    "documentation": {
+      "preference": "code_focused_not_important_during_unstable",
+      "confidence": 0.95,
+      "rationale": "During unstable API phase, documentation not priority",
+      "learned_from": ["2025-12-06 CLAUDE.md: 'documentations are not important right now'"]
+    }
+  },
+
+  "risk_tolerance": {
+    "breaking_changes": {
+      "preference": "acceptable_with_migration",
+      "confidence": 1.0,
+      "rationale": "Willing to break API during unstable phase if properly migrated"
+    },
+    "experimental_features": {
+      "preference": "willing",
+      "confidence": 0.9,
+      "rationale": "Uses unstable nixpkgs, secure boot, advanced features"
+    },
+    "system_rebuilds": {
+      "preference": "comfortable",
+      "confidence": 1.0,
+      "rationale": "Regularly rebuilds both yoga and skyspy-dev"
+    }
+  },
+
+  "workflow": {
+    "git_commits": {
+      "preference": "single_commit_per_branch",
+      "confidence": 0.9,
+      "rationale": "Clean history with squashed commits",
+      "learned_from": ["2025-12-06 CLAUDE.md workflow"]
+    },
+    "testing": {
+      "preference": "test_before_switch",
+      "confidence": 1.0,
+      "rationale": "Always test first, then switch",
+      "learned_from": ["2025-12-06 CLAUDE.md: 'ALWAYS test first!'"]
+    },
+    "formatting": {
+      "preference": "nix_fmt_before_commit",
+      "confidence": 1.0,
+      "rationale": "Format all Nix files before committing",
+      "learned_from": ["2025-12-06 CLAUDE.md common commands"]
+    }
+  },
+
+  "meta": {
+    "learning_sessions": 1,
+    "decisions_observed": 5,
+    "patterns_identified": 12,
+    "next_learning_goals": [
+      "Learn module organization preferences",
+      "Learn error handling patterns",
+      "Learn testing depth preferences",
+      "Learn commit message style patterns"
+    ]
+  }
+}

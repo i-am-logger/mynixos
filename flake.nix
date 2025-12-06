@@ -464,7 +464,7 @@
               };
             };
 
-            # Streaming environment (auto-enabled when any user has streaming = true)
+            # Streaming environment (auto-enabled when any user has graphical.streaming.enable = true)
             streaming = lib.mkOption {
               description = "Streaming tools (OBS Studio, virtual camera, polkit)";
               default = { };
@@ -473,7 +473,7 @@
                   enable = lib.mkOption {
                     type = lib.types.bool;
                     default = false;
-                    description = "Auto-set to true when any user has streaming = true (managed by mynixos)";
+                    description = "Auto-set to true when any user has graphical.streaming.enable = true (managed by mynixos)";
                   };
                 };
               };
@@ -1015,74 +1015,106 @@
 
                   # User-level feature booleans (flattened from my.users.<name>.features)
                   graphical = lib.mkOption {
-                    type = lib.types.bool;
-                    default = false;
-                    description = "Enable graphical environment for this user (auto-enables Hyprland + greetd system services)";
-                  };
-
-                  dev = lib.mkOption {
-                    type = lib.types.bool;
-                    default = false;
-                    description = "Enable development tools for this user (auto-enables Docker, binfmt)";
-                  };
-
-                  streaming = lib.mkOption {
-                    type = lib.types.bool;
-                    default = false;
-                    description = "Enable streaming tools for this user (OBS Studio, auto-enables v4l2loopback)";
-                  };
-
-                  ai = lib.mkOption {
-                    type = lib.types.bool;
-                    default = false;
-                    description = "Enable AI tools for this user (MCP servers, requires system-level my.ai.enable)";
-                  };
-
-                  docker = {
-                    enable = lib.mkOption {
-                      type = lib.types.bool;
-                      default = false;
-                      description = "Enable Docker with rootless support (auto-enabled by dev = true)";
-                    };
-                  };
-
-                  # Webapps submodule (flattened from my.users.<name>.features.webapps)
-                  webapps = lib.mkOption {
-                    description = "Browser-based web applications (per-user)";
+                    description = "Graphical environment configuration";
                     default = { };
                     type = lib.types.submodule {
                       options = {
                         enable = lib.mkOption {
                           type = lib.types.bool;
-                          default = true;
-                          description = "Enable webapps for this user (opinionated default: enabled)";
+                          default = false;
+                          description = "Enable graphical environment for this user (auto-enables Hyprland + greetd system services)";
                         };
 
-                        # Individual webapps - mynixos opinionated defaults
-                        gmail = lib.mkOption { type = lib.types.bool; default = true; description = "Gmail webapp"; };
-                        vscode = lib.mkOption { type = lib.types.bool; default = true; description = "VS Code webapp"; };
-                        github = lib.mkOption { type = lib.types.bool; default = true; description = "GitHub webapp"; };
-                        spotify = lib.mkOption { type = lib.types.bool; default = true; description = "Spotify webapp"; };
-                        discord = lib.mkOption { type = lib.types.bool; default = true; description = "Discord webapp"; };
-                        whatsapp = lib.mkOption { type = lib.types.bool; default = true; description = "WhatsApp webapp"; };
-                        youtube = lib.mkOption { type = lib.types.bool; default = true; description = "YouTube webapp"; };
-                        netflix = lib.mkOption { type = lib.types.bool; default = true; description = "Netflix webapp"; };
-                        twitch = lib.mkOption { type = lib.types.bool; default = true; description = "Twitch webapp"; };
-                        zoom = lib.mkOption { type = lib.types.bool; default = true; description = "Zoom webapp"; };
-                        chatgpt = lib.mkOption { type = lib.types.bool; default = true; description = "ChatGPT webapp"; };
-                        claude = lib.mkOption { type = lib.types.bool; default = true; description = "Claude webapp"; };
-                        grok = lib.mkOption { type = lib.types.bool; default = true; description = "Grok webapp"; };
-                        x = lib.mkOption { type = lib.types.bool; default = true; description = "X (Twitter) webapp"; };
+                        streaming = lib.mkOption {
+                          description = "Streaming tools configuration";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = false;
+                                description = "Enable streaming tools (OBS Studio, requires graphical.enable = true)";
+                              };
+                            };
+                          };
+                        };
 
-                        # Electron apps (disabled by default)
-                        slack = lib.mkOption { type = lib.types.bool; default = false; description = "Slack (Electron)"; };
-                        signal = lib.mkOption { type = lib.types.bool; default = false; description = "Signal (Electron)"; };
+                        webapps = lib.mkOption {
+                          description = "Browser-based web applications";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Enable webapps (opinionated default: enabled when graphical.enable = true)";
+                              };
 
-                        # Password managers (disabled by default)
-                        onePassword = lib.mkOption { type = lib.types.bool; default = false; description = "1Password"; };
+                              # Individual webapps - mynixos opinionated defaults
+                              gmail = lib.mkOption { type = lib.types.bool; default = true; description = "Gmail webapp"; };
+                              vscode = lib.mkOption { type = lib.types.bool; default = true; description = "VS Code webapp"; };
+                              github = lib.mkOption { type = lib.types.bool; default = true; description = "GitHub webapp"; };
+                              spotify = lib.mkOption { type = lib.types.bool; default = true; description = "Spotify webapp"; };
+                              discord = lib.mkOption { type = lib.types.bool; default = true; description = "Discord webapp"; };
+                              whatsapp = lib.mkOption { type = lib.types.bool; default = true; description = "WhatsApp webapp"; };
+                              youtube = lib.mkOption { type = lib.types.bool; default = true; description = "YouTube webapp"; };
+                              netflix = lib.mkOption { type = lib.types.bool; default = true; description = "Netflix webapp"; };
+                              twitch = lib.mkOption { type = lib.types.bool; default = true; description = "Twitch webapp"; };
+                              zoom = lib.mkOption { type = lib.types.bool; default = true; description = "Zoom webapp"; };
+                              chatgpt = lib.mkOption { type = lib.types.bool; default = true; description = "ChatGPT webapp"; };
+                              claude = lib.mkOption { type = lib.types.bool; default = true; description = "Claude webapp"; };
+                              grok = lib.mkOption { type = lib.types.bool; default = true; description = "Grok webapp"; };
+                              x = lib.mkOption { type = lib.types.bool; default = true; description = "X (Twitter) webapp"; };
+
+                              # Electron apps (disabled by default)
+                              slack = lib.mkOption { type = lib.types.bool; default = false; description = "Slack (Electron)"; };
+                              signal = lib.mkOption { type = lib.types.bool; default = false; description = "Signal (Electron)"; };
+
+                              # Password managers (disabled by default)
+                              onePassword = lib.mkOption { type = lib.types.bool; default = false; description = "1Password"; };
+                            };
+                          };
+                        };
                       };
                     };
                   };
+
+                  dev = lib.mkOption {
+                    description = "Development environment configuration";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Enable development tools (Docker, binfmt, dev packages)";
+                        };
+
+                        docker = {
+                          enable = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Enable Docker with rootless support (opinionated default: enabled when dev.enable = true)";
+                          };
+                        };
+                      };
+                    };
+                  };
+
+                  ai = lib.mkOption {
+                    description = "AI tools configuration";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Enable AI tools (MCP servers, requires system-level my.features.ai.enable)";
+                        };
+                      };
+                    };
+                  };
+
 
                   # Hyprland submodule (flattened from my.users.<name>.features.hyprland)
                   hyprland = lib.mkOption {
