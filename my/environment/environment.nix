@@ -100,7 +100,6 @@ in
         # Dual-boot and filesystem support services
         services.udisks2.enable = mkDefault true; # Auto-mounting support
         services.timesyncd.enable = mkDefault true; # Network time sync
-        services.fstrim.enable = mkDefault true; # SSD optimization
 
         # Locale and timezone (mynixos opinionated defaults)
         time.timeZone = mkDefault cfg.timezone;

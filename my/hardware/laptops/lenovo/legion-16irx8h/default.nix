@@ -8,12 +8,20 @@ in
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    # Import laptop-specific boot configuration
-    (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
-
-    # Additional laptop configuration
+  config = lib.mkMerge [
+    # Auto-enable storage modules based on hardware (unconditional to avoid recursion)
     {
+      # This laptop has NVMe storage, enable SSD optimizations
+      my.hardware.storage.nvme.enable = lib.mkIf cfg.enable (lib.mkDefault true);
+      my.hardware.storage.ssd.enable = lib.mkIf cfg.enable (lib.mkDefault true);
+    }
+
+    (lib.mkIf cfg.enable (lib.mkMerge [
+      # Import laptop-specific boot configuration
+      (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
+
+      # Additional laptop configuration
+      {
       # Boot configuration for this laptop hardware
       boot = {
         initrd = {
@@ -50,5 +58,6 @@ in
       # Platform architecture
       nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
     }
-  ]);
+    ]))
+  ];
 }

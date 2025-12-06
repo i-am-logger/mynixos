@@ -34,6 +34,8 @@ in
       my.hardware.storage.nvme.enable = lib.mkIf cfg.enable cfg.storage.nvme.enable;
       my.hardware.storage.sata.enable = lib.mkIf cfg.enable cfg.storage.sata.enable;
       my.hardware.storage.usb.enable = lib.mkIf cfg.enable cfg.storage.usb.enable;
+      # Auto-enable SSD optimizations when NVMe storage is enabled
+      my.hardware.storage.ssd.enable = lib.mkIf cfg.enable (lib.mkDefault cfg.storage.nvme.enable);
 
       # USB configuration
       my.hardware.usb.xhci.enable = lib.mkIf cfg.enable cfg.usb.xhci.enable;

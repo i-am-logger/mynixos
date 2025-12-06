@@ -126,9 +126,6 @@ in
       boot.loader.grub.configurationLimit = mkDefault 100;
       boot.tmp.cleanOnBoot = mkDefault true;
 
-      # SSD TRIM support
-      services.fstrim.enable = mkDefault true;
-
       # Opinionated system services (can be disabled with mkForce)
       services.usbmuxd.enable = lib.mkDefault true; # iOS device support
       services.fwupd.enable = lib.mkDefault true; # Firmware updates
