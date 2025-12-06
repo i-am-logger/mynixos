@@ -106,6 +106,7 @@
             # Features
             ./modules/features/users.nix
             ./modules/features/security.nix
+            ./modules/features/environment.nix
             ./modules/features/graphical.nix
             ./modules/features/hyprland.nix
             ./modules/features/themes.nix
@@ -191,17 +192,45 @@
             ./modules/hardware/boot/dual-boot.nix
 
             # System
-            # (filesystem configuration is handled directly in mkSystem based on my.system.filesystem)
+            # (filesystem configuration is handled directly in mkSystem based on my.filesystem)
+            ./modules/system/kernel.nix
 
             # Infrastructure
             ./modules/infra/services/k3s.nix
           ];
 
           options.my = {
-            # Hostname configuration
+            # Hostname configuration (deprecated - use my.system.hostname instead)
             hostname = lib.mkOption {
               type = lib.types.str;
               description = "System hostname";
+            };
+
+            # System-level configuration
+            system = lib.mkOption {
+              description = "System-level configuration";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  hostname = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = "System hostname (if null, uses my.hostname for backwards compatibility)";
+                  };
+
+                  kernel = lib.mkOption {
+                    type = lib.types.nullOr lib.types.package;
+                    default = null;
+                    description = "Kernel package override (e.g., pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). If null, uses hardware module default (typically latest).";
+                  };
+
+                  architecture = lib.mkOption {
+                    type = lib.types.nullOr (lib.types.enum [ "x86_64-linux" "aarch64-linux" ]);
+                    default = null;
+                    description = "System architecture (auto-detected from hardware if null)";
+                  };
+                };
+              };
             };
 
             # Features namespace
@@ -375,6 +404,14 @@
                       options = {
                         enable = lib.mkEnableOption "streaming stack with v4l2loopback";
 
+                        v4l2loopback = {
+                          enable = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Enable v4l2loopback kernel module for virtual webcam (opinionated default: enabled when streaming.enable = true)";
+                          };
+                        };
+
                         obs = {
                           enable = lib.mkOption {
                             type = lib.types.bool;
@@ -503,11 +540,52 @@
 
                   # System feature
                   system = lib.mkOption {
-                    description = "Core system utilities and configuration";
+                    description = "Core system utilities and configuration (boot, kernel, nix)";
                     default = { };
                     type = lib.types.submodule {
                       options = {
-                        enable = lib.mkEnableOption "system utilities (console, nix, environment)";
+                        enable = lib.mkEnableOption "system utilities (console, nix, boot configuration)";
+                      };
+                    };
+                  };
+
+                  # Environment feature
+                  environment = lib.mkOption {
+                    description = "Environment variables, XDG, locale, timezone";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkEnableOption "environment configuration (variables, XDG, locale)";
+
+                        editor = lib.mkOption {
+                          type = lib.types.package;
+                          default = pkgs.helix;
+                          description = "Default text editor package (mynixos default: helix)";
+                        };
+
+                        browser = lib.mkOption {
+                          type = lib.types.str;
+                          default = "brave";
+                          description = "Default web browser command (mynixos default: brave)";
+                        };
+
+                        timezone = lib.mkOption {
+                          type = lib.types.str;
+                          default = "America/Denver";
+                          description = "System timezone (mynixos default: America/Denver)";
+                        };
+
+                        locale = lib.mkOption {
+                          type = lib.types.str;
+                          default = "en_US.UTF-8";
+                          description = "System locale (mynixos default: en_US.UTF-8)";
+                        };
+
+                        keyboardLayout = lib.mkOption {
+                          type = lib.types.str;
+                          default = "us";
+                          description = "Keyboard layout (mynixos default: us)";
+                        };
 
                         xdg = {
                           enable = lib.mkEnableOption "XDG portal support for Wayland";
@@ -797,7 +875,34 @@
                   editor = lib.mkOption {
                     type = lib.types.nullOr lib.types.str;
                     default = null;
-                    description = "Default editor (helix, vim, neovim)";
+                    description = "Default editor command (e.g., 'hx', 'vim', 'nvim'). Defaults to 'hx' from mynixos. DEPRECATED: Use defaults.editor instead.";
+                  };
+
+                  browser = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = "Default browser command (e.g., 'brave', 'firefox', 'chromium'). Defaults to 'brave' from mynixos. DEPRECATED: Use defaults.browser instead.";
+                  };
+
+                  # User defaults (packages for editor, browser, etc)
+                  defaults = lib.mkOption {
+                    description = "Default applications for this user";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        editor = lib.mkOption {
+                          type = lib.types.package;
+                          default = pkgs.helix;
+                          description = "Default editor package (opinionated default: helix)";
+                        };
+
+                        browser = lib.mkOption {
+                          type = lib.types.str;
+                          default = "brave";
+                          description = "Default browser command (opinionated default: brave)";
+                        };
+                      };
+                    };
                   };
 
                   avatar = lib.mkOption {
@@ -873,6 +978,136 @@
                     });
                     default = [ ];
                     description = "User-specific filesystem mounts";
+                  };
+
+                  # Features namespace (per-user feature preferences)
+                  features = lib.mkOption {
+                    description = "User-level feature preferences";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        # Theme configuration (per-user)
+                        theme = lib.mkOption {
+                          description = "User theme preferences (wallpaper, colors, fonts)";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkEnableOption "user-specific theme configuration";
+                              # Theme options will be passed to stylix for this user
+                              # This allows different users to have different themes
+                            };
+                          };
+                        };
+
+                        # Webapps (per-user with opinionated defaults)
+                        webapps = lib.mkOption {
+                          description = "Browser-based web applications (per-user)";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Enable webapps for this user (opinionated default: enabled)";
+                              };
+
+                              # Individual webapps - mynixos opinionated defaults
+                              gmail = lib.mkOption { type = lib.types.bool; default = true; description = "Gmail webapp"; };
+                              vscode = lib.mkOption { type = lib.types.bool; default = true; description = "VS Code webapp"; };
+                              github = lib.mkOption { type = lib.types.bool; default = true; description = "GitHub webapp"; };
+                              spotify = lib.mkOption { type = lib.types.bool; default = true; description = "Spotify webapp"; };
+                              discord = lib.mkOption { type = lib.types.bool; default = true; description = "Discord webapp"; };
+                              whatsapp = lib.mkOption { type = lib.types.bool; default = true; description = "WhatsApp webapp"; };
+                              youtube = lib.mkOption { type = lib.types.bool; default = true; description = "YouTube webapp"; };
+                              netflix = lib.mkOption { type = lib.types.bool; default = true; description = "Netflix webapp"; };
+                              twitch = lib.mkOption { type = lib.types.bool; default = true; description = "Twitch webapp"; };
+                              zoom = lib.mkOption { type = lib.types.bool; default = true; description = "Zoom webapp"; };
+                              chatgpt = lib.mkOption { type = lib.types.bool; default = true; description = "ChatGPT webapp"; };
+                              claude = lib.mkOption { type = lib.types.bool; default = true; description = "Claude webapp"; };
+                              grok = lib.mkOption { type = lib.types.bool; default = true; description = "Grok webapp"; };
+                              x = lib.mkOption { type = lib.types.bool; default = true; description = "X (Twitter) webapp"; };
+
+                              # Electron apps (disabled by default)
+                              slack = lib.mkOption { type = lib.types.bool; default = false; description = "Slack (Electron)"; };
+                              signal = lib.mkOption { type = lib.types.bool; default = false; description = "Signal (Electron)"; };
+
+                              # Password managers (disabled by default)
+                              onePassword = lib.mkOption { type = lib.types.bool; default = false; description = "1Password"; };
+                            };
+                          };
+                        };
+
+                        # Hyprland window manager config (per-user)
+                        hyprland = lib.mkOption {
+                          description = "User-specific Hyprland configuration";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "Enable user-specific Hyprland config (opinionated default: enabled when system graphical.enable = true)";
+                              };
+
+                              input = {
+                                leftHanded = lib.mkOption {
+                                  type = lib.types.bool;
+                                  default = false;
+                                  description = "Left-handed mouse mode (opinionated default: false)";
+                                };
+                                sensitivity = lib.mkOption {
+                                  type = lib.types.float;
+                                  default = 0.0;
+                                  description = "Mouse sensitivity (opinionated default: 0.0, range: -1.0 to 1.0)";
+                                };
+                              };
+
+                              defaultBrowser = lib.mkOption {
+                                type = lib.types.str;
+                                default = "brave";
+                                description = "Default browser for Super+E keybind (opinionated default: brave)";
+                              };
+
+                              defaultTerminal = lib.mkOption {
+                                type = lib.types.str;
+                                default = "wezterm";
+                                description = "Default terminal for Super+T keybind (opinionated default: wezterm)";
+                              };
+                            };
+                          };
+                        };
+
+                        # Streaming (per-user)
+                        streaming = lib.mkOption {
+                          description = "User streaming preferences";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              obs = lib.mkOption {
+                                type = lib.types.bool;
+                                default = true;
+                                description = "OBS Studio with plugins (opinionated default: enabled when system streaming is enabled)";
+                              };
+                            };
+                          };
+                        };
+
+                        # AI tools (per-user)
+                        ai = lib.mkOption {
+                          description = "User AI tool preferences";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              mcpServers = lib.mkOption {
+                                type = lib.types.bool;
+                                default = false;
+                                description = "MCP (Model Context Protocol) servers for this user (opinionated default: disabled)";
+                              };
+                            };
+                          };
+                        };
+                      };
+                    };
                   };
 
                   # Apps namespace (per-user application preferences)
@@ -1346,9 +1581,9 @@
                         };
 
                         symlinkFlakeToHome = lib.mkOption {
-                          type = lib.types.nullOr lib.types.str;
-                          default = null;
-                          description = "Username to create ~/.flake symlink for";
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Create ~/.flake symlink pointing to /etc/nixos for all users (auto-detected from my.users)";
                         };
 
                         extraSystemDirectories = lib.mkOption {

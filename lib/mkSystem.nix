@@ -77,8 +77,14 @@
       ])
         ++ [
 
-        # Set hostname (from parameter or my.hostname)
-        { networking.hostName = if hostname != null then hostname else my.hostname; }
+        # Set hostname (supports both new my.system.hostname and deprecated my.hostname for backwards compatibility)
+        {
+          networking.hostName =
+            if hostname != null then hostname
+            else if my.system.hostname or null != null then my.system.hostname
+            else if my.hostname or null != null then my.hostname
+            else throw "Either hostname parameter, my.system.hostname, or my.hostname must be set";
+        }
 
         # NixOS users
         {

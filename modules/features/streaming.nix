@@ -4,24 +4,19 @@ with lib;
 
 let
   cfg = config.my.features.streaming;
+
+  # mynixos opinionated defaults for streaming
+  defaults = {
+    obs = true; # OBS enabled by default when system streaming is enabled
+  };
 in
 {
   config = mkIf cfg.enable (mkMerge [
-    # Base streaming configuration - v4l2loopback for virtual camera
+    # Base streaming configuration
     {
-      boot.kernelModules = [ "v4l2loopback" ];
-
-      boot.extraModulePackages = [
-        config.boot.kernelPackages.v4l2loopback
-      ];
-
-      boot.extraModprobeConfig = ''
-        options v4l2loopback devices=1 video_nr=1 card_label="My OBS Virt Cam" exclusive_caps=1
-      '';
-
       security.polkit.enable = true;
 
-      # Allow users group to run modprobe
+      # Allow users group to run modprobe (needed for v4l2loopback and other kernel modules)
       security.polkit.extraConfig = ''
         polkit.addRule(function(action, subject) {
             if (action.id == "org.freedesktop.policykit.exec" &&
@@ -42,31 +37,49 @@ in
         (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
-    # OBS Studio with plugins (applied to all users)
-    (mkIf cfg.obs.enable {
-      home-manager.users = mapAttrs
-        (name: userCfg: {
-          home.packages = with pkgs; [
-            ffmpeg-full
-            twitch-tui # twitch chat in terminal
-            streamlink # streamlink for live videostream
-          ];
+    # v4l2loopback kernel module for virtual webcam (conditional)
+    (mkIf cfg.v4l2loopback.enable {
+      boot.kernelModules = [ "v4l2loopback" ];
 
-          programs.obs-studio = {
-            enable = true;
-            plugins = with pkgs.obs-studio-plugins; [
-              wlrobs
-              obs-teleport
-              obs-tuna
-              waveform
-              obs-text-pthread # rich text source plugin for custom text overlays
-              advanced-scene-switcher # automated scene switcher with hotkey support
-              obs-websocket # WebSocket support for Stream Deck integration (legacy support)
-            ];
-          };
-        })
-        config.my.users;
+      boot.extraModulePackages = [
+        config.boot.kernelPackages.v4l2loopback
+      ];
+
+      boot.extraModprobeConfig = ''
+        options v4l2loopback devices=1 video_nr=1 card_label="My OBS Virt Cam" exclusive_caps=1
+      '';
     })
+
+    # OBS Studio with plugins (per-user configuration)
+    {
+      home-manager.users = mapAttrs
+        (name: userCfg:
+          let
+            # Get user-level streaming config (with mynixos opinionated defaults)
+            userStreaming = userCfg.features.streaming or { };
+          in
+          mkIf (userStreaming.obs or defaults.obs) {
+            home.packages = with pkgs; [
+              ffmpeg-full
+              twitch-tui # twitch chat in terminal
+              streamlink # streamlink for live videostream
+            ];
+
+            programs.obs-studio = {
+              enable = true;
+              plugins = with pkgs.obs-studio-plugins; [
+                wlrobs
+                obs-teleport
+                obs-tuna
+                waveform
+                obs-text-pthread # rich text source plugin for custom text overlays
+                advanced-scene-switcher # automated scene switcher with hotkey support
+                obs-websocket # WebSocket support for Stream Deck integration (legacy support)
+              ];
+            };
+          })
+        config.my.users;
+    }
 
     # StreamDeck support
     (mkIf cfg.streamdeck.enable {

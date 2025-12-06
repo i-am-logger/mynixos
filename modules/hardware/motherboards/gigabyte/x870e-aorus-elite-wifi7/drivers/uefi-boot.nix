@@ -13,9 +13,7 @@
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
 
-  # Use latest kernel (can be overridden)
-  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
-
+  # Kernel configuration moved to my.system.kernel in mynixos system module
   # Hardware detected kernel modules
   boot.initrd.availableKernelModules = lib.mkDefault [
     "nvme"

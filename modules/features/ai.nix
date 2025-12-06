@@ -5,6 +5,11 @@ with lib;
 let
   cfg = config.my.features.ai;
 
+  # mynixos opinionated defaults for AI features
+  defaults = {
+    mcpServers = false; # MCP servers disabled by default
+  };
+
   # GitHub MCP Server package (from github.com/mcp/github/github-mcp-server)
   mcp-github = pkgs.writeShellScriptBin "mcp-github" ''
     set -e
@@ -100,9 +105,18 @@ in
       };
     }
 
-    # MCP Servers (Model Context Protocol)
-    (mkIf cfg.mcpServers.enable {
-      environment.systemPackages = lib.attrValues mcp-packages;
-    })
+    # MCP Servers (Model Context Protocol) - per-user configuration
+    {
+      home-manager.users = mapAttrs
+        (name: userCfg:
+          let
+            # Get user-level AI config (with mynixos opinionated defaults)
+            userAI = userCfg.features.ai or { };
+          in
+          mkIf (userAI.mcpServers or defaults.mcpServers) {
+            home.packages = lib.attrValues mcp-packages;
+          })
+        config.my.users;
+    }
   ]);
 }

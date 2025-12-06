@@ -129,11 +129,15 @@ in
         deps = [ "users" "groups" ];
       };
 
-      createFlakeSymlink = mkIf (cfg.symlinkFlakeToHome != null) {
+      createFlakeSymlink = mkIf cfg.symlinkFlakeToHome {
         text = ''
-          if [ ! -L /home/${cfg.symlinkFlakeToHome}/.flake ]; then
-            ln -sfn /etc/nixos /home/${cfg.symlinkFlakeToHome}/.flake
-          fi
+          # Create ~/.flake symlink for all users (auto-detected from my.users)
+          ${concatMapStringsSep "\n" (userName: ''
+            if [ ! -L /home/${userName}/.flake ]; then
+              ln -sfn /etc/nixos /home/${userName}/.flake
+              chown ${userName}:users /home/${userName}/.flake
+            fi
+          '') userNames}
         '';
         deps = [ "users" "groups" "cloneRepoIfEmpty" ];
       };

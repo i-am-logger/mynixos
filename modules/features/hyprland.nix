@@ -46,7 +46,16 @@ let
     # "waybar &"  # Backup option if systemd service doesn't work
   ];
 
-  bindings = {
+  # mynixos opinionated defaults for Hyprland
+  defaults = {
+    browser = "brave";
+    terminal = "wezterm";
+    leftHanded = false;
+    sensitivity = 0.0;
+  };
+
+  # Bindings function (takes user config as parameter)
+  mkBindings = userHyprland: {
     # MAINMOD
     "$mainMod" = "SUPER";
 
@@ -54,7 +63,7 @@ let
     bind = [
       "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
       "$mainMod SHIFT, Space, exec, walker --modules ssh -w 1000 -h 700"
-      "$mainMod, E, exec, ${cfg.hyprland.defaultBrowser}"
+      "$mainMod, E, exec, ${userHyprland.defaultBrowser or defaults.browser}"
       "$mainMod SHIFT, E, exec, google-chrome-stable"
       "SHIFT, Print, exec, grimblast save area - | swappy -f -"
       ", Print, exec, grimblast --notify copy area"
@@ -73,7 +82,7 @@ let
       "$mainMod, semicolon, exec, walker -p 'Emojis… (type : then emoji name)' -w 1000 -h 700 -q ':'"
 
       # general bindings
-      "$mainMod, T, exec, ${cfg.hyprland.defaultTerminal}"
+      "$mainMod, T, exec, ${userHyprland.defaultTerminal or defaults.terminal}"
       "$mainMod, Q, killactive,"
       "$mainMod, Y, togglefloating,"
       "$mainMod, F, fullscreen"
@@ -269,7 +278,8 @@ let
     #workspace_swipe_min_speed_to_force = 15
   };
 
-  input = {
+  # Input function (takes user config as parameter)
+  mkInput = userHyprland: {
     #kb_layout = us
     #kb_variant = us,il
     #kb_model =
@@ -277,7 +287,7 @@ let
     #kb_rules =
     #repeat_rate = 30
     repeat_delay = 200;
-    left_handed = cfg.hyprland.input.leftHanded;
+    left_handed = userHyprland.input.leftHanded or defaults.leftHanded;
     #follow_mouse = 2 # 0|1|2|3
     float_switch_override_focus = 2;
     numlock_by_default = "off";
@@ -291,7 +301,7 @@ let
       scroll_factor = 0.3;
     };
 
-    sensitivity = cfg.hyprland.input.sensitivity;
+    sensitivity = userHyprland.input.sensitivity or defaults.sensitivity;
   };
 
   layouts = {
@@ -390,7 +400,12 @@ in
   # Option is declared in flake.nix
   config = mkIf (cfg.enable && cfg.windowManagers.hyprland) {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: userCfg:
+        let
+          # Get user-level hyprland config (with mynixos opinionated defaults)
+          userHyprland = userCfg.features.hyprland or { };
+        in
+        mkIf userHyprland.enable {
         # GTK configuration
         gtk = {
           enable = true;
@@ -523,16 +538,16 @@ in
             { inherit (decorations) active_opacity inactive_opacity fullscreen_opacity rounding dim_inactive dim_strength blur; }
             { inherit (environment) monitor env; }
             { inherit gestures; }
-            { inherit input; }
+            { input = mkInput userHyprland; }
             { inherit (layouts) dwindle master; }
             { inherit misc; }
             { inherit (windowRules) windowrule windowrulev2; }
             { inherit animations; }
             { exec-once = autostart; }
-            bindings
+            (mkBindings userHyprland)
           ];
         };
-      })
+      }) # End mkIf userHyprland.enable
       config.my.users;
   };
 }
