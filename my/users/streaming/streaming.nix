@@ -39,9 +39,7 @@ in
     }
 
     # v4l2loopback kernel module for virtual webcam (auto-enabled by user streaming)
-    {
-      # Auto-enable video.virtual infrastructure
-      my.video.virtual.enable = mkDefault true;
+    (mkIf config.my.video.virtual.enable {
       boot.kernelModules = [ "v4l2loopback" ];
 
       boot.extraModulePackages = [
@@ -51,6 +49,11 @@ in
       boot.extraModprobeConfig = ''
         options v4l2loopback devices=1 video_nr=1 card_label="My OBS Virt Cam" exclusive_caps=1
       '';
+    })
+
+    # Default to enable video.virtual when any user has streaming enabled
+    {
+      my.video.virtual.enable = mkDefault true;
     }
 
     # OBS Studio with plugins (per-user configuration)

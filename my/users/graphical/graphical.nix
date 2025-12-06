@@ -55,16 +55,6 @@ in
         ];
     }
 
-    # Browser configuration
-    (mkIf cfg.browser.enable {
-      programs.chromium = {
-        enable = true;
-        extensions = [
-          "aeblfdkhhhdcdjpifhhbdiojplfjncoa" # 1Password extension
-        ];
-      };
-    })
-
     # Audio tools are now in my.hardware.audio, not in graphical
   ]);
 }
