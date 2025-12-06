@@ -31,14 +31,12 @@ in
     (mkIf (dmType == "greetd") {
       services.greetd = {
         enable = true;
-        settings = mkMerge [
-          dmCfg.greetd.settings
-          {
-            default_session = {
-              command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${dmCfg.greetd.settings.default_session.command}";
-            };
-          }
-        ];
+        settings = {
+          default_session = {
+            command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${dmCfg.greetd.settings.default_session.command}";
+            user = dmCfg.greetd.settings.default_session.user;
+          };
+        };
       };
     })
 
