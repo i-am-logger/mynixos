@@ -106,12 +106,14 @@
             # Users
             ./my/users/users.nix
             ./my/users/defaults
-            ./my/users/graphical/graphical.nix
-            ./my/users/graphical/hyprland.nix
             ./my/users/webapps/webapps.nix
             ./my/users/streaming/streaming.nix
             ./my/users/dev/development.nix
             ./my/users/ai/ai.nix
+
+            # Graphical
+            ./my/graphical/graphical.nix
+            ./my/graphical/hyprland.nix
 
             # System
             ./my/system/core.nix
