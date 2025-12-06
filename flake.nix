@@ -119,7 +119,6 @@
             ./modules/features/audio.nix
             ./modules/features/performance.nix
             ./modules/features/impermanence.nix
-            ./modules/features/motd.nix
 
             # Presets
             ./modules/presets/workstation.nix
@@ -230,6 +229,8 @@
                     default = null;
                     description = "System architecture (auto-detected from hardware if null)";
                   };
+
+                  enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
                 };
               };
             };
@@ -523,28 +524,6 @@
                             };
                           };
                         };
-                      };
-                    };
-                  };
-
-                  # Core system feature (renamed from 'system')
-                  core = lib.mkOption {
-                    description = "Core system utilities and configuration (boot, kernel, nix)";
-                    default = { };
-                    type = lib.types.submodule {
-                      options = {
-                        enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration)";
-                      };
-                    };
-                  };
-
-                  # DEPRECATED: Use my.features.core instead
-                  system = lib.mkOption {
-                    description = "DEPRECATED: Use my.features.core instead. Core system utilities and configuration (boot, kernel, nix)";
-                    default = { };
-                    type = lib.types.submodule {
-                      options = {
-                        enable = lib.mkEnableOption "system utilities (console, nix, boot configuration) - DEPRECATED: use my.features.core";
                       };
                     };
                   };

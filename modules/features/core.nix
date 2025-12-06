@@ -7,24 +7,13 @@
 with lib;
 
 let
-  cfg = config.my.features.core;
-
-  # Backward compatibility: support old my.features.system path
-  oldCfg = config.my.features.system;
+  cfg = config.my.system;
 
   # Get list of all user names from my.features.users
   userNames = attrNames config.my.users;
 in
 {
-  # Emit deprecation warning if old path is used
-  config = mkMerge [
-    (mkIf oldCfg.enable {
-      warnings = [
-        "my.features.system is deprecated. Use my.features.core instead."
-      ];
-    })
-
-    (mkIf (cfg.enable || oldCfg.enable) {
+  config = mkIf cfg.enable (mkMerge [
     # Base system configuration
     {
       # Plymouth boot splash (opinionated)
@@ -233,6 +222,5 @@ in
         '';
       };
     }
-    })
-  ];
+  ]);
 }

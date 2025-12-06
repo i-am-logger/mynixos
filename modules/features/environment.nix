@@ -5,51 +5,41 @@ with lib;
 let
   cfg = config.my.features.environment;
   motdCfg = cfg.motd;
-
-  # Backward compatibility: support old my.features.motd path
-  oldMotdCfg = config.my.features.motd;
 in
 {
   config = mkMerge [
-    # Deprecation warning for old motd path
-    (mkIf oldMotdCfg.enable {
-      warnings = [
-        "my.features.motd is deprecated. Use my.features.environment.motd instead."
-      ];
+    # MOTD configuration
+    (mkIf motdCfg.enable {
+      users.motd = motdCfg.content;
     })
 
-    # MOTD configuration (from environment.motd or deprecated motd)
-    (mkIf (motdCfg.enable || oldMotdCfg.enable) {
-      users.motd = if motdCfg.enable then motdCfg.content else oldMotdCfg.content;
-    })
+    (mkIf cfg.enable (mkMerge [
+      # Base environment configuration
+      {
+        # Environment variables (from mynixos defaults in flake.nix)
+        # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
+        environment.variables = {
+          EDITOR = "${cfg.editor}/bin/hx";
+          VIEWER = "${cfg.editor}/bin/hx";
+          BROWSER = cfg.browser;
+          DEFAULT_BROWSER = cfg.browser;
+        };
 
-    (mkIf cfg.enable {
-    # Base environment configuration
-    {
-      # Environment variables (from mynixos defaults in flake.nix)
-      # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
-      environment.variables = {
-        EDITOR = "${cfg.editor}/bin/hx";
-        VIEWER = "${cfg.editor}/bin/hx";
-        BROWSER = cfg.browser;
-        DEFAULT_BROWSER = cfg.browser;
-      };
+        environment.pathsToLink = [ "libexec" ];
+        environment.sessionVariables.DEFAULT_BROWSER = mkDefault cfg.browser;
 
-      environment.pathsToLink = [ "libexec" ];
-      environment.sessionVariables.DEFAULT_BROWSER = mkDefault cfg.browser;
+        # XDG MIME defaults
+        xdg.mime.defaultApplications = mkDefault {
+          "text/html" = cfg.browser;
+          "x-scheme-handler/http" = cfg.browser;
+          "x-scheme-handler/https" = cfg.browser;
+          "x-scheme-handler/about" = cfg.browser;
+          "x-scheme-handler/unknown" = cfg.browser;
+        };
+      }
 
-      # XDG MIME defaults
-      xdg.mime.defaultApplications = mkDefault {
-        "text/html" = cfg.browser;
-        "x-scheme-handler/http" = cfg.browser;
-        "x-scheme-handler/https" = cfg.browser;
-        "x-scheme-handler/about" = cfg.browser;
-        "x-scheme-handler/unknown" = cfg.browser;
-      };
-    }
-
-    # XDG portal configuration (for Wayland/Hyprland)
-    (mkIf cfg.xdg.enable {
+      # XDG portal configuration (for Wayland/Hyprland)
+      (mkIf cfg.xdg.enable {
       xdg.portal = {
         enable = true;
         configPackages = [ pkgs.xdg-desktop-portal-gtk ];
@@ -97,50 +87,53 @@ in
       };
 
       services.dbus.enable = true;
+      })
 
-      # Common system services (opinionated)
-      services.hardware.bolt.enable = lib.mkDefault true; # Thunderbolt support
-      networking.networkmanager.enable = lib.mkDefault true;
-      networking.wireless.enable = lib.mkDefault false; # Prefer NetworkManager
+      # Common environment configuration (always enabled with environment feature)
+      {
+        # Common system services (opinionated)
+        services.hardware.bolt.enable = lib.mkDefault true; # Thunderbolt support
+        networking.networkmanager.enable = lib.mkDefault true;
+        networking.wireless.enable = lib.mkDefault false; # Prefer NetworkManager
 
-      # Dual-boot and filesystem support services
-      services.udisks2.enable = mkDefault true; # Auto-mounting support
-      services.timesyncd.enable = mkDefault true; # Network time sync
-      services.fstrim.enable = mkDefault true; # SSD optimization
+        # Dual-boot and filesystem support services
+        services.udisks2.enable = mkDefault true; # Auto-mounting support
+        services.timesyncd.enable = mkDefault true; # Network time sync
+        services.fstrim.enable = mkDefault true; # SSD optimization
 
-      # Locale and timezone (mynixos opinionated defaults)
-      time.timeZone = mkDefault (cfg.timezone or defaults.timezone);
-      i18n.defaultLocale = mkDefault (cfg.locale or defaults.locale);
-      i18n.extraLocaleSettings = mkDefault {
-        LC_ADDRESS = cfg.locale or defaults.locale;
-        LC_IDENTIFICATION = cfg.locale or defaults.locale;
-        LC_MEASUREMENT = cfg.locale or defaults.locale;
-        LC_MONETARY = cfg.locale or defaults.locale;
-        LC_NAME = cfg.locale or defaults.locale;
-        LC_NUMERIC = cfg.locale or defaults.locale;
-        LC_PAPER = cfg.locale or defaults.locale;
-        LC_TELEPHONE = cfg.locale or defaults.locale;
-        LC_TIME = cfg.locale or defaults.locale;
-      };
+        # Locale and timezone (mynixos opinionated defaults)
+        time.timeZone = mkDefault cfg.timezone;
+        i18n.defaultLocale = mkDefault cfg.locale;
+        i18n.extraLocaleSettings = mkDefault {
+          LC_ADDRESS = cfg.locale;
+          LC_IDENTIFICATION = cfg.locale;
+          LC_MEASUREMENT = cfg.locale;
+          LC_MONETARY = cfg.locale;
+          LC_NAME = cfg.locale;
+          LC_NUMERIC = cfg.locale;
+          LC_PAPER = cfg.locale;
+          LC_TELEPHONE = cfg.locale;
+          LC_TIME = cfg.locale;
+        };
 
-      # Keyboard layout (mynixos opinionated defaults)
-      services.xserver.xkb = {
-        layout = mkDefault (cfg.keyboardLayout or defaults.keyboardLayout);
-        variant = mkDefault "";
-      };
+        # Keyboard layout (mynixos opinionated defaults)
+        services.xserver.xkb = {
+          layout = mkDefault cfg.keyboardLayout;
+          variant = mkDefault "";
+        };
 
-      # Opinionated stateVersion - using 25.05 as baseline (can be overridden)
-      system.stateVersion = lib.mkDefault "25.05";
-    })
+        # Opinionated stateVersion - using 25.05 as baseline (can be overridden)
+        system.stateVersion = lib.mkDefault "25.05";
+      }
 
-    # Set home.stateVersion for all users (opinionated)
-    {
-      home-manager.users = mapAttrs
-        (name: userCfg: {
-          home.stateVersion = lib.mkDefault "25.05";
-        })
-        config.my.users;
-    }
-    })
+      # Set home.stateVersion for all users (opinionated)
+      {
+        home-manager.users = mapAttrs
+          (name: userCfg: {
+            home.stateVersion = lib.mkDefault "25.05";
+          })
+          config.my.users;
+      }
+    ]))
   ];
 }
