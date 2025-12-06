@@ -28,8 +28,6 @@ in
         });
       '';
 
-      services.usbmuxd.enable = true;
-
       # Add users to streaming-related groups
       users.users = mapAttrs
         (name: userCfg: {

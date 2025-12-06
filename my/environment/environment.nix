@@ -94,7 +94,6 @@ in
       {
         # Common system services (opinionated)
         services.hardware.bolt.enable = lib.mkDefault true; # Thunderbolt support
-        networking.networkmanager.enable = lib.mkDefault true;
         networking.wireless.enable = lib.mkDefault false; # Prefer NetworkManager
 
         # Dual-boot and filesystem support services

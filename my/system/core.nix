@@ -102,10 +102,6 @@ in
       };
 
       # Performance tunables moved to my.features.performance
-      # Only set vm.max_map_count here for compatibility (high value needed for some apps)
-      boot.kernel.sysctl = {
-        "vm.max_map_count" = lib.mkForce 2147483642;
-      };
 
       systemd.oomd = {
         enable = true;

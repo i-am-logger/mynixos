@@ -24,7 +24,8 @@ in
       "vm.dirty_background_ratio" = mkDefault 3;
       "vm.dirty_ratio" = mkDefault 8;
       "vm.transparent_hugepage" = mkDefault "madvise";
-      "vm.max_map_count" = mkDefault 262144;
+      # Use mkForce because nixpkgs sets this to 1048576
+      "vm.max_map_count" = mkForce 262144;
     };
 
     # zram compressed swap (15% of RAM by default)
