@@ -74,18 +74,18 @@
       hardware = {
         motherboards = {
           gigabyte = {
-            x870e-aorus-elite-wifi7 = ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7;
+            x870e-aorus-elite-wifi7 = ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7;
           };
         };
         laptops = {
           lenovo = {
-            legion-16irx8h = ./modules/hardware/laptops/lenovo/legion-16irx8h;
+            legion-16irx8h = ./my/hardware/laptops/lenovo/legion-16irx8h;
           };
         };
         cooling = {
           nzxt = {
             kraken-elite-rgb = {
-              elite-240-rgb = ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix;
+              elite-240-rgb = ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix;
             };
           };
         };
@@ -103,100 +103,107 @@
             lanzaboote.nixosModules.lanzaboote
 
             # mynixos modules
-            # Features
-            ./modules/features/users.nix
-            ./modules/features/security.nix
-            ./modules/features/environment.nix
-            ./modules/features/graphical.nix
-            ./modules/features/hyprland.nix
-            ./modules/features/themes.nix
-            ./modules/features/github-runner.nix
-            ./modules/features/ai.nix
-            ./modules/features/webapps.nix
-            ./modules/features/streaming.nix
-            ./modules/features/development.nix
-            ./modules/features/core.nix
-            ./modules/features/audio.nix
-            ./modules/features/performance.nix
-            ./modules/features/impermanence.nix
-
-            # Presets
-            ./modules/presets/workstation.nix
-
-            # Apps
-            ./modules/apps/browsers/brave.nix
-            ./modules/apps/browsers/firefox.nix
-            ./modules/apps/terminals/wezterm.nix
-            ./modules/apps/terminals/kitty.nix
-            ./modules/apps/terminals/ghostty.nix
-            ./modules/apps/terminals/alacritty.nix
-            ./modules/apps/editors/helix.nix
-            ./modules/apps/editors/marktext.nix
-            ./modules/apps/shells/bash.nix
-            ./modules/apps/shells/fish.nix
-            ./modules/apps/prompts/starship.nix
-            ./modules/apps/fileManagers/mc.nix
-            ./modules/apps/fileManagers/yazi.nix
-            ./modules/apps/multiplexers/zellij.nix
-            ./modules/apps/multiplexers/tmux.nix
-            ./modules/apps/viewers/bat.nix
-            ./modules/apps/viewers/feh.nix
-            ./modules/apps/fileUtils/lsd.nix
-            ./modules/apps/sysinfo/btop.nix
-            ./modules/apps/sysinfo/neofetch.nix
-            ./modules/apps/sysinfo/fastfetch.nix
-            ./modules/apps/visualizers/cava.nix
-            ./modules/apps/launchers/walker.nix
-            ./modules/apps/sync/rclone.nix
-            ./modules/apps/utils/calculator.nix
-            ./modules/apps/utils/imagemagick.nix
-            ./modules/apps/dev/direnv.nix
-            ./modules/apps/dev/devenv.nix
-            ./modules/apps/dev/github-desktop.nix
-            ./modules/apps/dev/kdiff3.nix
-            ./modules/apps/dev/jq.nix
-            ./modules/apps/dev/vscode.nix
-            ./modules/apps/media/pipewire-tools.nix
-            ./modules/apps/media/musikcube.nix
-            ./modules/apps/media/audacious.nix
-            ./modules/apps/media/audio-utils.nix
-            ./modules/apps/communication/element.nix
-            ./modules/apps/communication/signal.nix
-            ./modules/apps/communication/slack.nix
-            ./modules/apps/terminals/warp.nix
-            ./modules/apps/finance/cointop.nix
-            ./modules/apps/art/mypaint.nix
-            ./modules/apps/network/termscp.nix
-            ./modules/apps/fun/pipes.nix
-            ./modules/apps/git.nix
-            ./modules/apps/jujutsu.nix
-            ./modules/apps/ssh.nix
-            ./modules/apps/xdg.nix
-
-            # Security
-            ./modules/security/yubikey.nix
-
-            # Hardware
-            ./modules/hardware/cpu/amd.nix
-            ./modules/hardware/cpu/intel.nix
-            ./modules/hardware/gpu/amd.nix
-            ./modules/hardware/gpu/nvidia.nix
-            ./modules/hardware/bluetooth/realtek.nix
-            ./modules/hardware/storage
-            ./modules/hardware/usb
-            ./modules/hardware/memory
-            ./modules/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
-            ./modules/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
-            ./modules/hardware/laptops/lenovo/legion-16irx8h
-            ./modules/hardware/boot/uefi.nix
-            ./modules/hardware/boot/dual-boot.nix
+            # Users
+            ./my/users/users.nix
+            ./my/users/defaults
+            ./my/users/graphical/graphical.nix
+            ./my/users/graphical/hyprland.nix
+            ./my/users/webapps/webapps.nix
+            ./my/users/streaming/streaming.nix
+            ./my/users/dev/development.nix
+            ./my/users/ai/ai.nix
 
             # System
-            # (filesystem configuration is handled directly in mkSystem based on my.filesystem)
-            ./modules/system/kernel.nix
+            ./my/system/core.nix
+            ./my/system/kernel.nix
+
+            # Environment
+            ./my/environment/environment.nix
+
+            # Security
+            ./my/security/security.nix
+            ./my/security/yubikey.nix
+
+            # Audio
+            ./my/audio/audio.nix
+
+            # Performance
+            ./my/performance/performance.nix
+
+            # Storage
+            ./my/storage/impermanence/impermanence.nix
+
+            # Themes
+            ./my/themes/themes.nix
 
             # Infrastructure
-            ./modules/infra/services/k3s.nix
+            ./my/infra/k3s/k3s.nix
+            ./my/infra/github-runner/github-runner.nix
+
+            # Apps (user-level)
+            ./my/users/apps/browsers/brave.nix
+            ./my/users/apps/browsers/firefox.nix
+            ./my/users/apps/terminals/wezterm.nix
+            ./my/users/apps/terminals/kitty.nix
+            ./my/users/apps/terminals/ghostty.nix
+            ./my/users/apps/terminals/alacritty.nix
+            ./my/users/apps/terminals/warp.nix
+            ./my/users/apps/editors/helix.nix
+            ./my/users/apps/editors/marktext.nix
+            ./my/users/apps/shells/bash.nix
+            ./my/users/apps/shells/fish.nix
+            ./my/users/apps/prompts/starship.nix
+            ./my/users/apps/fileManagers/mc.nix
+            ./my/users/apps/fileManagers/yazi.nix
+            ./my/users/apps/multiplexers/zellij.nix
+            ./my/users/apps/multiplexers/tmux.nix
+            ./my/users/apps/viewers/bat.nix
+            ./my/users/apps/viewers/feh.nix
+            ./my/users/apps/fileUtils/lsd.nix
+            ./my/users/apps/sysinfo/btop.nix
+            ./my/users/apps/sysinfo/neofetch.nix
+            ./my/users/apps/sysinfo/fastfetch.nix
+            ./my/users/apps/visualizers/cava.nix
+            ./my/users/apps/launchers/walker.nix
+            ./my/users/apps/sync/rclone.nix
+            ./my/users/apps/utils/calculator.nix
+            ./my/users/apps/utils/imagemagick.nix
+            ./my/users/apps/dev/direnv.nix
+            ./my/users/apps/dev/devenv.nix
+            ./my/users/apps/dev/github-desktop.nix
+            ./my/users/apps/dev/kdiff3.nix
+            ./my/users/apps/dev/jq.nix
+            ./my/users/apps/dev/vscode.nix
+            ./my/users/apps/media/pipewire-tools.nix
+            ./my/users/apps/media/musikcube.nix
+            ./my/users/apps/media/audacious.nix
+            ./my/users/apps/media/audio-utils.nix
+            ./my/users/apps/communication/element.nix
+            ./my/users/apps/communication/signal.nix
+            ./my/users/apps/communication/slack.nix
+            ./my/users/apps/finance/cointop.nix
+            ./my/users/apps/art/mypaint.nix
+            ./my/users/apps/network/termscp.nix
+            ./my/users/apps/fun/pipes.nix
+            ./my/users/apps/git.nix
+            ./my/users/apps/jujutsu.nix
+            ./my/users/apps/ssh.nix
+            ./my/users/apps/xdg.nix
+
+            # Hardware
+            ./my/hardware/cpu/amd.nix
+            ./my/hardware/cpu/intel.nix
+            ./my/hardware/gpu/amd.nix
+            ./my/hardware/gpu/nvidia.nix
+            ./my/hardware/bluetooth/realtek.nix
+            ./my/hardware/storage
+            ./my/hardware/usb
+            ./my/hardware/memory
+            ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix
+            ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
+            ./my/hardware/laptops/lenovo/legion-16irx8h
+            ./my/hardware/boot/uefi.nix
+            ./my/hardware/boot/dual-boot.nix
           ];
 
           options.my = {
