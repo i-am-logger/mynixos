@@ -107,6 +107,8 @@
             ./my/users/users.nix
             ./my/users/defaults
             ./my/users/webapps/webapps.nix
+            ./my/users/graphical/media.nix
+            ./my/users/terminal/terminal.nix
             ./my/streaming/streaming.nix
             ./my/dev/development.nix
             ./my/ai/ai.nix
@@ -1075,6 +1077,44 @@
                             };
                           };
                         };
+
+                        media = lib.mkOption {
+                          description = "Media and creative applications";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              enable = lib.mkOption {
+                                type = lib.types.bool;
+                                default = false;
+                                description = "Enable media/creative apps";
+                              };
+
+                              # Painting/Drawing
+                              mypaint = lib.mkOption { type = lib.types.bool; default = true; description = "MyPaint digital painting"; };
+                              krita = lib.mkOption { type = lib.types.bool; default = true; description = "Krita digital painting"; };
+
+                              # Image Editing
+                              gimp = lib.mkOption { type = lib.types.bool; default = true; description = "GIMP image editor"; };
+                              inkscape = lib.mkOption { type = lib.types.bool; default = true; description = "Inkscape vector graphics"; };
+
+                              # Heavy Apps
+                              blender = lib.mkOption { type = lib.types.bool; default = false; description = "Blender 3D modeling (heavy)"; };
+                              darktable = lib.mkOption { type = lib.types.bool; default = false; description = "Darktable RAW editing (heavy)"; };
+
+                              # Audio/Video
+                              audacity = lib.mkOption { type = lib.types.bool; default = false; description = "Audacity audio editor"; };
+                              kdenlive = lib.mkOption { type = lib.types.bool; default = false; description = "Kdenlive video editor"; };
+
+                              # Music Players
+                              musikcube = lib.mkOption { type = lib.types.bool; default = false; description = "Musikcube music player"; };
+                              audacious = lib.mkOption { type = lib.types.bool; default = false; description = "Audacious music player"; };
+
+                              # Audio Tools
+                              pipewireTools = lib.mkOption { type = lib.types.bool; default = true; description = "PipeWire CLI tools"; };
+                              audioUtils = lib.mkOption { type = lib.types.bool; default = true; description = "Audio utilities (pavucontrol, pamixer)"; };
+                            };
+                          };
+                        };
                       };
                     };
                   };
@@ -1110,6 +1150,100 @@
                           type = lib.types.bool;
                           default = false;
                           description = "Enable AI tools (MCP servers, requires system-level my.features.ai.enable)";
+                        };
+                      };
+                    };
+                  };
+
+                  terminal = lib.mkOption {
+                    description = "Terminal-centric tools (multiplexers, TUI apps)";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Enable terminal tools";
+                        };
+
+                        multiplexer = lib.mkOption {
+                          type = lib.types.enum [ "zellij" "tmux" "screen" "none" ];
+                          default = "zellij";
+                          description = "Terminal multiplexer";
+                        };
+
+                        fileManagers = lib.mkOption {
+                          description = "File manager tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              mc = lib.mkOption { type = lib.types.bool; default = false; description = "Midnight Commander"; };
+                              yazi = lib.mkOption { type = lib.types.bool; default = true; description = "Yazi TUI file manager"; };
+                            };
+                          };
+                        };
+
+                        sysinfo = lib.mkOption {
+                          description = "System information tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              btop = lib.mkOption { type = lib.types.bool; default = false; description = "btop system monitor"; };
+                              htop = lib.mkOption { type = lib.types.bool; default = false; description = "htop system monitor"; };
+                              fastfetch = lib.mkOption { type = lib.types.bool; default = true; description = "fastfetch system info"; };
+                              neofetch = lib.mkOption { type = lib.types.bool; default = false; description = "neofetch system info"; };
+                            };
+                          };
+                        };
+
+                        viewers = lib.mkOption {
+                          description = "File viewer tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              bat = lib.mkOption { type = lib.types.bool; default = true; description = "bat file viewer"; };
+                            };
+                          };
+                        };
+
+                        fileUtils = lib.mkOption {
+                          description = "File utility tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              lsd = lib.mkOption { type = lib.types.bool; default = true; description = "lsd directory lister"; };
+                            };
+                          };
+                        };
+
+                        network = lib.mkOption {
+                          description = "Network utility tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              termscp = lib.mkOption { type = lib.types.bool; default = false; description = "termscp TUI file transfer"; };
+                            };
+                          };
+                        };
+
+                        fun = lib.mkOption {
+                          description = "Fun/eye candy tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              pipes = lib.mkOption { type = lib.types.bool; default = false; description = "Terminal eye candy"; };
+                            };
+                          };
+                        };
+
+                        visualizers = lib.mkOption {
+                          description = "Audio/visual visualizer tools";
+                          default = { };
+                          type = lib.types.submodule {
+                            options = {
+                              cava = lib.mkOption { type = lib.types.bool; default = false; description = "cava audio visualizer"; };
+                            };
+                          };
                         };
                       };
                     };
