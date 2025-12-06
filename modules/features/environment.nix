@@ -10,11 +10,12 @@ in
     # Base environment configuration
     {
       # Environment variables (from mynixos defaults in flake.nix)
+      # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
       environment.variables = {
-        EDITOR = mkDefault "${cfg.editor}/bin/hx";
-        VIEWER = mkDefault "${cfg.editor}/bin/hx";
-        BROWSER = mkDefault cfg.browser;
-        DEFAULT_BROWSER = mkDefault cfg.browser;
+        EDITOR = "${cfg.editor}/bin/hx";
+        VIEWER = "${cfg.editor}/bin/hx";
+        BROWSER = cfg.browser;
+        DEFAULT_BROWSER = cfg.browser;
       };
 
       environment.pathsToLink = [ "libexec" ];
