@@ -875,18 +875,18 @@
                   editor = lib.mkOption {
                     type = lib.types.nullOr lib.types.str;
                     default = null;
-                    description = "Default editor command (e.g., 'hx', 'vim', 'nvim'). Defaults to 'hx' from mynixos. DEPRECATED: Use defaults.editor instead.";
+                    description = "Default editor command (e.g., 'hx', 'vim', 'nvim'). Defaults to 'hx' from mynixos. DEPRECATED: Use environment.editor instead.";
                   };
 
                   browser = lib.mkOption {
                     type = lib.types.nullOr lib.types.str;
                     default = null;
-                    description = "Default browser command (e.g., 'brave', 'firefox', 'chromium'). Defaults to 'brave' from mynixos. DEPRECATED: Use defaults.browser instead.";
+                    description = "Default browser command (e.g., 'brave', 'firefox', 'chromium'). Defaults to 'brave' from mynixos. DEPRECATED: Use environment.browser instead.";
                   };
 
-                  # User defaults (packages for editor, browser, etc)
-                  defaults = lib.mkOption {
-                    description = "Default applications for this user";
+                  # User environment configuration (editor, browser packages)
+                  environment = lib.mkOption {
+                    description = "User-level environment configuration (editor, browser, etc)";
                     default = { };
                     type = lib.types.submodule {
                       options = {
@@ -897,9 +897,9 @@
                         };
 
                         browser = lib.mkOption {
-                          type = lib.types.str;
-                          default = "brave";
-                          description = "Default browser command (opinionated default: brave)";
+                          type = lib.types.package;
+                          default = pkgs.brave;
+                          description = "Default browser package (opinionated default: brave)";
                         };
                       };
                     };
