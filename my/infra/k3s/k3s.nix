@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.infra.services.k3s;
+  cfg = config.my.infra.k3s;
 in
 {
   config = mkIf cfg.enable {

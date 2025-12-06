@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.features.development.github-runner;
+  cfg = config.my.infra.github-runner;
 
   # List of repositories to create runner sets for
   repositories = cfg.repositories;
