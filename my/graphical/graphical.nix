@@ -9,8 +9,13 @@ let
   dmType = dmCfg.type;
 in
 {
-  config = mkIf anyUserGraphical (mkMerge [
-    # Base desktop configuration with Hyprland
+  config = mkMerge [
+    # Set read-only system flag
+    { my.graphical.enable = anyUserGraphical; }
+
+    # Feature configuration
+    (mkIf config.my.graphical.enable (mkMerge [
+      # Base desktop configuration with Hyprland
     {
       # System-level Hyprland setup
       systemd.tmpfiles.rules = [
@@ -141,5 +146,6 @@ in
     }
 
     # Audio tools are now in my.hardware.audio, not in graphical
-  ]);
+    ]))
+  ];
 }

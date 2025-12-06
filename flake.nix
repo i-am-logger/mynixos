@@ -434,6 +434,51 @@
               };
             };
 
+            # Graphical environment (auto-enabled when any user has graphical = true)
+            graphical = lib.mkOption {
+              description = "Graphical environment (Hyprland, display manager, XDG portals)";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Auto-set to true when any user has graphical = true (managed by mynixos)";
+                  };
+                };
+              };
+            };
+
+            # Development environment (auto-enabled when any user has dev = true)
+            dev = lib.mkOption {
+              description = "Development tools (Docker, binfmt, AppImage support)";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Auto-set to true when any user has dev = true (managed by mynixos)";
+                  };
+                };
+              };
+            };
+
+            # Streaming environment (auto-enabled when any user has streaming = true)
+            streaming = lib.mkOption {
+              description = "Streaming tools (OBS Studio, virtual camera, polkit)";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Auto-set to true when any user has streaming = true (managed by mynixos)";
+                  };
+                };
+              };
+            };
+
             # AI stack - system-level Ollama service (flattened from my.features.ai)
             ai = lib.mkOption {
               description = "AI infrastructure (Ollama service with ROCm support)";

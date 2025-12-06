@@ -11,8 +11,11 @@ let
 in
 {
   config = mkMerge [
+    # Set system flag
+    { my.dev.enable = anyUserDev; }
+
     # Base development groups
-    (mkIf anyUserDev {
+    (mkIf config.my.dev.enable {
       users.users = mapAttrs
         (name: userCfg: {
           extraGroups = [ "disk" "dialout" ];
@@ -46,7 +49,7 @@ in
     })
 
     # Binfmt emulation (dev feature)
-    (mkIf anyUserDev {
+    (mkIf config.my.dev.enable {
       boot.binfmt = {
         emulatedSystems = [ "aarch64-linux" ];
 

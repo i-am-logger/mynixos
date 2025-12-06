@@ -12,8 +12,13 @@ let
   };
 in
 {
-  config = mkIf anyUserStreaming (mkMerge [
-    # Base streaming configuration
+  config = mkMerge [
+    # Set system flag
+    { my.streaming.enable = anyUserStreaming; }
+
+    # Feature configuration
+    (mkIf config.my.streaming.enable (mkMerge [
+      # Base streaming configuration
     {
       # Enable polkit for streaming (mkDefault so security module can also enable it)
       security.polkit.enable = lib.mkDefault true;
@@ -73,5 +78,6 @@ in
 
     # StreamDeck support moved to my.hardware.peripherals.elgato.streamdeck
     # Streaming users can enable it separately if they have the hardware
-  ]);
+    ]))
+  ];
 }
