@@ -16,6 +16,13 @@
 - **Learning**: Physical dependencies should be reflected in namespace structure
 - **Confidence**: High
 
+### 2025-12-06: Media and Terminal API Design
+- **Situation**: Design API for new user feature categories (media apps and terminal tools)
+- **Action**: Nested media under graphical, kept terminal top-level
+- **Outcome**: ✅ Implementation successful with no issues, both systems build, validator found only pre-existing issues
+- **Learning**: Media nesting principle validated - apps that require GUI belong under graphical
+- **Confidence**: Very High (0.95)
+
 ## Patterns Discovered
 
 ### Derived System Flags

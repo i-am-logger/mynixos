@@ -16,6 +16,13 @@
 - **Learning**: grep/rg is essential for finding all usage before changing APIs
 - **Confidence**: High
 
+### 2025-12-06: Media and Terminal Feature Modules Implementation
+- **Situation**: Implement two new user-level feature categories based on architect spec
+- **Action**: Created media.nix (graphical nesting) and terminal.nix (top-level), followed opinionated defaults pattern
+- **Outcome**: ✅ Both modules built correctly, no validation issues
+- **Learning**: Nesting design validated - media (gui) naturally belongs under graphical
+- **Confidence**: Very High (0.95)
+
 ## Patterns Discovered
 
 ### mkMerge for Separation of Concerns
