@@ -39,66 +39,13 @@ in
         };
       }
 
-      # XDG portal configuration (for Wayland/Hyprland)
-      (mkIf cfg.xdg.enable {
-      xdg.portal = {
-        enable = true;
-        configPackages = [ pkgs.xdg-desktop-portal-gtk ];
-        xdgOpenUsePortal = true;
-        extraPortals = [
-          pkgs.xdg-desktop-portal-hyprland
-          pkgs.xdg-desktop-portal-gtk
-        ];
-        config = {
-          common = {
-            default = [
-              "hyprland"
-              "gtk"
-            ];
-            "org.freedesktop.impl.portal.Settings" = [
-              "gtk"
-            ];
-          };
-          hyprland = {
-            default = [
-              "hyprland"
-              "gtk"
-            ];
-            "org.freedesktop.impl.portal.Settings" = [
-              "gtk"
-            ];
-          };
-        };
-      };
-
-      environment.systemPackages = with pkgs; [
-        qt6.qtwayland
-      ];
-
-      environment.sessionVariables = {
-        NIXOS_OZONE_WL = "1"; # For Electron apps
-        XDG_CURRENT_DESKTOP = "Hyprland";
-        XDG_SESSION_TYPE = "wayland";
-        XDG_SESSION_DESKTOP = "Hyprland";
-        GDK_BACKEND = "wayland";
-        QT_QPA_PLATFORM = "wayland;xcb";
-        QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-        MOZ_ENABLE_WAYLAND = "1";
-        WAYLAND_DISPLAY = "wayland-1";
-      };
-
-      services.dbus.enable = true;
-      })
-
       # Common environment configuration (always enabled with environment feature)
       {
-        # Common system services (opinionated)
-        services.hardware.bolt.enable = lib.mkDefault true; # Thunderbolt support
-        networking.wireless.enable = lib.mkDefault false; # Prefer NetworkManager
+        # Disable wpa_supplicant in favor of NetworkManager (opinionated)
+        networking.wireless.enable = lib.mkDefault false;
 
-        # Dual-boot and filesystem support services
-        services.udisks2.enable = mkDefault true; # Auto-mounting support
-        services.timesyncd.enable = mkDefault true; # Network time sync
+        # Auto-mounting support for removable media (opinionated default)
+        services.udisks2.enable = mkDefault true;
 
         # Locale and timezone (mynixos opinionated defaults)
         time.timeZone = mkDefault cfg.timezone;

@@ -143,6 +143,12 @@ in
 
     # Audit rules configuration
     (mkIf (cfg.enable && cfg.auditRules.enable) {
+      # Enable kernel-level audit system
+      boot.kernelParams = [
+        "audit_backlog_limit=2048"
+        "audit=1"
+      ];
+
       security.auditd.enable = true;
       security.audit.enable = true;
       security.audit.rules = [

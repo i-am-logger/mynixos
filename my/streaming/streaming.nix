@@ -15,7 +15,8 @@ in
   config = mkIf anyUserStreaming (mkMerge [
     # Base streaming configuration
     {
-      security.polkit.enable = true;
+      # Enable polkit for streaming (mkDefault so security module can also enable it)
+      security.polkit.enable = lib.mkDefault true;
 
       # Allow users group to run modprobe (needed for v4l2loopback and other kernel modules)
       security.polkit.extraConfig = ''

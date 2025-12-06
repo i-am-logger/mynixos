@@ -48,5 +48,20 @@ in
     boot.kernelParams = [
       "nvidia-drm.modeset=1" # Enable DRM kernel mode setting
     ];
+
+    # NVIDIA udev rules for proper device permissions
+    services.udev.extraRules = ''
+      KERNEL=="nvidia*", GROUP="video", MODE="0666"
+      KERNEL=="nvidiactl", GROUP="video", MODE="0666"
+    '';
+
+    # NVIDIA persistenced service configuration
+    systemd.services.nvidia-persistenced = {
+      serviceConfig = {
+        Restart = lib.mkDefault "on-failure";
+        RestartSec = lib.mkDefault "5s";
+        ExecStartPre = "${pkgs.kmod}/bin/modprobe nvidia";
+      };
+    };
   };
 }

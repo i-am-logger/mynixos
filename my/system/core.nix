@@ -36,9 +36,6 @@ in
         "rd.systemd.show_status=false"
         "rd.udev.log_level=3"
         "acpi_osi=Linux"
-        # Audit system
-        "audit_backlog_limit=2048"
-        "audit=1"
       ];
 
       systemd.services.plymouth-quit-wait.enable = lib.mkDefault true;
@@ -64,42 +61,11 @@ in
         enableSSHSupport = true;
       };
 
-      # Systemd fixes and improvements
-      security.audit = {
-        enable = true;
-        rules = [
-          "-a never,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime"
-          "-a never,exit -F arch=b32 -S adjtimex -S settimeofday -S clock_settime"
-        ];
-      };
-
+      # DRM device permissions (generic, not NVIDIA-specific)
       services.udev.extraRules = ''
-        # Better NVIDIA device handling
-        KERNEL=="nvidia*", GROUP="video", MODE="0666"
-        KERNEL=="nvidiactl", GROUP="video", MODE="0666"
-
-        # Fix X11 socket permissions
+        # Fix X11 socket permissions for all GPUs
         KERNEL=="card[0-9]*", SUBSYSTEM=="drm", GROUP="video", MODE="0666"
       '';
-
-      systemd.services = {
-        nvidia-persistenced = {
-          serviceConfig = {
-            Restart = lib.mkDefault "on-failure";
-            RestartSec = lib.mkDefault "5s";
-            ExecStartPre = "${pkgs.kmod}/bin/modprobe nvidia";
-          };
-        };
-
-        fix-audio-speaker = {
-          after = [
-            "sound.target"
-            "pipewire.service"
-            "wireplumber.service"
-          ];
-          wants = [ "pipewire.service" ];
-        };
-      };
 
       # Performance tunables moved to my.features.performance
 
@@ -126,6 +92,7 @@ in
       services.usbmuxd.enable = lib.mkDefault true; # iOS device support
       services.fwupd.enable = lib.mkDefault true; # Firmware updates
       services.trezord.enable = lib.mkDefault true; # Trezor hardware wallet
+      services.timesyncd.enable = lib.mkDefault true; # Network time synchronization
 
       # Graphics hardware support
       hardware.graphics.enable = true;

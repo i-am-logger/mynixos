@@ -38,5 +38,15 @@ in
       alsa-tools
       alsa-utils
     ];
+
+    # Audio service dependencies (for hardware that needs specific initialization)
+    systemd.services.fix-audio-speaker = {
+      after = [
+        "sound.target"
+        "pipewire.service"
+        "wireplumber.service"
+      ];
+      wants = [ "pipewire.service" ];
+    };
   };
 }
