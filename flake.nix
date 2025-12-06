@@ -156,6 +156,7 @@
             ./modules/apps/dev/github-desktop.nix
             ./modules/apps/dev/kdiff3.nix
             ./modules/apps/dev/jq.nix
+            ./modules/apps/dev/vscode.nix
             ./modules/apps/media/pipewire-tools.nix
             ./modules/apps/media/musikcube.nix
             ./modules/apps/media/audacious.nix
@@ -443,14 +444,6 @@
                           };
                         };
 
-                        direnv = {
-                          enable = lib.mkOption {
-                            type = lib.types.bool;
-                            default = true;
-                            description = "direnv environment manager (opinionated default: enabled)";
-                          };
-                        };
-
                         binfmt = {
                           enable = lib.mkOption {
                             type = lib.types.bool;
@@ -463,10 +456,6 @@
                             default = true;
                             description = "AppImage support via binfmt (opinionated default: enabled)";
                           };
-                        };
-
-                        vscode = {
-                          enable = lib.mkEnableOption "Visual Studio Code (requires graphical.enable = true)";
                         };
 
                         k3s = lib.mkOption {
@@ -1248,6 +1237,11 @@
                             type = lib.types.bool;
                             default = true;
                             description = "jq JSON processor (opinionated default: enabled)";
+                          };
+                          vscode = lib.mkOption {
+                            type = lib.types.bool;
+                            default = true;
+                            description = "Visual Studio Code editor (opinionated default: enabled)";
                           };
                         };
 

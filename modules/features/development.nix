@@ -49,21 +49,6 @@ in
       };
     })
 
-    # Direnv support
-    (mkIf cfg.direnv.enable {
-      environment.systemPackages = with pkgs; [
-        direnv
-      ];
-
-      programs.direnv = {
-        enable = true;
-        silent = true;
-        direnvrcExtra = ''
-          echo "Loaded direnv!"
-        '';
-      };
-    })
-
     # Binfmt emulation support
     (mkIf cfg.binfmt.enable {
       boot.binfmt = {
@@ -81,26 +66,6 @@ in
         mask = ''\xff\xff\xff\xff\x00\x00\x00\x00\xff\xff\xff'';
         magicOrExtension = ''\x7fELF....AI\x02'';
       };
-    })
-
-    # VSCode support (requires graphical environment)
-    (mkIf cfg.vscode.enable {
-      assertions = [{
-        assertion = config.my.features.graphical.enable;
-        message = "development.vscode requires graphical.enable = true";
-      }];
-
-      environment.systemPackages = with pkgs; [
-        libsecret # For keyring integration
-        libxkbcommon
-      ];
-
-      nixpkgs.config.allowUnfreePredicate =
-        pkg:
-        builtins.elem (pkg.pname or pkg.name or (lib.getName pkg)) [
-          "vscode"
-          "vscode-with-extensions"
-        ];
     })
 
     # k3s Kubernetes cluster for local development
