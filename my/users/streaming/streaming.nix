@@ -38,20 +38,8 @@ in
         (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
     }
 
-    # v4l2loopback kernel module for virtual webcam (auto-enabled by user streaming)
-    (mkIf config.my.video.virtual.enable {
-      boot.kernelModules = [ "v4l2loopback" ];
-
-      boot.extraModulePackages = [
-        config.boot.kernelPackages.v4l2loopback
-      ];
-
-      boot.extraModprobeConfig = ''
-        options v4l2loopback devices=1 video_nr=1 card_label="My OBS Virt Cam" exclusive_caps=1
-      '';
-    })
-
     # Default to enable video.virtual when any user has streaming enabled
+    # The actual kernel module configuration is in my/video/virtual.nix
     {
       my.video.virtual.enable = mkDefault true;
     }

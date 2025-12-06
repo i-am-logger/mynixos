@@ -127,6 +127,9 @@
             # Audio
             ./my/audio/audio.nix
 
+            # Video
+            ./my/video/virtual.nix
+
             # Performance
             ./my/performance/performance.nix
 
@@ -280,9 +283,9 @@
                   };
 
                   browser = lib.mkOption {
-                    type = lib.types.str;
-                    default = "brave";
-                    description = "Default web browser command (mynixos default: brave)";
+                    type = lib.types.package;
+                    default = pkgs.brave;
+                    description = "Default web browser package (mynixos default: brave)";
                   };
 
                   timezone = lib.mkOption {
