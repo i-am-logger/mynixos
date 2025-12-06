@@ -242,7 +242,239 @@
               };
             };
 
-            # Features namespace
+            # Security stack (flattened from my.features.security)
+            security = lib.mkOption {
+              description = "Security stack configuration";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkEnableOption "security stack";
+
+                  secureBoot = {
+                    enable = lib.mkEnableOption "secure boot with lanzaboote";
+                  };
+
+                  yubikey = {
+                    enable = lib.mkEnableOption "yubikey support";
+                  };
+
+                  auditRules = {
+                    enable = lib.mkEnableOption "audit rules";
+                  };
+                };
+              };
+            };
+
+            # Environment configuration (flattened from my.features.environment)
+            environment = lib.mkOption {
+              description = "Environment variables, XDG, locale, timezone";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkEnableOption "environment configuration (variables, XDG, locale)";
+
+                  editor = lib.mkOption {
+                    type = lib.types.package;
+                    default = pkgs.helix;
+                    description = "Default text editor package (mynixos default: helix)";
+                  };
+
+                  browser = lib.mkOption {
+                    type = lib.types.str;
+                    default = "brave";
+                    description = "Default web browser command (mynixos default: brave)";
+                  };
+
+                  timezone = lib.mkOption {
+                    type = lib.types.str;
+                    default = "America/Denver";
+                    description = "System timezone (mynixos default: America/Denver)";
+                  };
+
+                  locale = lib.mkOption {
+                    type = lib.types.str;
+                    default = "en_US.UTF-8";
+                    description = "System locale (mynixos default: en_US.UTF-8)";
+                  };
+
+                  keyboardLayout = lib.mkOption {
+                    type = lib.types.str;
+                    default = "us";
+                    description = "Keyboard layout (mynixos default: us)";
+                  };
+
+                  xdg = {
+                    enable = lib.mkEnableOption "XDG portal support for Wayland";
+                  };
+
+                  motd = lib.mkOption {
+                    description = "Message of the day configuration";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkEnableOption "message of the day";
+
+                        content = lib.mkOption {
+                          type = lib.types.str;
+                          default = "";
+                          description = "MOTD content to display on login";
+                        };
+                      };
+                    };
+                  };
+                };
+              };
+            };
+
+            # Performance tuning (flattened from my.features.performance)
+            performance = lib.mkOption {
+              description = "Performance optimizations (kernel tunables, zram, vmtouch)";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkEnableOption "performance optimizations";
+
+                  zramPercent = lib.mkOption {
+                    type = lib.types.int;
+                    default = 15;
+                    description = "Percentage of RAM to use for zram compressed swap";
+                  };
+
+                  vmtouchCache = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Enable vmtouch RAM caching for system closure";
+                  };
+                };
+              };
+            };
+
+            # AI stack - system-level Ollama service (flattened from my.features.ai)
+            ai = lib.mkOption {
+              description = "AI infrastructure (Ollama service with ROCm support)";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  enable = lib.mkEnableOption "AI infrastructure with Ollama and ROCm support";
+
+                  rocmGfxVersion = lib.mkOption {
+                    type = lib.types.str;
+                    default = "11.0.2";
+                    description = "ROCm GFX version override for AMD GPU compatibility (opinionated default: 11.0.2 for RDNA3)";
+                  };
+                };
+              };
+            };
+
+            # Video namespace - virtual camera support
+            video = lib.mkOption {
+              description = "Video device configuration";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  virtual = lib.mkOption {
+                    description = "Virtual camera devices (v4l2loopback)";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Enable v4l2loopback kernel module for virtual webcam (auto-enabled by user streaming)";
+                        };
+                      };
+                    };
+                  };
+                };
+              };
+            };
+
+            # Infrastructure namespace
+            infra = lib.mkOption {
+              description = "Infrastructure services";
+              default = { };
+              type = lib.types.submodule {
+                options = {
+                  docker = lib.mkOption {
+                    description = "Docker container runtime";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Docker with rootless support (auto-enabled by user dev feature)";
+                        };
+                      };
+                    };
+                  };
+
+                  k3s = lib.mkOption {
+                    description = "k3s Kubernetes cluster configuration";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkEnableOption "k3s Kubernetes cluster";
+
+                        role = lib.mkOption {
+                          type = lib.types.enum [ "server" "agent" ];
+                          default = "server";
+                          description = "k3s role - server or agent";
+                        };
+
+                        disableTraefik = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Disable built-in Traefik ingress controller";
+                        };
+
+                        apiPort = lib.mkOption {
+                          type = lib.types.port;
+                          default = 6443;
+                          description = "k3s API server port";
+                        };
+
+                        kubeconfigReadable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Make kubeconfig readable by non-root users";
+                        };
+                      };
+                    };
+                  };
+
+                  github-runner = lib.mkOption {
+                    description = "GitHub Actions Runner Controller stack (requires k3s)";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkEnableOption "GitHub Actions runners with k3s and ARC";
+
+                        enableGpu = lib.mkOption {
+                          type = lib.types.bool;
+                          default = false;
+                          description = "Enable GPU passthrough to runners (vendor auto-detected from hardware)";
+                        };
+
+                        useCustomImage = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Use custom GitHub runner image from GHCR";
+                        };
+
+                        repositories = lib.mkOption {
+                          type = lib.types.listOf lib.types.str;
+                          default = [ ];
+                          description = "List of repository names to create runner sets for";
+                        };
+                      };
+                    };
+                  };
+                };
+              };
+            };
+
+            # Features namespace (DEPRECATED - use top-level my.security, my.environment, etc instead)
             features = lib.mkOption {
               type = lib.types.submodule {
                 options = {
@@ -983,7 +1215,110 @@
                     description = "User-specific filesystem mounts";
                   };
 
-                  # Features namespace (per-user feature preferences)
+                  # User-level feature booleans (flattened from my.users.<name>.features)
+                  graphical = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Enable graphical environment for this user (auto-enables Hyprland + greetd system services)";
+                  };
+
+                  dev = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Enable development tools for this user (auto-enables Docker, binfmt)";
+                  };
+
+                  streaming = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Enable streaming tools for this user (OBS Studio, auto-enables v4l2loopback)";
+                  };
+
+                  ai = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Enable AI tools for this user (MCP servers, requires system-level my.ai.enable)";
+                  };
+
+                  # Webapps submodule (flattened from my.users.<name>.features.webapps)
+                  webapps = lib.mkOption {
+                    description = "Browser-based web applications (per-user)";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Enable webapps for this user (opinionated default: enabled)";
+                        };
+
+                        # Individual webapps - mynixos opinionated defaults
+                        gmail = lib.mkOption { type = lib.types.bool; default = true; description = "Gmail webapp"; };
+                        vscode = lib.mkOption { type = lib.types.bool; default = true; description = "VS Code webapp"; };
+                        github = lib.mkOption { type = lib.types.bool; default = true; description = "GitHub webapp"; };
+                        spotify = lib.mkOption { type = lib.types.bool; default = true; description = "Spotify webapp"; };
+                        discord = lib.mkOption { type = lib.types.bool; default = true; description = "Discord webapp"; };
+                        whatsapp = lib.mkOption { type = lib.types.bool; default = true; description = "WhatsApp webapp"; };
+                        youtube = lib.mkOption { type = lib.types.bool; default = true; description = "YouTube webapp"; };
+                        netflix = lib.mkOption { type = lib.types.bool; default = true; description = "Netflix webapp"; };
+                        twitch = lib.mkOption { type = lib.types.bool; default = true; description = "Twitch webapp"; };
+                        zoom = lib.mkOption { type = lib.types.bool; default = true; description = "Zoom webapp"; };
+                        chatgpt = lib.mkOption { type = lib.types.bool; default = true; description = "ChatGPT webapp"; };
+                        claude = lib.mkOption { type = lib.types.bool; default = true; description = "Claude webapp"; };
+                        grok = lib.mkOption { type = lib.types.bool; default = true; description = "Grok webapp"; };
+                        x = lib.mkOption { type = lib.types.bool; default = true; description = "X (Twitter) webapp"; };
+
+                        # Electron apps (disabled by default)
+                        slack = lib.mkOption { type = lib.types.bool; default = false; description = "Slack (Electron)"; };
+                        signal = lib.mkOption { type = lib.types.bool; default = false; description = "Signal (Electron)"; };
+
+                        # Password managers (disabled by default)
+                        onePassword = lib.mkOption { type = lib.types.bool; default = false; description = "1Password"; };
+                      };
+                    };
+                  };
+
+                  # Hyprland submodule (flattened from my.users.<name>.features.hyprland)
+                  hyprland = lib.mkOption {
+                    description = "User-specific Hyprland configuration";
+                    default = { };
+                    type = lib.types.submodule {
+                      options = {
+                        enable = lib.mkOption {
+                          type = lib.types.bool;
+                          default = true;
+                          description = "Enable user-specific Hyprland config (opinionated default: enabled when user graphical = true)";
+                        };
+
+                        input = {
+                          leftHanded = lib.mkOption {
+                            type = lib.types.bool;
+                            default = false;
+                            description = "Left-handed mouse mode (opinionated default: false)";
+                          };
+                          sensitivity = lib.mkOption {
+                            type = lib.types.float;
+                            default = 0.0;
+                            description = "Mouse sensitivity (opinionated default: 0.0, range: -1.0 to 1.0)";
+                          };
+                        };
+
+                        defaultBrowser = lib.mkOption {
+                          type = lib.types.str;
+                          default = "brave";
+                          description = "Default browser for Super+E keybind (opinionated default: brave)";
+                        };
+
+                        defaultTerminal = lib.mkOption {
+                          type = lib.types.str;
+                          default = "wezterm";
+                          description = "Default terminal for Super+T keybind (opinionated default: wezterm)";
+                        };
+                      };
+                    };
+                  };
+
+                  # Features namespace (DEPRECATED - use top-level user booleans and submodules instead)
                   features = lib.mkOption {
                     description = "User-level feature preferences";
                     default = { };
@@ -1503,51 +1838,6 @@
               };
               default = { };
               description = "Application configurations";
-            };
-
-            # Infrastructure namespace
-            infra = lib.mkOption {
-              type = lib.types.submodule {
-                options = {
-                  services = {
-                    k3s = lib.mkOption {
-                      description = "k3s Kubernetes cluster configuration";
-                      default = { };
-                      type = lib.types.submodule {
-                        options = {
-                          enable = lib.mkEnableOption "k3s Kubernetes cluster";
-
-                          role = lib.mkOption {
-                            type = lib.types.enum [ "server" "agent" ];
-                            default = "server";
-                            description = "k3s role - server or agent";
-                          };
-
-                          disableTraefik = lib.mkOption {
-                            type = lib.types.bool;
-                            default = true;
-                            description = "Disable built-in Traefik ingress controller";
-                          };
-
-                          apiPort = lib.mkOption {
-                            type = lib.types.port;
-                            default = 6443;
-                            description = "k3s API server port";
-                          };
-
-                          kubeconfigReadable = lib.mkOption {
-                            type = lib.types.bool;
-                            default = true;
-                            description = "Make kubeconfig readable by non-root users";
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-              default = { };
-              description = "Infrastructure services and applications";
             };
 
             # Storage namespace
