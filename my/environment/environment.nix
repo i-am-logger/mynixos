@@ -18,23 +18,24 @@ in
       {
         # Environment variables (from mynixos defaults in flake.nix)
         # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
+        # Note: BROWSER needs full path to binary for XDG to work correctly
         environment.variables = {
           EDITOR = "${cfg.editor}/bin/hx";
           VIEWER = "${cfg.editor}/bin/hx";
-          BROWSER = cfg.browser;
-          DEFAULT_BROWSER = cfg.browser;
+          BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+          DEFAULT_BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
         };
 
         environment.pathsToLink = [ "libexec" ];
-        environment.sessionVariables.DEFAULT_BROWSER = mkDefault cfg.browser;
+        environment.sessionVariables.DEFAULT_BROWSER = mkDefault "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
 
-        # XDG MIME defaults
+        # XDG MIME defaults - using .desktop file pattern
         xdg.mime.defaultApplications = mkDefault {
-          "text/html" = cfg.browser;
-          "x-scheme-handler/http" = cfg.browser;
-          "x-scheme-handler/https" = cfg.browser;
-          "x-scheme-handler/about" = cfg.browser;
-          "x-scheme-handler/unknown" = cfg.browser;
+          "text/html" = "${cfg.browser.pname or "brave"}-browser.desktop";
+          "x-scheme-handler/http" = "${cfg.browser.pname or "brave"}-browser.desktop";
+          "x-scheme-handler/https" = "${cfg.browser.pname or "brave"}-browser.desktop";
+          "x-scheme-handler/about" = "${cfg.browser.pname or "brave"}-browser.desktop";
+          "x-scheme-handler/unknown" = "${cfg.browser.pname or "brave"}-browser.desktop";
         };
       }
 
