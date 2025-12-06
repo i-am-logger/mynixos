@@ -24,9 +24,15 @@ in
         enable = true;
       };
 
-      services.displayManager.gdm = {
+      # Minimal display manager for Hyprland
+      services.greetd = {
         enable = true;
-        wayland = true;
+        settings = {
+          default_session = {
+            command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+            user = "greeter";
+          };
+        };
       };
 
       environment.systemPackages = with pkgs; [
