@@ -107,9 +107,9 @@
             ./my/users/users.nix
             ./my/users/defaults
             ./my/users/webapps/webapps.nix
-            ./my/users/streaming/streaming.nix
-            ./my/users/dev/development.nix
-            ./my/users/ai/ai.nix
+            ./my/streaming/streaming.nix
+            ./my/dev/development.nix
+            ./my/ai/ai.nix
 
             # Graphical
             ./my/graphical/graphical.nix
