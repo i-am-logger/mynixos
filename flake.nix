@@ -215,12 +215,6 @@
           ];
 
           options.my = {
-            # Hostname configuration (deprecated - use my.system.hostname instead)
-            hostname = lib.mkOption {
-              type = lib.types.str;
-              description = "System hostname";
-            };
-
             # System-level configuration
             system = lib.mkOption {
               description = "System-level configuration";
@@ -861,12 +855,6 @@
                     description = "Email for git, etc (required for git configuration)";
                   };
 
-                  githubUsername = lib.mkOption {
-                    type = lib.types.nullOr lib.types.str;
-                    default = null;
-                    description = "DEPRECATED: Use my.users.<name>.github.username instead. GitHub username for this user.";
-                  };
-
                   github = lib.mkOption {
                     description = "GitHub configuration for this user";
                     default = { };
@@ -905,18 +893,6 @@
                     type = lib.types.nullOr lib.types.str;
                     default = null;
                     description = "Hashed password for user account (if null, user must set password manually)";
-                  };
-
-                  editor = lib.mkOption {
-                    type = lib.types.nullOr lib.types.str;
-                    default = null;
-                    description = "Default editor command (e.g., 'hx', 'vim', 'nvim'). Defaults to 'hx' from mynixos. DEPRECATED: Use environment.editor instead.";
-                  };
-
-                  browser = lib.mkOption {
-                    type = lib.types.nullOr lib.types.str;
-                    default = null;
-                    description = "Default browser command (e.g., 'brave', 'firefox', 'chromium'). Defaults to 'brave' from mynixos. DEPRECATED: Use environment.browser instead.";
                   };
 
                   # User environment configuration (editor, browser packages)

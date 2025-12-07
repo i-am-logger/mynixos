@@ -7,12 +7,11 @@ let
 in
 {
   config = mkMerge [
-    # Hostname configuration (backwards compatible)
+    # Hostname configuration
     {
       networking.hostName = mkDefault (
         if cfg.hostname != null then cfg.hostname
-        else if config.my.hostname != null then config.my.hostname
-        else throw "Either my.system.hostname or my.hostname must be set"
+        else throw "my.system.hostname must be set"
       );
     }
 

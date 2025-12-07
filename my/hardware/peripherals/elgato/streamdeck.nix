@@ -31,16 +31,18 @@ in
     # Ensure the user is in the required groups
     users.groups.streamdeck = { };
 
-    # Add streamdeck-ui with Qt platform fixes (applied to all users)
+    # Add streamdeck-ui with Qt platform fixes (only for users with streaming enabled)
     home-manager.users = mapAttrs
-      (name: userCfg: {
-        home.packages = with pkgs; [
-          streamdeck-ui
-          # Qt platform dependencies
-          libsForQt5.qt5.qtwayland
-          qt6.qtwayland
-        ];
-      })
+      (name: userCfg:
+        mkIf (userCfg.graphical.streaming.enable or false) {
+          home.packages = with pkgs; [
+            streamdeck-ui
+            # Qt platform dependencies
+            libsForQt5.qt5.qtwayland
+            qt6.qtwayland
+          ];
+        }
+      )
       config.my.users;
 
     # Fix Qt platform plugin issues for streamdeck-ui

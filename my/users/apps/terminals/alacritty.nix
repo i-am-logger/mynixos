@@ -2,21 +2,20 @@
 
 with lib;
 
-let
-  cfg = config.my.apps.terminals;
-in
 {
-  config = mkIf cfg.alacritty {
+  config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
-        home.packages = with pkgs; [
-          alacritty
-        ];
+      (name: userCfg:
+        mkIf userCfg.apps.terminals.alacritty {
+          home.packages = with pkgs; [
+            alacritty
+          ];
 
-        programs.alacritty = {
-          enable = true;
-        };
-      })
+          programs.alacritty = {
+            enable = true;
+          };
+        }
+      )
       config.my.users;
   };
 }

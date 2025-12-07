@@ -9,8 +9,7 @@ let
   userRepositories = lib.flatten (
     lib.mapAttrsToList (username: userCfg:
       let
-        # Support both new github.username and deprecated githubUsername
-        githubUser = userCfg.github.username or userCfg.githubUsername or null;
+        githubUser = userCfg.github.username or null;
       in
       lib.optionals (githubUser != null) (
         map (repo: {
@@ -24,15 +23,14 @@ let
   # List of repositories to create runner sets for (combined from users and legacy cfg.repositories)
   repositories = (map (item: item.repo) userRepositories) ++ cfg.repositories;
 
-  # Get first user's GitHub username (personal data from my.users) - for legacy support
+  # Get first user's GitHub username (personal data from my.users)
   userNames = attrNames config.my.users;
   firstUser = if userNames != [ ] then head userNames else throw "No users configured in my.users";
-  # Support both new github.username and deprecated githubUsername for backward compatibility
   githubUsername =
     let
       firstUserCfg = config.my.users.${firstUser};
     in
-    firstUserCfg.github.username or firstUserCfg.githubUsername or (throw "github.username not set for user ${firstUser}");
+    firstUserCfg.github.username or (throw "github.username not set for user ${firstUser}");
 
   # Auto-detect GPU vendor from mynixos hardware configuration
   autoGpuVendor = config.my.hardware.gpu or null;

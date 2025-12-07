@@ -86,9 +86,10 @@ in
               "Media"
               "Code"
             ])
-            ++ (optionals (config.my.apps.browsers.firefox or false) [
+            # Always persist browser data (Firefox, etc.)
+            ++ [
               ".mozilla"
-            ])
+            ]
             ++ (optionals config.my.dev.enable [
               ".docker"
               ".npm"
