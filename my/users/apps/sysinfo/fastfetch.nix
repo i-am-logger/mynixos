@@ -104,6 +104,18 @@ in
                   "key": "\u001b[1mWM\u001b[0m      "
                 },
                 {
+                  "type": "de",
+                  "key": "\u001b[1mDE\u001b[0m      "
+                },
+                {
+                  "type": "wmtheme",
+                  "key": "\u001b[1mTheme\u001b[0m   "
+                },
+                {
+                  "type": "font",
+                  "key": "\u001b[1mFont\u001b[0m    "
+                },
+                {
                   "type": "terminal",
                   "key": "\u001b[1mTerminal\u001b[0m"
                 },
