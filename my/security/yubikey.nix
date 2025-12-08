@@ -24,21 +24,6 @@ in
             gopass-jsonapi # Browser integration
             pkgs.passExtensions.pass-import # Import from other password managers
 
-            # Create gpg-import-yubikey script
-            (pkgs.writeShellScriptBin "gpg-import-yubikey" ''
-              #!/usr/bin/env bash
-              echo "Importing YubiKey public keys..."
-
-              ${concatMapStringsSep "\n" (yk: ''
-                echo "Importing YubiKey ${yk.serial}..."
-                gpg --import ${yk.publicKeyPath}
-                echo "Setting trust level to ultimate for ${yk.keyId}..."
-                echo -e "trust\n5\ny\nsave" | gpg --command-fd 0 --edit-key ${yk.keyId}
-              '') userCfg.yubikeys}
-
-              echo "All YubiKey public keys imported and trusted!"
-            '')
-
             # Smart GPG wrapper that detects which YubiKey is available
             (pkgs.writeShellScriptBin "gpg-smart" ''
               #!/usr/bin/env bash
@@ -102,35 +87,44 @@ in
           ];
 
           # Automatically import YubiKey public keys on home-manager activation
-          # Using home.activation without lib.dag since it's not available in this context
-          home.file.".gnupg/import-yubikeys.sh" = {
+          home.activation.importYubikeyGpgKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
+            echo "Setting up YubiKey GPG keys..."
+
+            # Ensure GPG home directory exists
+            $DRY_RUN_CMD mkdir -p ~/.gnupg
+            $DRY_RUN_CMD chmod 700 ~/.gnupg
+
+            # Import current YubiKey keys non-interactively
+            ${concatMapStringsSep "\n" (yk: ''
+              if [ -f "${yk.publicKeyPath}" ]; then
+                echo "Importing public key for YubiKey ${yk.serial}..."
+                $DRY_RUN_CMD ${pkgs.gnupg}/bin/gpg --batch --import "${yk.publicKeyPath}" 2>/dev/null || true
+              fi
+            '') userCfg.yubikeys}
+
+            # Set trust non-interactively (using fingerprints)
+            ${concatMapStringsSep "\n" (yk: ''
+              echo "Setting trust for YubiKey ${yk.serial}..."
+              $DRY_RUN_CMD echo "${yk.fingerprint}:6:" | ${pkgs.gnupg}/bin/gpg --import-ownertrust 2>/dev/null || true
+            '') userCfg.yubikeys}
+
+            echo "YubiKey GPG keyring configured successfully"
+          '';
+
+          # Helper script for manual GPG key import
+          home.file.".local/bin/gpg-import-yubikey" = {
             text = ''
               #!/usr/bin/env bash
-              echo "Setting up YubiKey GPG keys..."
+              echo "Importing YubiKey public keys..."
 
-              # Delete any keys that are not our current YubiKeys
-              for key_id in $(${pkgs.gnupg}/bin/gpg --list-keys --with-colons 2>/dev/null | grep ^pub | cut -d: -f5); do
-                ${concatMapStringsSep "\n" (yk: ''
-                  if [[ "$key_id" == "${yk.keyId}" ]]; then
-                    continue
-                  fi
-                '') userCfg.yubikeys}
-                echo "Removing old key: $key_id"
-                fingerprint=$(${pkgs.gnupg}/bin/gpg --list-keys --with-colons "$key_id" 2>/dev/null | grep ^fpr | cut -d: -f10 | head -1)
-                ${pkgs.gnupg}/bin/gpg --batch --yes --delete-secret-and-public-keys "$fingerprint!" 2>/dev/null || true
-              done
-
-              # Import current YubiKey keys non-interactively
               ${concatMapStringsSep "\n" (yk: ''
-                ${pkgs.gnupg}/bin/gpg --batch --import ${yk.publicKeyPath} 2>/dev/null || true
+                echo "Importing YubiKey ${yk.serial}..."
+                gpg --import ${yk.publicKeyPath}
+                echo "Setting trust level to ultimate for ${yk.keyId}..."
+                echo -e "trust\n5\ny\nsave" | gpg --command-fd 0 --edit-key ${yk.keyId}
               '') userCfg.yubikeys}
 
-              # Set trust non-interactively (using fingerprints)
-              ${concatMapStringsSep "\n" (yk: ''
-                echo "${yk.fingerprint}:6:" | ${pkgs.gnupg}/bin/gpg --import-ownertrust 2>/dev/null || true
-              '') userCfg.yubikeys}
-
-              echo "YubiKey GPG keyring cleaned and configured"
+              echo "All YubiKey public keys imported and trusted!"
             '';
             executable = true;
           };
