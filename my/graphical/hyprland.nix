@@ -585,9 +585,7 @@ in
                 inherit (decorationBlur) enabled brightness size;
               };
 
-              shadow = {
-                color = "rgba(00000099)";
-              };
+              # Shadow color managed by stylix theming
             };
 
             # Window and layer rules
