@@ -13,8 +13,8 @@
         apps.dev.tools = {
           # Development tools
           direnv.enable = lib.mkDefault true;
-          devenv.enable = lib.mkDefault false;
-          vscode.enable = lib.mkDefault true;
+          devenv.enable = lib.mkDefault true;
+          vscode.enable = lib.mkDefault false;
           jq.enable = lib.mkDefault true;
           kdiff3.enable = lib.mkDefault false;
           githubDesktop.enable = lib.mkDefault false;
