@@ -3,14 +3,8 @@
 with lib;
 
 let
-  # Simple "my" ASCII logo for mynixos filled with snowflakes
-  mynixosLogo = pkgs.writeText "mynixos-logo.txt" ''
-       ____ ___  __  __
-      /❄__ `__ \/❄/❄/❄/
-     /❄/❄/❄/❄/❄/_/❄/
-    /_/❄/_/❄/_/\__, /
-              /____/
-  '';
+  # mynixos logo from assets directory
+  mynixosLogo = ../../../../assets/logos/mynixos.txt;
 in
 {
   config = {
