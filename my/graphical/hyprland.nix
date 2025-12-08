@@ -428,14 +428,9 @@ in
         in
         mkIf (userCfg.graphical.enable && userHyprland.enable) {
         # GTK configuration
+        # Stylix automatically sets gtk.theme.name and gtk.iconTheme.name
         gtk = {
           enable = true;
-          theme = {
-            name = "Stylix";
-          };
-          iconTheme = {
-            name = "Adwaita";
-          };
         };
 
         # Notification daemon with Stylix theming
