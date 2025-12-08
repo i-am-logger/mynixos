@@ -16,6 +16,10 @@ in
   config = mkIf cfg.enable (mkMerge [
     # Base system configuration
     {
+      # Distribution identity
+      system.nixos.distroId = "mynixos";
+      system.nixos.distroName = "mynixos";
+
       # Plymouth boot splash (opinionated)
       boot.plymouth = {
         enable = true;
