@@ -430,8 +430,12 @@ in
         # GTK configuration
         gtk = {
           enable = true;
-          # iconTheme = {
-          # };
+          theme = {
+            name = "Stylix";
+          };
+          iconTheme = {
+            name = "Adwaita";
+          };
         };
 
         # Notification daemon with Stylix theming
