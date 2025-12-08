@@ -87,29 +87,41 @@ in
           ];
 
           # Automatically import YubiKey public keys on home-manager activation
-          home.activation.importYubikeyGpgKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
-            echo "Setting up YubiKey GPG keys..."
+          # Using systemd service approach since lib.hm.dag is not available in this context
+          systemd.user.services.import-yubikey-gpg-keys = {
+            Unit = {
+              Description = "Import YubiKey GPG public keys";
+              After = [ "graphical-session.target" ];
+            };
+            Service = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              ExecStart = pkgs.writeShellScript "import-yubikey-keys" ''
+                echo "Setting up YubiKey GPG keys..."
 
-            # Ensure GPG home directory exists
-            $DRY_RUN_CMD mkdir -p ~/.gnupg
-            $DRY_RUN_CMD chmod 700 ~/.gnupg
+                # Ensure GPG home directory exists
+                mkdir -p ~/.gnupg
+                chmod 700 ~/.gnupg
 
-            # Import current YubiKey keys non-interactively
-            ${concatMapStringsSep "\n" (yk: ''
-              if [ -f "${yk.publicKeyPath}" ]; then
-                echo "Importing public key for YubiKey ${yk.serial}..."
-                $DRY_RUN_CMD ${pkgs.gnupg}/bin/gpg --batch --import "${yk.publicKeyPath}" 2>/dev/null || true
-              fi
-            '') userCfg.yubikeys}
+                # Import current YubiKey keys non-interactively
+                ${concatMapStringsSep "\n" (yk: ''
+                  if [ -f "${yk.publicKeyPath}" ]; then
+                    echo "Importing public key for YubiKey ${yk.serial}..."
+                    ${pkgs.gnupg}/bin/gpg --batch --import "${yk.publicKeyPath}" 2>/dev/null || true
+                  fi
+                '') userCfg.yubikeys}
 
-            # Set trust non-interactively (using fingerprints)
-            ${concatMapStringsSep "\n" (yk: ''
-              echo "Setting trust for YubiKey ${yk.serial}..."
-              $DRY_RUN_CMD echo "${yk.fingerprint}:6:" | ${pkgs.gnupg}/bin/gpg --import-ownertrust 2>/dev/null || true
-            '') userCfg.yubikeys}
+                # Set trust non-interactively (using fingerprints)
+                ${concatMapStringsSep "\n" (yk: ''
+                  echo "Setting trust for YubiKey ${yk.serial}..."
+                  echo "${yk.fingerprint}:6:" | ${pkgs.gnupg}/bin/gpg --import-ownertrust 2>/dev/null || true
+                '') userCfg.yubikeys}
 
-            echo "YubiKey GPG keyring configured successfully"
-          '';
+                echo "YubiKey GPG keyring configured successfully"
+              '';
+            };
+            Install.WantedBy = [ "default.target" ];
+          };
 
           # Helper script for manual GPG key import
           home.file.".local/bin/gpg-import-yubikey" = {
