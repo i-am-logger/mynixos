@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.my.users;
+  secretsCfg = config.my.secrets;
 
   # Collect all user mounts
   allMounts = flatten (mapAttrsToList
@@ -15,17 +16,52 @@ let
   # Only create users that have fullName defined (fully configured users)
   # Users with only mounts/email/yubikeys defined won't be created (they come from myLib.users)
   usersToCreate = filterAttrs (name: userCfg: userCfg.fullName or null != null) cfg;
+
+  # Get users that want sops-managed passwords
+  usersWithSopsPassword = filterAttrs
+    (name: userCfg: userCfg.secrets.hashedPassword or false)
+    usersToCreate;
+
+  # Get password file path for a user
+  # Priority: 1. hashedPasswordFile, 2. sops secret (if user.secrets.hashedPassword = true), 3. null (use hashedPassword)
+  getPasswordFile = name: userCfg:
+    if userCfg.hashedPasswordFile != null then
+      userCfg.hashedPasswordFile
+    else if secretsCfg.enable && (userCfg.secrets.hashedPassword or false) then
+      config.sops.secrets."users/${name}/password".path
+    else
+      null;
 in
 {
   config = mkMerge [
+    # Define sops secrets for user passwords when secrets are enabled and user opts in
+    (mkIf (secretsCfg.enable && usersWithSopsPassword != { }) {
+      sops.secrets = listToAttrs (
+        map (name: {
+          name = "users/${name}/password";
+          value = {
+            neededForUsers = true;
+          };
+        }) (attrNames usersWithSopsPassword)
+      );
+    })
+
     # Generate NixOS users from my.features.users (only those with fullName)
     (mkIf (usersToCreate != { }) {
       users.users = mapAttrs
-        (name: userCfg: {
-          isNormalUser = true;
-          description = userCfg.description or userCfg.fullName;
-          hashedPassword = userCfg.hashedPassword;
-          home = "/home/${name}";
+        (name: userCfg:
+          let
+            passwordFile = getPasswordFile name userCfg;
+          in
+          {
+            isNormalUser = true;
+            description = userCfg.description or userCfg.fullName;
+            # Prefer hashedPasswordFile (including sops) over hashedPassword for security
+            hashedPasswordFile = passwordFile;
+            hashedPassword = if passwordFile == null
+              then userCfg.hashedPassword
+              else null;
+            home = "/home/${name}";
           group = name; # Create a group with the same name as the user
           extraGroups = [ "wheel" "networkmanager" ]; # Base groups, features add more
           shell =

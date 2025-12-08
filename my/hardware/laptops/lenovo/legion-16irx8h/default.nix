@@ -9,11 +9,18 @@ in
   ];
 
   config = lib.mkMerge [
-    # Auto-enable storage modules based on hardware (unconditional to avoid recursion)
+    # Auto-enable hardware modules based on laptop options (unconditional to avoid recursion)
     {
-      # This laptop has NVMe storage, enable SSD optimizations
-      my.hardware.storage.nvme.enable = lib.mkIf cfg.enable (lib.mkDefault true);
-      my.hardware.storage.ssd.enable = lib.mkIf cfg.enable (lib.mkDefault true);
+      # Storage options
+      my.hardware.storage.nvme.enable = lib.mkIf cfg.enable cfg.storage.nvme.enable;
+      my.hardware.storage.usb.enable = lib.mkIf cfg.enable cfg.storage.usb.enable;
+      # Auto-enable SSD optimizations when NVMe storage is enabled
+      my.hardware.storage.ssd.enable = lib.mkIf cfg.enable (lib.mkDefault cfg.storage.nvme.enable);
+
+      # USB options
+      my.hardware.usb.xhci.enable = lib.mkIf cfg.enable cfg.usb.xhci.enable;
+      my.hardware.usb.thunderbolt.enable = lib.mkIf cfg.enable cfg.usb.thunderbolt.enable;
+      my.hardware.usb.hid.enable = lib.mkIf cfg.enable cfg.usb.hid.enable;
     }
 
     (lib.mkIf cfg.enable (lib.mkMerge [
@@ -22,12 +29,10 @@ in
 
       # Additional laptop configuration
       {
-      # Boot configuration for this laptop hardware
+      # Kernel modules for this laptop hardware
+      # Note: Storage and USB modules are now handled via my.hardware.* options above
       boot = {
-        initrd = {
-          availableKernelModules = [ "xhci_pci" "nvme" "thunderbolt" "usbhid" "usb_storage" "sd_mod" ];
-          kernelModules = [ ];
-        };
+        initrd.kernelModules = [ ];
         kernelModules = [ "kvm-intel" "i915" ]; # i915 for Intel iGPU in hybrid mode
         extraModulePackages = [ ];
       };

@@ -6,27 +6,28 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.shells.bash {
+        let
+          cfg = userCfg.apps.terminal.shells.bash;
+        in
+        mkIf (cfg.enable or false) {
           programs.bash = {
             enable = true;
             enableCompletion = true;
 
-            # Basic bash configuration
-            historyControl = [ "ignoredups" "ignorespace" ];
+            # Configuration from user options
+            historyControl = cfg.historyControl;
             historyFile = "$HOME/.bash_history";
-            historyFileSize = 10000;
-            historySize = 10000;
-
-            shellOptions = [
-              "histappend"
-              "checkwinsize"
-              "extglob"
-              "globstar"
-              "checkjobs"
-            ];
+            historyFileSize = cfg.historyFileSize;
+            historySize = cfg.historySize;
+            shellOptions = cfg.shellOptions;
           };
-        }
-      )
+
+          # fzf integration for enhanced history search (Ctrl+R, Ctrl+T, Alt+C)
+          programs.fzf = {
+            enable = true;
+            enableBashIntegration = true;
+          };
+        })
       config.my.users;
   };
 }

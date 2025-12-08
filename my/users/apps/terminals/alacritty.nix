@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.terminals.alacritty {
+        {
           home.packages = with pkgs; [
             alacritty
           ];
@@ -14,8 +14,7 @@ with lib;
           programs.alacritty = {
             enable = true;
           };
-        }
-      )
+        })
       config.my.users;
   };
 }

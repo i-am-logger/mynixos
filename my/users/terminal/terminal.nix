@@ -17,8 +17,8 @@ in
         mkIf (termCfg.enable or false) (mkMerge [
           # Multiplexer configuration
           {
-            programs.zellij.enable = (termCfg.multiplexer or "zellij") == "zellij";
-            programs.tmux.enable = (termCfg.multiplexer or "zellij") == "tmux";
+            programs.zellij.enable = mkDefault ((termCfg.multiplexer or "zellij") == "zellij");
+            # Don't set tmux.enable here - let tmux.nix handle it when multiplexer == "tmux"
             # screen doesn't have home-manager module, add to packages if selected
             home.packages = with pkgs;
               (optional ((termCfg.multiplexer or "zellij") == "screen") screen);

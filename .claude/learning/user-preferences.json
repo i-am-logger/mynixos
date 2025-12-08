@@ -1,8 +1,9 @@
 {
   "user_id": "logger",
-  "last_updated": "2025-12-06T00:00:00Z",
+  "last_updated": "2025-12-07T00:00:00Z",
   "confidence_threshold": 0.75,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "session_notes": "Post-mortem analysis after critical system failure - validated actual preferences under real stress"
 
   "api_design": {
     "nesting_preference": {
@@ -157,15 +158,72 @@
     }
   },
 
+  "failure_response": {
+    "error_recovery_approach": {
+      "preference": "swift_rollback_then_thorough_analysis",
+      "confidence": 0.95,
+      "observed_behavior": "When system became unbootable, user rolled back immediately rather than debugging",
+      "learned_from": ["2025-12-07 critical failure response"],
+      "rationale": "Get system working first, then understand root causes"
+    },
+    "validation_strictness": {
+      "preference": "very_high",
+      "confidence": 1.0,
+      "observed_behavior": "Swift rollback suggests user expects validated system, not best-effort attempts",
+      "learned_from": ["2025-12-07 CLAUDE.md: 'Always run test before switch'"],
+      "rationale": "Never deploy unvalidated changes to production systems"
+    },
+    "learning_from_failure": {
+      "preference": "detailed_post_mortem_analysis",
+      "confidence": 0.95,
+      "observed_behavior": "Requested comprehensive learning system documentation after failure",
+      "learned_from": ["2025-12-07 cybernetic system request"],
+      "rationale": "Failures are learning opportunities when properly analyzed"
+    },
+    "time_to_investigate": {
+      "preference": "understand_before_recommit",
+      "confidence": 0.9,
+      "observed_behavior": "Asked for preventive measures and learnings before resuming work",
+      "learned_from": ["2025-12-07 request for post-mortem"],
+      "rationale": "Prevention more important than speed in recovery"
+    }
+  },
+
+  "system_preferences": {
+    "user_input": {
+      "leftHanded": {
+        "value": true,
+        "confidence": 1.0,
+        "learned_from": ["observed in /etc/nixos/users/logger/default.nix", "confirmed by preference preservation request"],
+        "critical": true
+      },
+      "mouse_sensitivity": {
+        "value": -0.3,
+        "confidence": 1.0,
+        "learned_from": ["observed in /etc/nixos/users/logger/default.nix", "noted as user preference in failure analysis"],
+        "critical": true
+      }
+    },
+    "environment_preferences": {
+      "pattern": "use_environment_api_as_single_source_of_truth",
+      "confidence": 1.0,
+      "learned_from": ["2025-12-07 critical failure - environment API disconnect was a root cause"],
+      "requirement": "All app modules must respect my.users.<name>.environment.BROWSER/TERMINAL/EDITOR"
+    }
+  },
+
   "meta": {
-    "learning_sessions": 1,
-    "decisions_observed": 5,
-    "patterns_identified": 12,
+    "learning_sessions": 2,
+    "decisions_observed": 19,
+    "patterns_identified": 17,
+    "critical_failures_analyzed": 1,
+    "system_preferences_confirmed": 2,
     "next_learning_goals": [
-      "Learn module organization preferences",
-      "Learn error handling patterns",
-      "Learn testing depth preferences",
-      "Learn commit message style patterns"
-    ]
+      "Validate breaking change detection preferences",
+      "Confirm preferred recovery procedure for future failures",
+      "Learn post-mortem analysis depth preferences",
+      "Learn commit message style for critical fixes"
+    ],
+    "confidence_in_current_profile": 0.92
   }
 }

@@ -28,5 +28,12 @@ in
         RestartSec = "5s";
       };
     };
+
+    # Persistence configuration
+    my.system.persistence.features = {
+      systemDirectories = [
+        "/var/lib/bluetooth"
+      ];
+    };
   };
 }

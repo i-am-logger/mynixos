@@ -2,11 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps;
-in
 {
-  config = mkIf cfg.git {
+  # Git configuration - always enabled for all users
+  # This is opinionated: git is essential for development
+  config = {
     home-manager.users = mapAttrs
       (name: userCfg: {
         home.packages = with pkgs; [

@@ -74,12 +74,11 @@ in
       };
 
       # Ollama service with ROCm acceleration
+      # Uses DynamicUser (nixpkgs default) - do NOT set user/group manually
       services.ollama = {
         enable = true;
-        package = pkgs.ollama-rocm;
-        acceleration = "rocm";
-        user = "ollama";
-        group = "ollama";
+        package = pkgs.ollama-rocm; # ROCm acceleration via package selection
+        # user/group intentionally omitted - nixpkgs uses DynamicUser by default
         home = "/var/lib/ollama";
         models = "/var/lib/ollama/models";
         loadModels = [
@@ -88,15 +87,7 @@ in
         ];
       };
 
-      # Ensure ollama user/group exist
-      users.users.ollama = {
-        isSystemUser = true;
-        group = "ollama";
-        home = "/var/lib/ollama";
-        createHome = true;
-      };
-
-      users.groups.ollama = { };
+      # DynamicUser handles user/group automatically - no manual creation needed
 
       # Override systemd service to add ROCm environment variables
       systemd.services.ollama.environment = {
@@ -117,6 +108,17 @@ in
             home.packages = lib.attrValues mcp-packages;
           })
         config.my.users;
+    }
+
+    # Persistence configuration
+    {
+      my.system.persistence.features = {
+        systemDirectories = [
+          # DynamicUser manages /var/lib/private/ollama internally
+          # We persist the parent directory with root ownership
+          "/var/lib/private"
+        ];
+      };
     }
   ]);
 }

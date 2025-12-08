@@ -5,8 +5,9 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: mkIf userCfg.apps.media.audioUtils {
-        home.packages = with pkgs; [
+      (name: userCfg:
+        mkIf (userCfg.apps.media.audioUtils.enable or false) {
+          home.packages = with pkgs; [
           # Audio utilities
           pavucontrol
           pamixer

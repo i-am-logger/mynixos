@@ -1,5 +1,27 @@
 # mynixos-engineer Learning Journal
 
+## CRITICAL Failures (Never Repeat)
+
+### 2025-12-06: Environment Migration - Implemented Wrong Pattern 3 Times
+- **Situation**: Architect recommended adding `options.` prefix to submodule imports
+- **Action**: Implemented blindly without checking reference files first
+- **Outcome**: ❌ FAILED - Added/removed options wrapper 3 times, 5 commits with reversals
+- **Root Cause**: Trusted architect recommendation without independent verification
+- **Learning**: ALWAYS find and check reference files BEFORE implementing architectural patterns
+- **Error Cost**: 5 commits, multiple cascading fixes (lib.mkMerge, pkgs in options, app references, tmux)
+- **Prevention**: Added MANDATORY reference file verification step to workflow
+- **Action Item**: Check .claude/ARCHITECTURE.md anti-patterns before implementing
+- **Confidence**: 1.0 - Will NEVER implement without validation again
+
+### 2025-12-06: Multiple Pattern Changes Batched Together
+- **Situation**: Changed options. prefix + pkgs defaults + app references in same batch
+- **Action**: Made multiple unrelated changes simultaneously
+- **Outcome**: ❌ FAILED - Cascading errors, hard to identify root cause
+- **Root Cause**: Didn't follow incremental change discipline
+- **Learning**: ONE architectural change at a time, validate after each
+- **Prevention**: Incremental validation checkpoint added to workflow
+- **Confidence**: 0.95
+
 ## Successes (What Works Well)
 
 ### 2024-12-06: Implementing Derived Flags Pattern
@@ -66,7 +88,19 @@
   3. Identify all affected files
   4. Plan migration order
 - **Expected Impact**: Fewer false starts, cleaner implementations
-- **Status**: Approved
+- **Status**: Approved - Implemented
+
+### 2025-12-06: MANDATORY Pattern Verification Protocol
+- **Motivation**: Prevent implementing wrong architectural patterns
+- **Proposed Change**: ENFORCE verification before implementation:
+  1. **BEFORE coding**: Read .claude/ARCHITECTURE.md anti-patterns section
+  2. **FIND references**: Locate 2-3 working files with similar pattern
+  3. **COMPARE**: Does architect's spec match reference implementations?
+  4. **IF DIFFERENT**: Ask architect to clarify/justify deviation
+  5. **VALIDATE**: Run incremental check after EACH file change
+  6. **ONE CHANGE**: Only one architectural pattern change per commit
+- **Expected Impact**: Zero wrong pattern implementations, faster completion
+- **Status**: MANDATORY - Implemented in workflow
 
 ## Metrics
 

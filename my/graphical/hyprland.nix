@@ -47,16 +47,15 @@ let
     # "waybar &"  # Backup option if systemd service doesn't work
   ];
 
-  # mynixos opinionated defaults for Hyprland
+  # mynixos opinionated defaults for Hyprland input settings
+  # Note: browser/terminal come from environment API (userCfg.environment.BROWSER/TERMINAL)
   defaults = {
-    browser = "brave";
-    terminal = "wezterm";
     leftHanded = false;
     sensitivity = 0.0;
   };
 
-  # Bindings function (takes user config as parameter)
-  mkBindings = userHyprland: {
+  # Bindings function - takes user hyprland config and environment-derived commands
+  mkBindings = { userHyprland, browserCmd, terminalCmd }: {
     # MAINMOD
     "$mainMod" = "SUPER";
 
@@ -64,7 +63,7 @@ let
     bind = [
       "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
       "$mainMod SHIFT, Space, exec, walker --modules ssh -w 1000 -h 700"
-      "$mainMod, E, exec, ${userHyprland.defaultBrowser or defaults.browser}"
+      "$mainMod, E, exec, ${browserCmd}"
       "$mainMod SHIFT, E, exec, google-chrome-stable"
       "SHIFT, Print, exec, grimblast save area - | swappy -f -"
       ", Print, exec, grimblast --notify copy area"
@@ -83,7 +82,7 @@ let
       "$mainMod, semicolon, exec, walker -p 'Emojis… (type : then emoji name)' -w 1000 -h 700 -q ':'"
 
       # general bindings
-      "$mainMod, T, exec, ${userHyprland.defaultTerminal or defaults.terminal}"
+      "$mainMod, T, exec, ${terminalCmd}"
       "$mainMod, Q, killactive,"
       "$mainMod, Y, togglefloating,"
       "$mainMod, F, fullscreen"
@@ -216,6 +215,8 @@ let
     };
   };
 
+  # Decoration settings for Hyprland 0.51+
+  # blur must be nested under decoration, not at top level
   decorations = {
     active_opacity = 1.0;
     inactive_opacity = 1.0;
@@ -223,12 +224,15 @@ let
     rounding = 8;
     dim_inactive = true;
     dim_strength = 0.3; # 0.0 ~ 1.0
-    blur = {
-      enabled = true;
-      brightness = 0.7;
-      # contrast = 2.0
-      size = 3;
-    };
+    # Note: blur is defined here but home-manager may flatten it
+    # See decorationBlur below for workaround
+  };
+
+  # Separate blur config for explicit nesting
+  decorationBlur = {
+    enabled = true;
+    brightness = 0.7;
+    size = 3;
   };
 
   environment = {
@@ -288,7 +292,7 @@ let
     #kb_rules =
     #repeat_rate = 30
     repeat_delay = 200;
-    left_handed = userHyprland.input.leftHanded or defaults.leftHanded;
+    left_handed = userHyprland.leftHanded or defaults.leftHanded;
     #follow_mouse = 2 # 0|1|2|3
     float_switch_override_focus = 2;
     numlock_by_default = "off";
@@ -302,7 +306,7 @@ let
       scroll_factor = 0.3;
     };
 
-    sensitivity = userHyprland.input.sensitivity or defaults.sensitivity;
+    sensitivity = userHyprland.sensitivity or defaults.sensitivity;
   };
 
   layouts = {
@@ -404,9 +408,25 @@ in
       (name: userCfg:
         let
           # Get user-level hyprland config (with mynixos opinionated defaults)
-          userHyprland = userCfg.hyprland or { };
+          userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
+
+          # Get browser/terminal from environment API (single source of truth)
+          browserApp = userCfg.environment.BROWSER or null;
+          terminalApp = userCfg.environment.TERMINAL or null;
+
+          # Derive command paths from packages
+          # Falls back to opinionated defaults if environment not set
+          browserCmd =
+            if browserApp != null && (browserApp.enable or false)
+            then browserApp.package.meta.mainProgram or browserApp.package.pname or "brave"
+            else "brave";
+
+          terminalCmd =
+            if terminalApp != null && (terminalApp.enable or false)
+            then terminalApp.package.meta.mainProgram or terminalApp.package.pname or "wezterm"
+            else "wezterm";
         in
-        mkIf userHyprland.enable {
+        mkIf (userCfg.graphical.enable && userHyprland.enable) {
         # GTK configuration
         gtk = {
           enable = true;
@@ -532,21 +552,54 @@ in
           xwayland = {
             enable = true;
           };
-          settings = lib.mkMerge [
-            { inherit (general) gaps_in gaps_out border_size layout; }
-            { inherit group; }
-            { inherit layerrule; }
-            { inherit (decorations) active_opacity inactive_opacity fullscreen_opacity rounding dim_inactive dim_strength blur; }
-            { inherit (environment) monitor env; }
-            { inherit gestures; }
-            { input = mkInput userHyprland; }
-            { inherit (layouts) dwindle master; }
-            { inherit misc; }
-            { inherit (windowRules) windowrule windowrulev2; }
-            { inherit animations; }
-            { exec-once = autostart; }
-            (mkBindings userHyprland)
-          ];
+          settings = {
+            # General settings - nested under general block
+            general = {
+              inherit (general) gaps_in gaps_out border_size layout;
+            };
+
+            # Input settings
+            input = mkInput userHyprland;
+
+            # Layouts
+            inherit (layouts) dwindle master;
+
+            # Misc
+            inherit misc;
+
+            # Groups
+            inherit group;
+
+            # Gestures
+            inherit gestures;
+
+            # Animations
+            inherit animations;
+
+            # Decoration - properly structured for Hyprland 0.51+
+            # This merges with stylix's decoration settings
+            decoration = {
+              inherit (decorations) active_opacity inactive_opacity fullscreen_opacity rounding dim_inactive dim_strength;
+
+              blur = {
+                inherit (decorationBlur) enabled brightness size;
+              };
+
+              shadow = {
+                color = "rgba(00000099)";
+              };
+            };
+
+            # Window and layer rules
+            inherit layerrule;
+            inherit (windowRules) windowrule windowrulev2;
+
+            # Environment
+            inherit (environment) monitor env;
+
+            # Autostart
+            exec-once = autostart;
+          } // (mkBindings { inherit userHyprland browserCmd terminalCmd; });
         };
       }) # End mkIf userHyprland.enable
       config.my.users;

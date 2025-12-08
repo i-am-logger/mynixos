@@ -7,7 +7,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.fileUtils.lsd {
+        mkIf (userCfg.apps.terminal.fileUtils.lsd.enable or false) {
           programs.lsd = {
             enable = true;
             settings = {
@@ -30,8 +30,7 @@ with lib;
               blocks = [ "permission" "user" "group" "size" "date" "name" ];
             };
           };
-        }
-      )
+        })
       config.my.users;
   };
 }

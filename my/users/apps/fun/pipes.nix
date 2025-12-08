@@ -5,13 +5,14 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: mkIf userCfg.apps.fun.pipes {
-        home.packages = with pkgs; [
-          pipes
-          neo
-          asciiquarium
-        ];
-      })
+      (name: userCfg:
+        mkIf (userCfg.apps.terminal.fun.pipes.enable or false) {
+          home.packages = with pkgs; [
+            pipes
+            neo
+            asciiquarium
+          ];
+        })
       config.my.users;
   };
 }

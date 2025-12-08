@@ -81,6 +81,27 @@ in
       };
 
       # PAM U2F configuration for yubikey users
+      # Generate u2f_keys file from user yubikey data
+      # Format: username:keyHandle1,publicKey1,algorithm,flags:keyHandle2,publicKey2,algorithm,flags
+      # U2F keys must be registered using: pamu2fcfg -u <username>
+      # See: https://developers.yubico.com/pam-u2f/
+
+      # Create u2f_keys file in nix store from user configurations
+      environment.etc."u2f_keys".text = lib.concatStringsSep "\n" (
+        lib.filter (line: line != "") (
+          lib.mapAttrsToList
+            (username: userCfg:
+              if (length userCfg.yubikeys) > 0
+              then "${username}:${lib.concatMapStringsSep ":" (yk:
+                # Format: keyHandle,publicKey,algorithm,flags
+                "${yk.u2fKeyHandle},${yk.u2fPublicKey},${yk.u2fAlgorithm},${yk.u2fFlags}"
+              ) userCfg.yubikeys}"
+              else ""
+            )
+            (lib.filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users)
+        )
+      );
+
       security.pam = {
         services = {
           login.u2fAuth = true;
@@ -95,12 +116,12 @@ in
           enable = true;
           control = "sufficient";
           settings = {
+            # Point to nix-managed u2f keys file in /etc
+            authfile = "/etc/u2f_keys";
             cue = true;
             interactive = true;
-            max_devices = 2;
             origin = "pam://";
             appid = "pam://";
-            authpending_file = "/var/run/user/%i/pam-u2f-authpending";
           };
         };
       };
@@ -150,7 +171,7 @@ in
       ];
 
       security.auditd.enable = true;
-      security.audit.enable = true;
+      security.audit.enable = "lock";
       security.audit.rules = [
         # Root executions (all architectures)
         "-a exit,always -F arch=b64 -F euid=0 -S execve -k root_commands"
@@ -200,9 +221,7 @@ in
         "-w /var/run/utmp -p wa -k session"
         "-w /var/log/wtmp -p wa -k session"
         "-w /var/log/btmp -p wa -k session"
-
-        # Make configuration immutable (must be last)
-        "-e 2"
+        # Note: -e 2 (immutable) is added automatically by NixOS when enable = "lock"
       ];
 
       # Disable filter plugin to avoid "line too long" error

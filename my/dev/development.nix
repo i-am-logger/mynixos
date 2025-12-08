@@ -64,5 +64,23 @@ in
         };
       };
     })
+
+    # Persistence configuration
+    (mkIf config.my.dev.enable {
+      my.system.persistence.features = {
+        systemDirectories = [
+          "/var/lib/docker"
+          "/var/lib/containers"
+        ];
+        userDirectories = [
+          ".docker"
+          ".npm"
+          ".cargo"
+          ".rustup"
+          ".gradle"
+          ".m2"
+        ];
+      };
+    })
   ];
 }

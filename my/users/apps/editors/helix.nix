@@ -6,7 +6,19 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.editors.helix {
+        let
+          editor = userCfg.environment.EDITOR;
+          isGraphical = userCfg.graphical.enable or false;
+          # Enable helix when:
+          # 1. User explicitly set EDITOR to helix, OR
+          # 2. User has graphical.enable = true AND didn't set EDITOR (opinionated default)
+          hasHelix =
+            if editor != null then
+              editor.enable && (editor.package.pname or "") == "helix"
+            else
+              isGraphical; # Opinionated default: helix when graphical enabled and no editor specified
+        in
+        mkIf hasHelix {
           home.packages = with pkgs; [
             helix
             alejandra

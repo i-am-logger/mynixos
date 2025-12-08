@@ -2,6 +2,13 @@
 
 {
   # UEFI boot configuration for Lenovo Legion Pro 7 16IRX8H
+  # Kernel modules are now handled by hardware options:
+  # - my.hardware.storage.nvme (nvme)
+  # - my.hardware.storage.usb (usb_storage, sd_mod)
+  # - my.hardware.usb.xhci (xhci_pci)
+  # - my.hardware.usb.thunderbolt (thunderbolt)
+  # - my.hardware.usb.hid (usbhid)
+  # These are enabled via laptop options in default.nix
 
   # Bootloader - GRUB for EFI (overrides systemd-boot from common modules)
   boot.loader.grub = {
@@ -17,18 +24,6 @@
 
   # Use latest kernel (can be overridden)
   boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
-
-  # Hardware detected kernel modules
-  boot.initrd.availableKernelModules = lib.mkDefault [
-    "xhci_pci"
-    "nvme"
-    "thunderbolt"
-    "usbhid"
-    "usb_storage"
-    "sd_mod"
-  ];
-
-  boot.extraModulePackages = lib.mkDefault [ ];
 
   # Mask audit-rules service (cosmetic fix for this hardware)
   # Rules are loaded early via kernel cmdline

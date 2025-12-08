@@ -36,7 +36,13 @@ graph TB
     AskUser --> RecordDecision[Record Decision to Twin]
     RecordDecision --> PlanAgents
 
-    PlanAgents --> IdentifyParallel[Identify Parallel Tasks]
+    PlanAgents --> ArchitecturalChange{Architectural Change?}
+    ArchitecturalChange --> |Yes| SpawnExplorer[Spawn Explorer: Find Reference Patterns]
+    ArchitecturalChange --> |No| IdentifyParallel[Identify Parallel Tasks]
+
+    SpawnExplorer --> ValidatePattern[Validate Pattern with References]
+    ValidatePattern --> IdentifyParallel
+
     IdentifyParallel --> SpawnAgents[Spawn Agents]
 
     SpawnAgents --> MonitorExecution[Monitor Agent Execution]
@@ -275,7 +281,18 @@ graph TB
     LoadArchitecture --> AnalyzeRequirement[Analyze Requirement]
     AnalyzeRequirement --> SearchPatterns[Search Pattern Library]
 
-    SearchPatterns --> IdentifyApproaches[Identify Possible Approaches]
+    %% CRITICAL: Pattern validation step added after environment-migration failure
+    SearchPatterns --> SpawnExplorer[Spawn Explorer: Find Reference Files]
+    SpawnExplorer --> ComparePatterns[Compare Proposed vs Reference]
+    ComparePatterns --> PatternsMatch{Patterns Match?}
+
+    PatternsMatch --> |No - New Pattern| ValidateNewPattern[Validate Why Different]
+    PatternsMatch --> |Yes - Proven Pattern| IdentifyApproaches[Identify Possible Approaches]
+
+    ValidateNewPattern --> SafeToDeviate{Safe to Deviate?}
+    SafeToDeviate --> |Yes| IdentifyApproaches
+    SafeToDeviate --> |No| SearchPatterns
+
     IdentifyApproaches --> QueryTwin{Query Twin for Preferences}
 
     QueryTwin --> |High Confidence| ApplyPreference[Apply User Preference]
@@ -295,10 +312,17 @@ graph TB
 
     DesignAPI --> ValidateAgainstPrinciples{Follows Principles?}
     ValidateAgainstPrinciples --> |No| IdentifyViolation[Identify Violation]
-    ValidateAgainstPrinciples --> |Yes| DocumentDesign[Document Design]
+    ValidateAgainstPrinciples --> |Yes| CheckArchitectureMd[Check ARCHITECTURE.md Anti-Patterns]
 
     IdentifyViolation --> Redesign[Redesign Solution]
     Redesign --> DesignAPI
+
+    %% CRITICAL: Anti-pattern check added
+    CheckArchitectureMd --> HasAntiPattern{Has Known Anti-Pattern?}
+    HasAntiPattern --> |Yes| FixAntiPattern[Fix Anti-Pattern]
+    HasAntiPattern --> |No| DocumentDesign[Document Design]
+
+    FixAntiPattern --> DesignAPI
 
     DocumentDesign --> SpecifyChanges[Specify Required Changes]
     SpecifyChanges --> DefineMigration[Define Migration Path]
@@ -374,17 +398,27 @@ Implements features, fixes bugs, writes Nix modules.
 
 ```mermaid
 graph TB
-    Start[Design Received] --> QueryTwin[Query Twin for Code Style]
+    Start[Design Received] --> CheckArchitectureMd[Check ARCHITECTURE.md]
+    CheckArchitectureMd --> QueryTwin[Query Twin for Code Style]
     QueryTwin --> LoadModules[Load Existing Modules]
 
     LoadModules --> ParseDesign[Parse Design Specification]
     ParseDesign --> IdentifyFiles[Identify Files to Modify]
 
-    IdentifyFiles --> PlanImplementation[Plan Implementation Steps]
+    %% CRITICAL: Pattern verification before implementation
+    IdentifyFiles --> FindReferenceFiles[Find Reference Files with Similar Pattern]
+    FindReferenceFiles --> ComparePatterns[Compare Design vs Reference]
+    ComparePatterns --> PatternConfirmed{Pattern Confirmed?}
+
+    PatternConfirmed --> |No - Unclear| AskArchitect[Ask Architect to Clarify Pattern]
+    PatternConfirmed --> |Yes| PlanImplementation[Plan Implementation Steps]
+
+    AskArchitect --> PlanImplementation
     PlanImplementation --> QueryTwinPatterns[Query Twin for Patterns]
 
     QueryTwinPatterns --> ImplementChanges[Implement Changes]
 
+    %% CRITICAL: Incremental implementation - one file at a time
     ImplementChanges --> ForEachFile{More Files?}
     ForEachFile --> |Yes| ReadFile[Read File]
     ForEachFile --> |No| FormatCode[Format with nix fmt]
@@ -393,7 +427,17 @@ graph TB
     ApplyChanges --> VerifySyntax{Syntax Valid?}
 
     VerifySyntax --> |No| AnalyzeSyntaxError[Analyze Syntax Error]
-    VerifySyntax --> |Yes| ImplementChanges
+    VerifySyntax --> |Yes| IncrementalCheck[Run Incremental Check]
+
+    %% CRITICAL: Validate after EACH file change
+    IncrementalCheck --> CheckPassed{Check Passed?}
+    CheckPassed --> |No| RevertChange[Revert Change]
+    CheckPassed --> |Yes| ImplementChanges
+
+    RevertChange --> AnalyzeWhatWentWrong[Analyze What Went Wrong]
+    AnalyzeWhatWentWrong --> LearnFromMistake[Learn From Mistake]
+    LearnFromMistake --> AdjustApproach[Adjust Approach]
+    AdjustApproach --> ApplyChanges
 
     AnalyzeSyntaxError --> LearnError[Learn Error Pattern]
     LearnError --> FixSyntax[Fix Syntax]

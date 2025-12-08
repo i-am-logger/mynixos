@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.fileManagers.mc {
+        mkIf (userCfg.apps.terminal.fileManagers.mc.enable or false) {
           home.packages = with pkgs; [
             mc
           ];
@@ -17,8 +17,7 @@ with lib;
           #   source = ./config;  # Adjust path to your mc config location
           #   recursive = true;
           # };
-        }
-      )
+        })
       config.my.users;
   };
 }

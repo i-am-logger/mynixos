@@ -7,7 +7,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.sysinfo.btop {
+        mkIf (userCfg.apps.terminal.sysinfo.btop.enable or false) {
           programs.btop = {
             enable = true;
             settings = {
@@ -19,8 +19,7 @@ with lib;
               cudaSupport = true;
             };
           };
-        }
-      )
+        })
       config.my.users;
   };
 }

@@ -2,12 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(fastfetch:*)",
-      "Read(//nix/store/**)",
-      "Bash(nix-shell -p jp2a --run \"jp2a --width=40 /home/logger/Media/Pictures/logger.jpg\")",
+      "Bash(git:*)",
+      "Bash(nix:*)",
       "Bash(nix-shell:*)",
-      "WebSearch"
+      "Bash(nixos-rebuild:*)",
+      "WebSearch",
+      "Read(//etc/nixos/**)",
+      "Read(//home/logger/Code/github/logger/mynixos)",
+      "Read(//home/logger/Code/github/tmp/**)",
+      "Read(//nix/store/**)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(jq:*)"
+    ],
     "ask": []
   }
 }

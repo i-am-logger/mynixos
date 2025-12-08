@@ -6,11 +6,19 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.browsers.firefox {
-          programs.firefox = {
-            enable = true;
-            package = pkgs.firefox;
-          };
+        let
+          browser = userCfg.environment.BROWSER;
+          hasFirefox = browser != null && browser.enable && browser.package.pname or "" == "firefox";
+        in
+        mkIf hasFirefox {
+          programs.firefox = mkMerge [
+            {
+              enable = true;
+              package = browser.package;
+            }
+            # Merge settings if provided
+            browser.settings
+          ];
         }
       )
       config.my.users;

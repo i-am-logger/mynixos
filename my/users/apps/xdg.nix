@@ -2,11 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps;
-in
 {
-  config = mkIf cfg.xdg {
+  # XDG configuration - always enabled for all users
+  # This is opinionated: XDG directories are essential for a well-configured system
+  config = {
     home-manager.users = mapAttrs
       (name: userCfg: {
         home.packages = with pkgs; [

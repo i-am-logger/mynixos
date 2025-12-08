@@ -1,15 +1,16 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, appHelpers, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: mkIf userCfg.apps.dev.jq {
-        home.packages = with pkgs; [
-          jq
-        ];
-      })
+      (name: userCfg:
+        mkIf (appHelpers.shouldEnable userCfg "dev" "jq") {
+          home.packages = with pkgs; [
+            jq
+          ];
+        })
       config.my.users;
   };
 }

@@ -1,15 +1,16 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, appHelpers, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: mkIf userCfg.apps.dev.devenv {
-        home.packages = with pkgs; [
-          devenv
-        ];
-      })
+      (name: userCfg:
+        mkIf (appHelpers.shouldEnable userCfg "dev" "devenv") {
+          home.packages = with pkgs; [
+            devenv
+          ];
+        })
       config.my.users;
   };
 }

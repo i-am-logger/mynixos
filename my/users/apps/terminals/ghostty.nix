@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.terminals.ghostty {
+        mkIf (userCfg.apps.graphical.terminals.ghostty.enable or false) {
           home.packages = with pkgs; [
             ghostty
           ];
@@ -43,8 +43,7 @@ with lib;
               # custom-shader-animation = true;
             };
           };
-        }
-      )
+        })
       config.my.users;
   };
 }

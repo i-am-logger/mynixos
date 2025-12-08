@@ -152,7 +152,7 @@ in
             PROMPT_COMMAND="_update_gpg_tty; ''${PROMPT_COMMAND}"
           '';
 
-          programs.zsh.initExtra = ''
+          programs.zsh.initContent = ''
             export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
             export GPG_TTY=$(tty)
             unset GNOME_KEYRING_CONTROL
@@ -329,5 +329,18 @@ in
         }
       )
       config.my.users;
+
+    # Persistence configuration
+    my.system.persistence.features = {
+      systemDirectories = [
+        "/yubikey"
+      ];
+      userDirectories = [
+        ".gnupg"
+        ".password-store"
+        ".yubico"
+        ".ssh"
+      ];
+    };
   };
 }

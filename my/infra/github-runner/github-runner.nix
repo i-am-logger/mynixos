@@ -482,5 +482,14 @@ in
         '';
       };
     };
+
+    # Persistence configuration
+    my.system.persistence.features = {
+      systemDirectories = [
+        "/var/lib/rancher"
+        "/var/lib/kubelet"
+        "/var/lib/cni"
+      ];
+    };
   };
 }

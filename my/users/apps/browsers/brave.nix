@@ -6,7 +6,11 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.browsers.brave {
+        let
+          browser = userCfg.environment.BROWSER;
+          hasBrave = browser != null && browser.enable && browser.package.pname or "" == "brave";
+        in
+        mkIf hasBrave {
           # Wrap Brave to use gopass via secret service and GPG agent
           home.packages =
             let
@@ -29,12 +33,6 @@ with lib;
             [
               brave-with-gopass
             ];
-
-          # Copy the SkySpy wallpaper to a location Brave can access
-          # Note: You may need to adjust the source path to match your theme location
-          # home.file.".local/share/skyspy/skyspy-wallpaper.png" = {
-          #   source = ../../../Themes/Wallpapers/skyspy-wallpaper-2560x1600.png;
-          # };
 
           # Configure XDG for Brave
           xdg.desktopEntries.brave-browser = {

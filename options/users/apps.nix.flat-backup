@@ -1,0 +1,290 @@
+{ lib, ... }:
+
+let
+  appLib = import ../../lib/app-options.nix { inherit lib; };
+in
+{
+  options = {
+    apps = lib.mkOption {
+      type = lib.types.submodule ({...}: {
+        options = {
+          # ========================================
+          # FLAT CANONICAL APP OPTIONS
+          # ========================================
+          
+          # Shells
+          bash = lib.mkOption {
+            type = lib.types.submodule {
+              options = {
+                enable = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Enable Bash shell";
+                };
+                historySize = lib.mkOption {
+                  type = lib.types.int;
+                  default = 10000;
+                  description = "Number of commands to keep in history";
+                };
+                historyFileSize = lib.mkOption {
+                  type = lib.types.int;
+                  default = 10000;
+                  description = "Number of lines to keep in history file";
+                };
+                historyControl = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [ "ignoredups" "ignorespace" ];
+                  description = "History control options";
+                };
+                shellOptions = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [
+                    "histappend"
+                    "checkwinsize"
+                    "extglob"
+                    "globstar"
+                    "checkjobs"
+                  ];
+                  description = "Shell options (shopt)";
+                };
+                persistedDirectories = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [ ".bash_history" ];
+                  description = "Directories to persist";
+                };
+              };
+            };
+            default = { };
+            description = "Bash shell configuration";
+          };
+          
+          fish = appLib.mkAppOption { name = "fish"; default = false; description = "Fish shell"; persistedDirectories = []; };
+          
+          # Prompts
+          starship = appLib.mkAppOption {
+            name = "Starship";
+            default = false;
+            description = "Starship prompt";
+            persistedDirectories = [ ".config/starship" ];
+          };
+          
+          # Window Managers
+          hyprland = lib.mkOption {
+            type = lib.types.submodule {
+              options = {
+                enable = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Enable Hyprland window manager";
+                };
+                leftHanded = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Left-handed mouse mode";
+                };
+                sensitivity = lib.mkOption {
+                  type = lib.types.float;
+                  default = 0.0;
+                  description = "Mouse sensitivity (range: -1.0 to 1.0)";
+                };
+                settings = lib.mkOption {
+                  type = lib.types.attrs;
+                  default = {};
+                  description = "Additional Hyprland settings (passthrough to wayland.windowManager.hyprland.settings)";
+                };
+                persistedDirectories = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [ ".config/hypr" ];
+                  description = "Directories to persist";
+                };
+              };
+            };
+            default = { };
+            description = "Hyprland window manager configuration";
+          };
+          
+          # Browsers
+          brave = appLib.mkAppOption {
+            name = "Brave";
+            default = false;
+            description = "Brave browser";
+            persistedDirectories = [ ".config/BraveSoftware" ];
+          };
+          firefox = appLib.mkAppOption { name = "firefox"; default = false; description = "Firefox browser"; persistedDirectories = []; };
+          chromium = appLib.mkAppOption {
+            name = "Chromium";
+            default = false;
+            description = "Chromium browser";
+            persistedDirectories = [ ".config/chromium" ];
+          };
+          
+          # Terminals
+          wezterm = appLib.mkAppOption {
+            name = "WezTerm";
+            default = false;
+            description = "WezTerm terminal";
+            persistedDirectories = [ ".config/wezterm" ];
+          };
+          kitty = appLib.mkAppOption { name = "kitty"; default = false; description = "Kitty terminal"; persistedDirectories = []; };
+          ghostty = appLib.mkAppOption { name = "ghostty"; default = false; description = "Ghostty terminal"; persistedDirectories = []; };
+          
+          # Editors
+          helix = appLib.mkAppOption {
+            name = "Helix";
+            default = false;
+            description = "Helix editor";
+            persistedDirectories = [ ".config/helix" ];
+          };
+          marktext = appLib.mkAppOption { name = "marktext"; default = false; description = "MarkText markdown editor"; persistedDirectories = []; };
+          
+          # File Managers
+          mc = appLib.mkAppOption { name = "mc"; default = false; description = "Midnight Commander"; persistedDirectories = []; };
+          yazi = appLib.mkAppOption {
+            name = "Yazi";
+            default = false;
+            description = "Yazi TUI file manager";
+            persistedDirectories = [ ".config/yazi" ];
+          };
+          
+          # Multiplexers
+          zellij = appLib.mkAppOption {
+            name = "Zellij";
+            default = false;
+            description = "Zellij multiplexer";
+            persistedDirectories = [ ".config/zellij" ];
+          };
+          tmux = appLib.mkAppOption { name = "tmux"; default = false; description = "tmux multiplexer"; persistedDirectories = []; };
+          
+          # Viewers
+          bat = appLib.mkAppOption {
+            name = "bat";
+            default = false;
+            description = "bat syntax highlighter";
+            persistedDirectories = [ ];
+          };
+          feh = appLib.mkAppOption {
+            name = "feh";
+            default = false;
+            description = "feh image viewer";
+            persistedDirectories = [ ];
+          };
+          
+          # File Utils
+          lsd = appLib.mkAppOption {
+            name = "lsd";
+            default = false;
+            description = "lsd directory lister";
+            persistedDirectories = [ ];
+          };
+          
+          # System Info
+          btop = appLib.mkAppOption { name = "btop"; default = false; description = "btop system monitor"; persistedDirectories = []; };
+          neofetch = appLib.mkAppOption { name = "neofetch"; default = false; description = "neofetch system info"; persistedDirectories = []; };
+          fastfetch = appLib.mkAppOption {
+            name = "fastfetch";
+            default = false;
+            description = "fastfetch system info";
+            persistedDirectories = [ ];
+          };
+          
+          # Visualizers
+          cava = appLib.mkAppOption { name = "cava"; default = false; description = "cava audio visualizer"; persistedDirectories = []; };
+          
+          # Launchers
+          walker = appLib.mkAppOption {
+            name = "Walker";
+            default = false;
+            description = "Walker application launcher";
+            persistedDirectories = [ ".config/walker" ];
+          };
+          
+          # Status bars
+          waybar = appLib.mkAppOption { name = "waybar"; default = false; description = "Waybar status bar"; persistedDirectories = []; };
+          
+          # Sync
+          rclone = appLib.mkAppOption {
+            name = "rclone";
+            default = false;
+            description = "rclone cloud sync";
+            persistedDirectories = [ ".config/rclone" ];
+          };
+          
+          # Utils
+          calculator = appLib.mkAppOption { name = "calculator"; default = false; description = "Calculator (qalculate)"; persistedDirectories = []; };
+          imagemagick = appLib.mkAppOption {
+            name = "ImageMagick";
+            default = false;
+            description = "ImageMagick image manipulation";
+            persistedDirectories = [ ];
+          };
+          
+          # Dev
+          direnv = appLib.mkAppOption {
+            name = "direnv";
+            default = false;
+            description = "direnv environment manager";
+            persistedDirectories = [ ".direnv" ".local/share/direnv" ];
+          };
+          devenv = appLib.mkAppOption { name = "devenv"; default = false; description = "devenv development environment manager"; persistedDirectories = []; };
+          githubDesktop = appLib.mkAppOption { name = "githubDesktop"; default = false; description = "GitHub Desktop"; persistedDirectories = []; };
+          kdiff3 = appLib.mkAppOption { name = "kdiff3"; default = false; description = "KDiff3 diff tool"; persistedDirectories = []; };
+          jq = appLib.mkAppOption {
+            name = "jq";
+            default = false;
+            description = "jq JSON processor";
+            persistedDirectories = [ ];
+          };
+          vscode = appLib.mkAppOption {
+            name = "VSCode";
+            default = false;
+            description = "Visual Studio Code editor";
+            persistedDirectories = [ ".vscode" ".claude" ];
+          };
+          
+          # Media
+          pipewireTools = appLib.mkAppOption {
+            name = "PipeWire Tools";
+            default = false;
+            description = "PipeWire CLI tools";
+            persistedDirectories = [ ];
+          };
+          musikcube = appLib.mkAppOption { name = "musikcube"; default = false; description = "musikcube music player"; persistedDirectories = []; };
+          audacious = appLib.mkAppOption { name = "audacious"; default = false; description = "Audacious music player"; persistedDirectories = []; };
+          audioUtils = appLib.mkAppOption {
+            name = "Audio Utilities";
+            default = false;
+            description = "Audio utilities (pavucontrol, pamixer)";
+            persistedDirectories = [ ];
+          };
+          
+          # Art
+          mypaint = appLib.mkAppOption { name = "mypaint"; default = false; description = "MyPaint drawing application"; persistedDirectories = []; };
+          
+          # Communication
+          element = appLib.mkAppOption { name = "element"; default = false; description = "Element Matrix client"; persistedDirectories = []; };
+          signal = appLib.mkAppOption { name = "signal"; default = false; description = "Signal Desktop messenger"; persistedDirectories = []; };
+          slack = appLib.mkAppOption { name = "slack"; default = false; description = "Slack communication tool"; persistedDirectories = []; };
+          
+          # Security
+          onePassword = appLib.mkAppOption {
+            name = "1Password";
+            default = false;
+            description = "1Password password manager";
+            persistedDirectories = [ ".config/1Password" ];
+          };
+          
+          # Network
+          termscp = appLib.mkAppOption { name = "termscp"; default = false; description = "termscp TUI file transfer"; persistedDirectories = []; };
+          
+          # Fun
+          pipes = appLib.mkAppOption { name = "pipes"; default = false; description = "Terminal eye candy (pipes, neo, asciiquarium)"; persistedDirectories = []; };
+          
+          # Finance
+          cointop = appLib.mkAppOption { name = "cointop"; default = false; description = "Cointop cryptocurrency tracker"; persistedDirectories = []; };
+        };
+      });
+      default = { };
+      description = "Per-user application configurations (flat canonical structure)";
+    };
+  };
+}

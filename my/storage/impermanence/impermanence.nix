@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -8,6 +13,10 @@ let
 
   # Get all user names from my.features.users
   userNames = attrNames config.my.users;
+
+  # Get app-specific directories for a user from aggregation
+  getUserAppDirectories =
+    userName: config.my.system.persistence.aggregated.${userName}.directories or [ ];
 in
 {
   config = mkIf cfg.enable {
@@ -19,10 +28,13 @@ in
     };
 
     # Create persist directory if not using dedicated partition
-    systemd.tmpfiles.rules = mkIf (!cfg.useDedicatedPartition) ([
-      "d ${persistPath} 0755 root root -"
-      "d ${persistPath}/home 0755 root root -"
-    ] ++ (map (user: "d ${persistPath}/home/${user} 0755 ${user} users -") userNames));
+    systemd.tmpfiles.rules = mkIf (!cfg.useDedicatedPartition) (
+      [
+        "d ${persistPath} 0755 root root -"
+        "d ${persistPath}/home 0755 root root -"
+      ]
+      ++ (map (user: "d ${persistPath}/home/${user} 0755 ${user} users -") userNames)
+    );
 
     # Persistence configuration
     environment.persistence."${persistPath}" = {
@@ -35,44 +47,12 @@ in
         "/var/lib/systemd"
         "/var/log"
       ]
-      ++ (optionals config.my.graphical.enable [
-        "/var/lib/gnome"
-        "/var/lib/AccountsService"
-        "/var/lib/colord"
-        "/var/lib/power-profiles-daemon"
-        "/var/lib/upower"
-      ])
-      ++ (optionals (config.my.hardware.bluetooth.enable or false) [
-        "/var/lib/bluetooth"
-      ])
-      ++ (optionals config.my.dev.enable [
-        "/var/lib/docker"
-        "/var/lib/containers"
-      ])
-      ++ (optionals (config.my.ai.enable or false) [
-        {
-          directory = "/var/lib/ollama";
-          user = "ollama";
-          group = "ollama";
-          mode = "0755";
-        }
-      ])
-      ++ (optionals (config.my.infra.github-runner.enable or false) [
-        "/var/lib/rancher"
-        "/var/lib/kubelet"
-        "/var/lib/cni"
-      ])
-      ++ (optionals ((config.my.hardware.gpu or null) == "nvidia") [
-        "/var/lib/nvidia-persistenced"
-      ])
-      ++ (optionals (config.my.security.yubikey.enable or false) [
-        "/yubikey"
-      ])
-      ++ cfg.extraSystemDirectories; # Allow custom additions
+      ++ cfg.extraSystemDirectories # Allow custom additions
+      ++ config.my.system.persistence.features.systemDirectories; # Feature-declared system directories
 
       # Per-user persistence
-      users = mkMerge (map
-        (userName: {
+      users = mkMerge (
+        map (userName: {
           ${userName} = {
             directories = [
               ".local"
@@ -86,33 +66,17 @@ in
               "Media"
               "Code"
             ])
-            # Always persist browser data (Firefox, etc.)
-            ++ [
-              ".mozilla"
-            ]
-            ++ (optionals config.my.dev.enable [
-              ".docker"
-              ".npm"
-              ".cargo"
-              ".rustup"
-              ".gradle"
-              ".m2"
-              ".vscode"
-            ])
-            ++ (optionals (config.my.security.yubikey.enable or false) [
-              ".gnupg"
-              ".password-store"
-              ".yubico"
-              ".ssh"
-            ])
+            # App-specific directories from aggregation
+            ++ (getUserAppDirectories userName)
+            # Feature-declared user directories
+            ++ config.my.system.persistence.features.userDirectories
             ++ cfg.extraUserDirectories; # Custom additions (applied to all users)
 
-            files = [
-              ".bash_history"
-            ] ++ cfg.extraUserFiles; # Custom files (applied to all users)
+            files = cfg.extraUserFiles # Custom files (applied to all users)
+            ++ config.my.system.persistence.features.userFiles; # Feature-declared user files
           };
-        })
-        userNames);
+        }) userNames
+      );
     };
 
     # Optional: Clone NixOS config on first boot
@@ -125,7 +89,10 @@ in
             git clone ${cfg.cloneFlakeRepo} /etc/nixos
           fi
         '';
-        deps = [ "users" "groups" ];
+        deps = [
+          "users"
+          "groups"
+        ];
       };
 
       createFlakeSymlink = mkIf cfg.symlinkFlakeToHome {
@@ -138,7 +105,11 @@ in
             fi
           '') userNames}
         '';
-        deps = [ "users" "groups" "cloneRepoIfEmpty" ];
+        deps = [
+          "users"
+          "groups"
+          "cloneRepoIfEmpty"
+        ];
       };
     };
   };

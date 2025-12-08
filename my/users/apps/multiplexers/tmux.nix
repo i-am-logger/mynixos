@@ -7,7 +7,11 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf userCfg.apps.multiplexers.tmux {
+        let
+          termCfg = userCfg.terminal or { };
+          isTmux = (termCfg.multiplexer or "zellij") == "tmux";
+        in
+        mkIf isTmux {
           programs.tmux = {
             aggressiveResize = true;
             baseIndex = 1;
@@ -55,8 +59,7 @@ with lib;
               set-option -g renumber-windows on
             '';
           };
-        }
-      )
-      config.my.users;
+        })
+      (config.my.users or {});
   };
 }

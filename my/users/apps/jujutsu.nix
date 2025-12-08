@@ -2,11 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps;
-in
 {
-  config = mkIf cfg.jujutsu {
+  # Jujutsu configuration - always enabled for all users
+  # This is opinionated: jujutsu is provided as an alternative to git
+  config = {
     home-manager.users = mapAttrs
       (name: userCfg: {
         programs.jujutsu = {

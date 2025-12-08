@@ -63,5 +63,12 @@ in
         ExecStartPre = "${pkgs.kmod}/bin/modprobe nvidia";
       };
     };
+
+    # Persistence configuration
+    my.system.persistence.features = {
+      systemDirectories = [
+        "/var/lib/nvidia-persistenced"
+      ];
+    };
   };
 }

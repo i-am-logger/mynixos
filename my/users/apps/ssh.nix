@@ -2,11 +2,10 @@
 
 with lib;
 
-let
-  cfg = config.my.apps;
-in
 {
-  config = mkIf cfg.ssh {
+  # SSH configuration - always enabled for all users
+  # This is opinionated: SSH is essential for development and remote access
+  config = {
     home-manager.users = mapAttrs
       (name: userCfg: {
         programs.ssh = {
