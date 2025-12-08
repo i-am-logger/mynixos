@@ -11,6 +11,9 @@ let
 
   # Get list of all user names from my.features.users
   userNames = attrNames config.my.users;
+  
+  # Read mynixos version from version.txt
+  mynixosVersion = lib.strings.removeSuffix "\n" (builtins.readFile ../../version.txt);
 in
 {
   config = mkIf cfg.enable (mkMerge [
@@ -19,6 +22,31 @@ in
       # Distribution identity
       system.nixos.distroId = "mynixos";
       system.nixos.distroName = "mynixos";
+      system.nixos.vendorId = "mynixos";
+      system.nixos.vendorName = "mynixos";
+      
+      # Override system derivation name to use mynixos branding
+      system.systemBuilderArgs = {
+        name = "mynixos-system-${config.system.name}-${mynixosVersion}";
+      };
+      
+      # Additional os-release fields for mynixos branding
+      # Override VERSION and PRETTY_NAME to use mynixos version from release-please
+      system.nixos.extraOSReleaseArgs = {
+        HOME_URL = "https://github.com/i-am-logger/mynixos";
+        VENDOR_URL = "https://github.com/i-am-logger/mynixos";
+        DOCUMENTATION_URL = "https://github.com/i-am-logger/mynixos#readme";
+        SUPPORT_URL = "https://github.com/i-am-logger/mynixos/discussions";
+        BUG_REPORT_URL = "https://github.com/i-am-logger/mynixos/issues";
+        ANSI_COLOR = "0;38;2;126;186;228";
+        # Override version fields with mynixos version from release-please
+        VERSION = "${mynixosVersion} (Bootstrapper)";
+        VERSION_ID = mynixosVersion;
+        VERSION_CODENAME = "bootstrapper";
+        PRETTY_NAME = "mynixos ${mynixosVersion} (Bootstrapper)";
+        # Override ID_LIKE to mynixos (not nixos) - mynixos is its own distribution
+        ID_LIKE = "mynixos";
+      };
 
       # Plymouth boot splash (opinionated)
       boot.plymouth = {
@@ -100,6 +128,23 @@ in
 
       # Graphics hardware support
       hardware.graphics.enable = true;
+
+      # Power management - prevent unwanted sleep/suspend (opinionated for workstations)
+      # Desktop workstations shouldn't auto-suspend
+      services.logind = {
+        lidSwitch = mkDefault "ignore";
+        lidSwitchDocked = mkDefault "ignore";
+        lidSwitchExternalPower = mkDefault "ignore";
+        powerKey = mkDefault "ignore";
+        powerKeyLongPress = mkDefault "poweroff";
+        suspendKey = mkDefault "ignore";
+        hibernateKey = mkDefault "ignore";
+        # Use settings.Login instead of deprecated extraConfig
+        settings.Login = {
+          IdleAction = mkDefault "ignore";
+          IdleActionSec = mkDefault 0;
+        };
+      };
 
       # Network configuration (NetworkManager is a system service, not hardware)
       networking.networkmanager.enable = lib.mkDefault true;

@@ -12,7 +12,7 @@ with lib;
             enable = true;
             settings = {
               update_ms = 100;
-              show_gpu = "true";
+              show_gpu_info = "On";
               shown_boxes = "cpu mem net proc gpu0";
             };
             package = pkgs.btop.override {

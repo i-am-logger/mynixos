@@ -31,7 +31,7 @@
           
           # System info
           sysinfo.fastfetch.enable = lib.mkDefault true;
-          sysinfo.btop.enable = lib.mkDefault false;
+          sysinfo.btop.enable = lib.mkDefault true;
           sysinfo.neofetch.enable = lib.mkDefault false;
           
           # Network tools
