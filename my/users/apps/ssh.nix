@@ -25,19 +25,20 @@ with lib;
             "github.com" = {
               hostname = "github.com";
               user = "git";
-              identitiesOnly = true;
+              # identitiesOnly = false allows SSH to use keys from gpg-agent
+              identitiesOnly = false;
             };
 
             "gitlab.com" = {
               hostname = "gitlab.com";
               user = "git";
-              identitiesOnly = true;
+              identitiesOnly = false;
             };
 
             "bitbucket.org" = {
               hostname = "bitbucket.org";
               user = "git";
-              identitiesOnly = true;
+              identitiesOnly = false;
             };
           };
 
