@@ -104,11 +104,7 @@ in
                   "key": "\u001b[1mWM\u001b[0m      "
                 },
                 {
-                  "type": "de",
-                  "key": "\u001b[1mDE\u001b[0m      "
-                },
-                {
-                  "type": "wmtheme",
+                  "type": "theme",
                   "key": "\u001b[1mTheme\u001b[0m   "
                 },
                 {
