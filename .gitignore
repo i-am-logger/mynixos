@@ -1,0 +1,33 @@
+# AI assistant files
+.claude/
+AGENTS.md
+CLAUDE.md
+*.agents.md
+
+# AI-generated documentation
+docs/AGENT_*.md
+docs/MIGRATION_*.md
+docs/FLAKE_MIGRATION_*.md
+docs/PATTERN_*.md
+docs/ENVIRONMENT_API.md
+
+# Build artifacts
+result
+result-*
+
+# Nix
+.direnv/
+.envrc
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.backup
+*.bak
+flake.nix.backup
