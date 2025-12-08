@@ -3,12 +3,12 @@
 with lib;
 
 let
-  # Simple "my" ASCII logo for mynixos
+  # Simple "my" ASCII logo for mynixos filled with snowflakes
   mynixosLogo = pkgs.writeText "mynixos-logo.txt" ''
        ____ ___  __  __
-      / __ `__ \/ / / /
-     / / / / / / /_/ /
-    /_/ /_/ /_/\__, /
+      /❄__ `__ \/❄/❄/❄/
+     /❄/❄/❄/❄/❄/_/❄/
+    /_/❄/_/❄/_/\__, /
               /____/
   '';
 in
