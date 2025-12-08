@@ -143,6 +143,14 @@
             legion-16irx8h = {
               enable = lib.mkEnableOption "Lenovo Legion 16IRX8H laptop";
 
+              bluetooth = {
+                enable = lib.mkOption {
+                  type = lib.types.bool;
+                  default = true;
+                  description = "Enable bluetooth hardware";
+                };
+              };
+
               storage = {
                 nvme = {
                   enable = lib.mkOption {

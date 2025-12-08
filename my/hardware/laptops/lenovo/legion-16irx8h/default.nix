@@ -11,6 +11,13 @@ in
   config = lib.mkMerge [
     # Auto-enable hardware modules based on laptop options (unconditional to avoid recursion)
     {
+      # Set hardware types (triggers Intel CPU/NVIDIA GPU modules when laptop is enabled)
+      my.hardware.cpu = lib.mkIf cfg.enable "intel";
+      my.hardware.gpu = lib.mkIf cfg.enable "nvidia";
+
+      # Bluetooth configuration
+      my.hardware.bluetooth.enable = lib.mkIf cfg.enable cfg.bluetooth.enable;
+
       # Storage options
       my.hardware.storage.nvme.enable = lib.mkIf cfg.enable cfg.storage.nvme.enable;
       my.hardware.storage.usb.enable = lib.mkIf cfg.enable cfg.storage.usb.enable;

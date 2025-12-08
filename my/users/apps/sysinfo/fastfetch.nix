@@ -2,6 +2,31 @@
 
 with lib;
 
+let
+  # mynixos logo file with "my" centered on the snowflake with shadows
+  mynixosLogo = pkgs.writeText "mynixos-logo.txt" ''
+    $1          ▗▄▄▄       $2▗▄▄▄▄    ▄▄▄▖
+    $1          ▜███▙       $2▜███▙  ▟███▛
+    $1           ▜███▙  $3 ░░       $2▜███▙▟███▛
+    $1            ▜███▙$3░▐█▌░▐█▌░ $2▜██████▛
+    $1     ▟█████████████$3▐█▌░▐█▌░$2▜████▛     $1▟▙
+    $1    ▟███████████████$3▐█▌░▐█▌$2▜███▙    $1▟██▙
+    $2           ▄▄▄▄▖    $3░▀▀░░▀▀ $2▜███▙  $1▟███▛
+    $2          ▟███▛       $3░░    $2▜██▛ $1▟███▛
+    $2         ▟███▛               ▜▛ $1▟███▛
+    $2▟███████████▛                  $1▟██████████▙
+    $2▜██████████▛                  $1▟███████████▛
+    $2      ▟███▛ $1▟▙               ▟███▛
+    $2     ▟███▛ $1▟██▙             ▟███▛
+    $2    ▟███▛  $1▜███▙           ▝▀▀▀▀
+    $2    ▜██▛    $1▜███▙ $2▜██████████████████▛
+    $2     ▜▛     $1▟████▙ $2▜████████████████▛
+    $1           ▟██████▙       $2▜███▙
+    $1          ▟███▛▜███▙       $2▜███▙
+    $1         ▟███▛  ▜███▙       $2▜███▙
+    $1         ▝▀▀▀    ▀▀▀▀▘       $2▀▀▀▘
+  '';
+in
 {
   config = {
     home-manager.users = mapAttrs
@@ -10,6 +35,109 @@ with lib;
           home.packages = with pkgs; [
             fastfetch
           ];
+          
+          # Configure fastfetch to use mynixos logo with categorized system info
+          xdg.configFile."fastfetch/config.jsonc".text = ''
+            {
+              "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+              "logo": {
+                "type": "file",
+                "source": "${mynixosLogo}",
+                "color": {
+                  "1": "blue",
+                  "2": "cyan",
+                  "3": "white"
+                },
+                "padding": {
+                  "top": 1
+                }
+              },
+              "display": {
+                "separator": "  "
+              },
+              "modules": [
+                {
+                  "type": "title",
+                  "format": "{user-name}@{host-name}"
+                },
+                "separator",
+                {
+                  "type": "custom",
+                  "format": "\u001b[1mSystem\u001b[0m"
+                },
+                {
+                  "type": "os",
+                  "key": " \u001b[1mOS\u001b[0m      "
+                },
+                {
+                  "type": "host",
+                  "key": " \u001b[1mHost\u001b[0m    "
+                },
+                {
+                  "type": "kernel",
+                  "key": " \u001b[1mKernel\u001b[0m  "
+                },
+                {
+                  "type": "uptime",
+                  "key": " \u001b[1mUptime\u001b[0m  "
+                },
+                {
+                  "type": "packages",
+                  "key": " \u001b[1mPackages\u001b[0m"
+                },
+                "break",
+                {
+                  "type": "custom",
+                  "format": "\u001b[1mHardware\u001b[0m"
+                },
+                {
+                  "type": "cpu",
+                  "key": " \u001b[1mCPU\u001b[0m     "
+                },
+                {
+                  "type": "gpu",
+                  "key": " \u001b[1mGPU\u001b[0m     "
+                },
+                {
+                  "type": "memory",
+                  "key": " \u001b[1mMemory\u001b[0m  "
+                },
+                {
+                  "type": "swap",
+                  "key": "󰾴 \u001b[1mSwap\u001b[0m    "
+                },
+                {
+                  "type": "disk",
+                  "key": " \u001b[1mDisk\u001b[0m    "
+                },
+                {
+                  "type": "battery",
+                  "key": " \u001b[1mBattery\u001b[0m "
+                },
+                "break",
+                {
+                  "type": "custom",
+                  "format": "\u001b[1mDesktop\u001b[0m"
+                },
+                {
+                  "type": "wm",
+                  "key": " \u001b[1mWM\u001b[0m      "
+                },
+                {
+                  "type": "terminal",
+                  "key": " \u001b[1mTerminal\u001b[0m"
+                },
+                {
+                  "type": "shell",
+                  "key": " \u001b[1mShell\u001b[0m   "
+                },
+                {
+                  "type": "display",
+                  "key": " \u001b[1mDisplay\u001b[0m "
+                }
+              ]
+            }
+          '';
         })
       config.my.users;
   };
