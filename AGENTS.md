@@ -6,7 +6,7 @@ Quick reference for AI coding agents working in this repository.
 
 ```bash
 nix flake check                                              # Evaluate flake & check syntax
-nix fmt                                                       # Format all Nix files
+nixpkgs fmt                                                  # Format all Nix files
 nix build /etc/nixos#checks.x86_64-linux.github-runner-test  # Run all 20 test suites (GitHub runner image)
 nix build /etc/nixos#github-runner-image                     # Build runner image only
 ```

@@ -4,20 +4,13 @@ AGENTS.md
 CLAUDE.md
 *.agents.md
 
-# AI-generated documentation
-docs/AGENT_*.md
-docs/MIGRATION_*.md
-docs/FLAKE_MIGRATION_*.md
-docs/PATTERN_*.md
-docs/ENVIRONMENT_API.md
-
 # Build artifacts
 result
 result-*
 
 # Nix
 .direnv/
-.envrc
+.devenv/
 
 # Editor/IDE
 .vscode/
@@ -30,4 +23,3 @@ result-*
 # Backup files
 *.backup
 *.bak
-flake.nix.backup

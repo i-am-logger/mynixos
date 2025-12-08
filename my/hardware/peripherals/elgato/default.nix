@@ -1,6 +1,6 @@
 { ... }:
 {
   imports = [
-    ./streamdeck.nix
+    ./streamdeck
   ];
 }
