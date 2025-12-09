@@ -45,7 +45,7 @@ in
                 {
                   "type": "os",
                   "key": "        OS",
-                  "format": "\u001b[1m{}\u001b[0m"
+                  "outputColor": "bright_white"
                 },
                 {
                   "type": "host",
@@ -54,7 +54,7 @@ in
                 {
                   "type": "uptime",
                   "key": "    Uptime",
-                  "format": "\u001b[1m{}\u001b[0m"
+                  "outputColor": "bright_white"
                 },
                 {
                   "type": "kernel",
