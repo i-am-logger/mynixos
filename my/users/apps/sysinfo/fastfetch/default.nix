@@ -41,23 +41,23 @@ in
                 },
                 {
                   "type": "os",
-                  "key": "\u001b[1mOS\u001b[0m      "
+                  "key": "      \u001b[1mOS\u001b[0m"
                 },
                 {
                   "type": "host",
-                  "key": "\u001b[1mHost\u001b[0m    "
+                  "key": "    \u001b[1mHost\u001b[0m"
                 },
                 {
                   "type": "uptime",
-                  "key": "\u001b[1mUptime\u001b[0m  "
+                  "key": "  \u001b[1mUptime\u001b[0m"
                 },
                 {
                   "type": "kernel",
-                  "key": "\u001b[1mKernel\u001b[0m  "
+                  "key": "  \u001b[1mKernel\u001b[0m"
                 },
                 {
                   "type": "shell",
-                  "key": "\u001b[1mShell\u001b[0m   "
+                  "key": "   \u001b[1mShell\u001b[0m"
                 },
                 {
                   "type": "packages",
@@ -70,32 +70,32 @@ in
                 },
                 {
                   "type": "cpu",
-                  "key": "\u001b[1mCPU\u001b[0m     "
+                  "key": "     \u001b[1mCPU\u001b[0m"
                 },
                 {
                   "type": "gpu",
-                  "key": "\u001b[1mGPU\u001b[0m     "
+                  "key": "     \u001b[1mGPU\u001b[0m"
                 },
                 {
                   "type": "memory",
-                  "key": "\u001b[1mMemory\u001b[0m  "
+                  "key": "  \u001b[1mMemory\u001b[0m"
                 },
                 {
                   "type": "disk",
-                  "key": "\u001b[1mDisk\u001b[0m    ",
+                  "key": "    \u001b[1mDisk\u001b[0m",
                   "format": "{1} / {2} ({3}) - {9} [{10}]"
                 },
                 {
                   "type": "swap",
-                  "key": "\u001b[1mSwap\u001b[0m    "
+                  "key": "    \u001b[1mSwap\u001b[0m"
                 },
                 {
                   "type": "display",
-                  "key": "\u001b[1mDisplay\u001b[0m "
+                  "key": " \u001b[1mDisplay\u001b[0m"
                 },
                 {
                   "type": "battery",
-                  "key": "\u001b[1mBattery\u001b[0m "
+                  "key": " \u001b[1mBattery\u001b[0m"
                 },
                 "break",
                 {
@@ -104,11 +104,11 @@ in
                 },
                 {
                   "type": "wm",
-                  "key": "\u001b[1mWM\u001b[0m      "
+                  "key": "      \u001b[1mWM\u001b[0m"
                 },
                 {
                   "type": "theme",
-                  "key": "\u001b[1mTheme\u001b[0m   "
+                  "key": "   \u001b[1mTheme\u001b[0m"
                 },
                 {
                   "type": "font",
