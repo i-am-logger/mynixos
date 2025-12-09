@@ -82,7 +82,8 @@ in
                 },
                 {
                   "type": "disk",
-                  "key": "\u001b[1mDisk\u001b[0m    "
+                  "key": "\u001b[1mDisk\u001b[0m    ",
+                  "format": "{1} / {2} ({3}) - {9} [{10}]"
                 },
                 {
                   "type": "swap",
@@ -111,7 +112,13 @@ in
                 },
                 {
                   "type": "font",
-                  "key": "\u001b[1mFont\u001b[0m    "
+                  "key": "\u001b[1mFont (Qt)\u001b[0m",
+                  "format": "{1}"
+                },
+                {
+                  "type": "font",
+                  "key": "\u001b[1mFont (GTK)\u001b[0m",
+                  "format": "{2}"
                 },
                 {
                   "type": "terminal",
