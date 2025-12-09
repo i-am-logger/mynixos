@@ -86,7 +86,8 @@ in
                 {
                   "type": "disk",
                   "key": "      \u001b[1mDisk\u001b[0m",
-                  "hideFolders": []
+                  "hideFolders": [],
+                  "format": "[{mountpoint}] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "swap",
