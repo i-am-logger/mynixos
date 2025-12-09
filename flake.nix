@@ -363,6 +363,12 @@
               # Users options
               ({ ... }: { options.my = import ./my/users/users/options.nix { inherit lib pkgs; }; })
               
+              # Users opinionated defaults (mynixos.nix files)
+              ./my/users/terminal/mynixos.nix
+              ./my/users/graphical/mynixos.nix
+              ./my/users/dev/mynixos.nix
+              ./my/users/ai/mynixos.nix
+              
               # Secrets (special - uses different pattern)
               (import ./my/secrets/secrets/options.nix)
             ];

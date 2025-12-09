@@ -15,11 +15,6 @@
         ../ai/options.nix
         ../terminal/options.nix
         ./apps-options.nix
-        # Opinionated defaults (mynixos.nix files)
-        ../terminal/mynixos.nix
-        ../graphical/mynixos.nix
-        ../dev/mynixos.nix
-        ../ai/mynixos.nix
       ];
 
       # Pass pkgs to submodule so environment.nix can use it in defaults
