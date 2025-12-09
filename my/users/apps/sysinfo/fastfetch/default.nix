@@ -86,8 +86,27 @@ in
                 {
                   "type": "disk",
                   "key": "      \u001b[1mDisk\u001b[0m",
+                  "folders": "/",
+                  "format": "[       /] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                },
+                {
+                  "type": "disk",
+                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "folders": "/boot",
                   "hideFolders": [],
-                  "format": "[{mountpoint}] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                  "format": "[   /boot] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                },
+                {
+                  "type": "disk",
+                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "folders": "/nix",
+                  "format": "[    /nix] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                },
+                {
+                  "type": "disk",
+                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "folders": "/persist",
+                  "format": "[/persist] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "swap",
