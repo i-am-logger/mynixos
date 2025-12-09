@@ -61,9 +61,6 @@
     let
       lib = nixpkgs.lib;
 
-      # Auto-import utilities
-      autoImports = import ./lib/auto-imports.nix { inherit lib; };
-      
       # mynixos library functions
       mynixosLib = import ./lib { inherit inputs lib nixpkgs self; };
 
@@ -144,9 +141,201 @@
               # External modules
               impermanence.nixosModules.impermanence
               lanzaboote.nixosModules.lanzaboote
+
+              # Implementation modules (my/)
+              # Top-level features
+              ./my/ai/ai
+              ./my/audio/audio
+              ./my/dev/development
+              ./my/environment/environment
+              ./my/performance/performance
+              ./my/secrets/secrets
+              ./my/streaming/streaming
+              ./my/video/virtual
+
+              # Graphical
+              ./my/graphical/graphical
+              ./my/graphical/hyprland
+
+              # Security
+              ./my/security/security
+              ./my/security/yubikey
+
+              # System
+              ./my/system/core
+              ./my/system/kernel
+              ./my/system/scripts
+
+              # Themes
+              ./my/themes/themes
+
+              # Hardware - Bluetooth
+              ./my/hardware/bluetooth/realtek
+
+              # Hardware - Boot
+              ./my/hardware/boot/dual-boot
+              ./my/hardware/boot/uefi
+
+              # Hardware - Cooling
+              ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb
+
+              # Hardware - CPU
+              ./my/hardware/cpu/amd
+              ./my/hardware/cpu/intel
+
+              # Hardware - GPU
+              ./my/hardware/gpu/amd
+              ./my/hardware/gpu/nvidia
+
+              # Hardware - Laptops
+              ./my/hardware/laptops/lenovo/legion-16irx8h
+
+              # Hardware - Memory
+              ./my/hardware/memory/optimization
+
+              # Hardware - Motherboards
+              ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
+
+              # Hardware - Peripherals
+              ./my/hardware/peripherals/elgato
+
+              # Hardware - Storage
+              ./my/hardware/storage/nvme
+              ./my/hardware/storage/sata
+              ./my/hardware/storage/ssd
+              ./my/hardware/storage/usb
+
+              # Hardware - USB
+              ./my/hardware/usb/hid
+              ./my/hardware/usb/thunderbolt
+              ./my/hardware/usb/xhci
+
+              # Infrastructure
+              ./my/infra/github-runner/github-runner
+              ./my/infra/k3s/k3s
+
+              # Storage
+              ./my/storage/impermanence/aggregation
+              ./my/storage/impermanence/feature-aggregation
+              ./my/storage/impermanence/impermanence
+
+              # Users - Core
+              ./my/users/defaults
+              ./my/users/environment-defaults
+              ./my/users/environment-validation
+              ./my/users/users
+
+              # Users - Features
+              ./my/users/graphical/media
+              ./my/users/terminal/terminal
+              ./my/users/webapps/webapps
+
+              # Users - Apps: AI
+              ./my/users/apps/ai/opencode
+
+              # Users - Apps: Art
+              ./my/users/apps/art/mypaint
+
+              # Users - Apps: Browsers
+              ./my/users/apps/browsers/brave
+              ./my/users/apps/browsers/chromium
+              ./my/users/apps/browsers/firefox
+
+              # Users - Apps: Communication
+              ./my/users/apps/communication/element
+              ./my/users/apps/communication/signal
+              ./my/users/apps/communication/slack
+
+              # Users - Apps: Development
+              ./my/users/apps/dev/devenv
+              ./my/users/apps/dev/direnv
+              ./my/users/apps/dev/github-desktop
+              ./my/users/apps/dev/jq
+              ./my/users/apps/dev/kdiff3
+              ./my/users/apps/dev/vscode
+
+              # Users - Apps: Editors
+              ./my/users/apps/editors/helix
+              ./my/users/apps/editors/marktext
+
+              # Users - Apps: File Managers
+              ./my/users/apps/fileManagers/mc
+              ./my/users/apps/fileManagers/yazi
+
+              # Users - Apps: File Utils
+              ./my/users/apps/fileUtils/lsd
+
+              # Users - Apps: Finance
+              ./my/users/apps/finance/cointop
+
+              # Users - Apps: Fun
+              ./my/users/apps/fun/pipes
+
+              # Users - Apps: Git/VCS
+              ./my/users/apps/git
+              ./my/users/apps/jujutsu
+
+              # Users - Apps: Launchers
+              ./my/users/apps/launchers/walker
+
+              # Users - Apps: Media
+              ./my/users/apps/media/audacious
+              ./my/users/apps/media/audio-utils
+              ./my/users/apps/media/musikcube
+              ./my/users/apps/media/pipewire-tools
+
+              # Users - Apps: Multiplexers
+              ./my/users/apps/multiplexers/tmux
+              ./my/users/apps/multiplexers/zellij
+
+              # Users - Apps: Network
+              ./my/users/apps/network/termscp
+
+              # Users - Apps: Prompts
+              ./my/users/apps/prompts/starship
+
+              # Users - Apps: Security
+              ./my/users/apps/security/1password
+
+              # Users - Apps: Shells
+              ./my/users/apps/shells/bash
+              ./my/users/apps/shells/fish
+
+              # Users - Apps: SSH
+              ./my/users/apps/ssh
+
+              # Users - Apps: Status bars
+              ./my/users/apps/statusbars/waybar
+
+              # Users - Apps: Sync
+              ./my/users/apps/sync/rclone
+
+              # Users - Apps: System Info
+              ./my/users/apps/sysinfo/btop
+              ./my/users/apps/sysinfo/fastfetch
+              ./my/users/apps/sysinfo/neofetch
+
+              # Users - Apps: Terminals
+              ./my/users/apps/terminals/alacritty
+              ./my/users/apps/terminals/ghostty
+              ./my/users/apps/terminals/kitty
+              ./my/users/apps/terminals/warp
+              ./my/users/apps/terminals/wezterm
+
+              # Users - Apps: Utilities
+              ./my/users/apps/utils/calculator
+              ./my/users/apps/utils/imagemagick
+
+              # Users - Apps: Viewers
+              ./my/users/apps/viewers/bat
+              ./my/users/apps/viewers/feh
+
+              # Users - Apps: Visualizers
+              ./my/users/apps/visualizers/cava
+
+              # Users - Apps: XDG
+              ./my/users/apps/xdg
             ]
-            # Auto-import all implementation modules from my/
-            ++ (autoImports.autoImport ./my)
             # Option definitions (manual - stable list of ~17 files)
             ++ [
               (
