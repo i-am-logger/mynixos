@@ -85,23 +85,23 @@ in
                 },
                 {
                   "type": "disk",
-                  "key": "        \u001b[1m/\u001b[0m",
+                  "key": "\u001b[1mDisk [       /]\u001b[0m",
                   "folders": "/"
                 },
                 {
                   "type": "disk",
-                  "key": "    \u001b[1m/boot\u001b[0m",
+                  "key": "\u001b[1mDisk [   /boot]\u001b[0m",
                   "folders": "/boot",
                   "hideFolders": []
                 },
                 {
                   "type": "disk",
-                  "key": "     \u001b[1m/nix\u001b[0m",
+                  "key": "\u001b[1mDisk [    /nix]\u001b[0m",
                   "folders": "/nix"
                 },
                 {
                   "type": "disk",
-                  "key": " \u001b[1m/persist\u001b[0m",
+                  "key": "\u001b[1mDisk [/persist]\u001b[0m",
                   "folders": "/persist"
                 },
                 {
