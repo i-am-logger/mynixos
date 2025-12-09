@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf (appHelpers.shouldEnable userCfg "dev" "jq") {
+        mkIf (appHelpers.shouldEnable userCfg "tools" "jq") {
           home.packages = with pkgs; [
             jq
           ];

@@ -21,7 +21,7 @@ with lib;
     home-manager.users = mapAttrs
       (name: userCfg:
         # Enable if: app explicitly enabled OR dev feature enabled
-        mkIf (appHelpers.shouldEnable userCfg "dev" "vscode") {
+        mkIf (appHelpers.shouldEnable userCfg "tools" "vscode") {
           programs.vscode = {
           enable = true;
           package = pkgs.vscode;

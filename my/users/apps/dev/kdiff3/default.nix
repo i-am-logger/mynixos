@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf (appHelpers.shouldEnable userCfg "dev" "kdiff3") {
+        mkIf (appHelpers.shouldEnable userCfg "tools" "kdiff3") {
           home.packages = with pkgs; [
             kdiff3
           ];

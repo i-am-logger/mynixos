@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (name: userCfg:
-        mkIf (appHelpers.shouldEnable userCfg "dev" "devenv") {
+        mkIf (appHelpers.shouldEnable userCfg "tools" "devenv") {
           home.packages = with pkgs; [
             devenv
           ];
