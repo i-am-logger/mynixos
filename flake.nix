@@ -64,39 +64,35 @@
       # mynixos library functions
       mynixosLib = import ./lib { inherit inputs lib nixpkgs self; };
 
-      # Passkey type constructors (exported at flake level for use in configs)
-      yubikey =
-        {
-          serialNumber,
-          gpgKeyId ? null,
-          ...
-        }:
-        {
-          type = "yubikey";
-          inherit serialNumber gpgKeyId;
-        };
+      # Security key type constructors (exported in lib for use in configs)
+      securityKeys = {
+        yubikey =
+          {
+            serialNumber,
+            gpgKeyId ? null,
+            ...
+          }:
+          {
+            type = "yubikey";
+            inherit serialNumber gpgKeyId;
+          };
 
-      solokey =
-        { serialNumber, ... }:
-        {
-          type = "solokey";
-          inherit serialNumber;
-        };
+        solokey =
+          { serialNumber, ... }:
+          {
+            type = "solokey";
+            inherit serialNumber;
+          };
 
-      nitrokey =
-        { serialNumber, ... }:
-        {
-          type = "nitrokey";
-          inherit serialNumber;
-        };
+        nitrokey =
+          { serialNumber, ... }:
+          {
+            type = "nitrokey";
+            inherit serialNumber;
+          };
+      };
 
-    in
-    {
-      # Export type constructors for use in system configs
-      inherit yubikey solokey nitrokey;
-
-
-      # Export hardware profiles (generic, anyone with this hardware can use)
+      # Hardware profiles (exported in lib for use in configs)
       hardware = {
         motherboards = {
           gigabyte = {
@@ -117,6 +113,8 @@
         };
       };
 
+    in
+    {
       # Main NixOS module providing the `my.*` namespace
       nixosModules.default =
         {
@@ -380,18 +378,8 @@
         };
 
       # Export library functions
-      lib = {
-        inherit yubikey solokey nitrokey;
-
-        # System builder - the core mynixos API
-        mkSystem =
-          (import ./lib/mkSystem.nix {
-            inherit inputs lib nixpkgs;
-            self = self;
-          }).mkSystem;
-
-        # Installer ISO builder
-        mkInstallerISO = (import ./lib/mkInstallerISO.nix { inherit inputs lib nixpkgs; }).mkInstallerISO;
+      lib = mynixosLib // {
+        inherit securityKeys hardware;
       };
 
       # Formatter for nix code

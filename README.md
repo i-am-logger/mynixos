@@ -34,7 +34,7 @@ Use typed constructors instead of strings:
 
 ```nix
 yubikeys = [
-  (mynixos.yubikey {
+  (mynixos.lib.securityKeys.yubikey {
     serialNumber = "12345678";
     gpgKeyId = "ABCD1234";
   })
