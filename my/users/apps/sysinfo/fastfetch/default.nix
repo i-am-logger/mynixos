@@ -84,6 +84,10 @@ in
                   "key": "    \u001b[1mMemory\u001b[0m"
                 },
                 {
+                  "type": "swap",
+                  "key": "      \u001b[1mSwap\u001b[0m"
+                },
+                {
                   "type": "disk",
                   "key": "      \u001b[1mDisk\u001b[0m",
                   "folders": "/",
@@ -107,10 +111,6 @@ in
                   "key": "      \u001b[1mDisk\u001b[0m",
                   "folders": "/persist",
                   "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
-                },
-                {
-                  "type": "swap",
-                  "key": "      \u001b[1mSwap\u001b[0m"
                 },
                 {
                   "type": "display",
