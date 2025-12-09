@@ -211,13 +211,13 @@
               ./my/hardware/usb/xhci
 
               # Infrastructure
-              ./my/infra/github-runner/github-runner
-              ./my/infra/k3s/k3s
+              ./my/infra/github-runner
+              ./my/infra/k3s
 
               # Storage
-              ./my/storage/impermanence/aggregation
-              ./my/storage/impermanence/feature-aggregation
-              ./my/storage/impermanence/impermanence
+              ./my/storage/impermanence/aggregation.nix
+              ./my/storage/impermanence/feature-aggregation.nix
+              ./my/storage/impermanence/impermanence.nix
 
               # Users - Core
               ./my/users/defaults
@@ -227,8 +227,8 @@
 
               # Users - Features
               ./my/users/graphical/media
-              ./my/users/terminal/terminal
-              ./my/users/webapps/webapps
+              ./my/users/terminal
+              ./my/users/webapps
 
               # Users - Apps: AI
               ./my/users/apps/ai/opencode
