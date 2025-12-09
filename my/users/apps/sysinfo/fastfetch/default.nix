@@ -32,7 +32,7 @@ in
                   "type": 3
                 },
                 "color": {
-                  "keys": null
+                  "keys": "white"
                 }
               },
               "modules": [
