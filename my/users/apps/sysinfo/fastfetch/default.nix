@@ -48,20 +48,20 @@ in
                   "key": "\u001b[1mHost\u001b[0m    "
                 },
                 {
-                  "type": "kernel",
-                  "key": "\u001b[1mKernel\u001b[0m  "
-                },
-                {
                   "type": "uptime",
                   "key": "\u001b[1mUptime\u001b[0m  "
                 },
                 {
-                  "type": "packages",
-                  "key": "\u001b[1mPackages\u001b[0m"
+                  "type": "kernel",
+                  "key": "\u001b[1mKernel\u001b[0m  "
                 },
                 {
                   "type": "shell",
                   "key": "\u001b[1mShell\u001b[0m   "
+                },
+                {
+                  "type": "packages",
+                  "key": "\u001b[1mPackages\u001b[0m"
                 },
                 "break",
                 {
