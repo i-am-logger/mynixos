@@ -85,28 +85,24 @@ in
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
-                  "folders": "/",
-                  "format": "[       /] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                  "key": "        \u001b[1m/\u001b[0m",
+                  "folders": "/"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "key": "    \u001b[1m/boot\u001b[0m",
                   "folders": "/boot",
-                  "hideFolders": [],
-                  "format": "[   /boot] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                  "hideFolders": []
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
-                  "folders": "/nix",
-                  "format": "[    /nix] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                  "key": "     \u001b[1m/nix\u001b[0m",
+                  "folders": "/nix"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
-                  "folders": "/persist",
-                  "format": "[/persist] {size-percentage-bar} {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+                  "key": " \u001b[1m/persist\u001b[0m",
+                  "folders": "/persist"
                 },
                 {
                   "type": "swap",
