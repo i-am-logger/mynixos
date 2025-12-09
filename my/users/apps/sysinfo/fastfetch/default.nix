@@ -59,6 +59,10 @@ in
                   "type": "packages",
                   "key": "\u001b[1mPackages\u001b[0m"
                 },
+                {
+                  "type": "shell",
+                  "key": "\u001b[1mShell\u001b[0m   "
+                },
                 "break",
                 {
                   "type": "custom",
@@ -88,6 +92,10 @@ in
                   "type": "battery",
                   "key": "\u001b[1mBattery\u001b[0m "
                 },
+                {
+                  "type": "display",
+                  "key": "\u001b[1mDisplay\u001b[0m "
+                },
                 "break",
                 {
                   "type": "custom",
@@ -108,14 +116,6 @@ in
                 {
                   "type": "terminal",
                   "key": "\u001b[1mTerminal\u001b[0m"
-                },
-                {
-                  "type": "shell",
-                  "key": "\u001b[1mShell\u001b[0m   "
-                },
-                {
-                  "type": "display",
-                  "key": "\u001b[1mDisplay\u001b[0m "
                 }
               ]
             }
