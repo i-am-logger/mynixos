@@ -144,21 +144,21 @@
 
               # Implementation modules (my/)
               # Top-level features
-              ./my/ai/ai
-              ./my/audio/audio
+              ./my/ai
+              ./my/audio
               ./my/dev/development
-              ./my/environment/environment
-              ./my/performance/performance
-              ./my/secrets/secrets
-              ./my/streaming/streaming
+              ./my/environment
+              ./my/performance
+              ./my/secrets
+              ./my/streaming
               ./my/video/virtual
 
               # Graphical
-              ./my/graphical/graphical
+              ./my/graphical
               ./my/graphical/hyprland
 
               # Security
-              ./my/security/security
+              ./my/security
               ./my/security/yubikey
 
               # System
@@ -167,7 +167,7 @@
               ./my/system/scripts
 
               # Themes
-              ./my/themes/themes
+              ./my/themes
 
               # Hardware - Bluetooth
               ./my/hardware/bluetooth/realtek
@@ -340,15 +340,15 @@
             ++ [
               # Top-level options
               ({ ... }: { options.my = import ./my/system/options.nix { inherit lib pkgs; }; })
-              ({ ... }: { options.my = import ./my/security/security/options.nix { inherit lib; }; })
-              ({ ... }: { options.my = import ./my/environment/environment/options.nix { inherit lib pkgs; }; })
-              ({ ... }: { options.my = import ./my/performance/performance/options.nix { inherit lib; }; })
-              ({ ... }: { options.my = import ./my/graphical/graphical/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/security/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/environment/options.nix { inherit lib pkgs; }; })
+              ({ ... }: { options.my = import ./my/performance/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/graphical/options.nix { inherit lib; }; })
               ({ ... }: { options.my = import ./my/dev/development/options.nix { inherit lib; }; })
-              ({ ... }: { options.my = import ./my/streaming/streaming/options.nix { inherit lib; }; })
-              ({ ... }: { options.my = import ./my/ai/ai/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/streaming/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/ai/options.nix { inherit lib; }; })
               ({ ... }: { options.my = import ./my/video/virtual/options.nix { inherit lib; }; })
-              ({ ... }: { options.my = import ./my/themes/themes/options.nix { inherit lib pkgs; }; })
+              ({ ... }: { options.my = import ./my/themes/options.nix { inherit lib pkgs; }; })
               
               # Category-level options
               ({ ... }: { options.my = import ./my/infra/options.nix { inherit lib; }; })
@@ -370,7 +370,7 @@
               ./my/users/ai/mynixos.nix
               
               # Secrets (special - uses different pattern)
-              (import ./my/secrets/secrets/options.nix)
+              (import ./my/secrets/options.nix)
             ];
 
           config = {
