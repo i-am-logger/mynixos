@@ -44,29 +44,29 @@ in
                 },
                 {
                   "type": "os",
-                  "key": "        \u001b[1mOS\u001b[0m",
-                  "outputColor": "magenta"
+                  "key": "        OS",
+                  "format": "\u001b[1m{}\u001b[0m"
                 },
                 {
                   "type": "host",
-                  "key": "      \u001b[1mHost\u001b[0m"
+                  "key": "      Host"
                 },
                 {
                   "type": "uptime",
-                  "key": "    \u001b[1mUptime\u001b[0m",
-                  "outputColor": "cyan"
+                  "key": "    Uptime",
+                  "format": "\u001b[1m{}\u001b[0m"
                 },
                 {
                   "type": "kernel",
-                  "key": "    \u001b[1mKernel\u001b[0m"
+                  "key": "    Kernel"
                 },
                 {
                   "type": "shell",
-                  "key": "     \u001b[1mShell\u001b[0m"
+                  "key": "     Shell"
                 },
                 {
                   "type": "packages",
-                  "key": "  \u001b[1mPackages\u001b[0m"
+                  "key": "  Packages"
                 },
                 "break",
                 {
@@ -75,52 +75,52 @@ in
                 },
                 {
                   "type": "cpu",
-                  "key": "       \u001b[1mCPU\u001b[0m"
+                  "key": "       CPU"
                 },
                 {
                   "type": "gpu",
-                  "key": "       \u001b[1mGPU\u001b[0m"
+                  "key": "       GPU"
                 },
                 {
                   "type": "display",
-                  "key": "   \u001b[1mDisplay\u001b[0m"
+                  "key": "   Display"
                 },
                 {
                   "type": "memory",
-                  "key": "    \u001b[1mMemory\u001b[0m"
+                  "key": "    Memory"
                 },
                 {
                   "type": "swap",
-                  "key": "      \u001b[1mSwap\u001b[0m"
+                  "key": "      Swap"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "key": "      Disk",
                   "folders": "/",
                   "format": "{size-percentage-bar} [       /] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "key": "      Disk",
                   "folders": "/boot",
                   "hideFolders": [],
                   "format": "{size-percentage-bar} [   /boot] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "key": "      Disk",
                   "folders": "/nix",
                   "format": "{size-percentage-bar} [    /nix] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      \u001b[1mDisk\u001b[0m",
+                  "key": "      Disk",
                   "folders": "/persist",
                   "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "battery",
-                  "key": "   \u001b[1mBattery\u001b[0m"
+                  "key": "   Battery"
                 },
                 "break",
                 {
@@ -129,29 +129,29 @@ in
                 },
                 {
                   "type": "wm",
-                  "key": "        \u001b[1mWM\u001b[0m"
+                  "key": "        WM"
                 },
                 {
                   "type": "theme",
-                  "key": "     \u001b[1mTheme\u001b[0m"
+                  "key": "     Theme"
                 },
                 {
                   "type": "font",
-                  "key": " \u001b[1mFont (Qt)\u001b[0m",
+                  "key": " Font (Qt)",
                   "format": "{1}"
                 },
                 {
                   "type": "font",
-                  "key": "\u001b[1mFont (GTK)\u001b[0m",
+                  "key": "Font (GTK)",
                   "format": "{2}"
                 },
                 {
                   "type": "terminal",
-                  "key": "  \u001b[1mTerminal\u001b[0m"
+                  "key": "  Terminal"
                 },
                 {
                   "type": "terminalfont",
-                  "key": " \u001b[1mTerm Font\u001b[0m"
+                  "key": " Term Font"
                 }
               ]
             }
