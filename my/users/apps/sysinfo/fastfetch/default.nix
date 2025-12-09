@@ -30,6 +30,9 @@ in
                 "separator": "  ",
                 "percent": {
                   "type": 3
+                },
+                "color": {
+                  "keys": "default"
                 }
               },
               "modules": [
