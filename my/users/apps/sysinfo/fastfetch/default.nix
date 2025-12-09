@@ -5,6 +5,16 @@ with lib;
 let
   # mynixos logo from assets directory
   mynixosLogo = ../../../../../assets/logos/mynixos.txt;
+  
+  # Secure Boot check script (single bootctl call with conditional colors)
+  secureBootScript = pkgs.writeShellScript "fastfetch-secureboot" ''
+    status=$(${pkgs.systemd}/bin/bootctl status 2>/dev/null | ${pkgs.gawk}/bin/awk '/Secure Boot:/ {print $3; exit}')
+    case "$status" in
+      enabled)  printf '\033[32m\033[1mEnabled\033[0m' ;;
+      disabled) printf '\033[31m\033[1m\033[5mDisabled\033[0m' ;;
+      *)        printf '\033[33m\033[1mUnknown\033[0m' ;;
+    esac
+  '';
 in
 {
   config = {
@@ -71,14 +81,7 @@ in
                 {
                   "type": "command",
                   "key": "  \u001b[1mSecure Boot\u001b[0m",
-                  "text": "bash -c 'bootctl status 2>/dev/null | awk \"/Secure Boot: enabled/ {print \\\"Enabled\\\"; exit}\"'",
-                  "format": "{#green}\u001b[1m{result}\u001b[0m{#}"
-                },
-                {
-                  "type": "command",
-                  "key": "  \u001b[1mSecure Boot\u001b[0m",
-                  "text": "bash -c 'bootctl status 2>/dev/null | awk \"/Secure Boot: disabled/ {print \\\"Disabled\\\"; exit}\"'",
-                  "format": "{#red}\u001b[1m\u001b[5m{result}\u001b[0m{#}"
+                  "text": "${secureBootScript}"
                 },
                 {
                   "type": "kernel",
