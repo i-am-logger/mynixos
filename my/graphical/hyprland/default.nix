@@ -408,7 +408,7 @@ in
       (name: userCfg:
         let
           # Get user-level hyprland config (with mynixos opinionated defaults)
-          userHyprland = userCfg.graphical.windowManager.hyprland or { };
+          userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
 
           # Get browser/terminal from environment API (single source of truth)
           browserApp = userCfg.environment.BROWSER or null;

@@ -29,10 +29,12 @@ in
               "display": {
                 "separator": "  ",
                 "percent": {
-                  "type": 3
+                  "type": 3,
+                  "green": 60,
+                  "yellow": 80
                 },
                 "color": {
-                  "keys": "white"
+                  "keys": "default"
                 }
               },
               "modules": [
@@ -43,118 +45,193 @@ in
                 "separator",
                 {
                   "type": "custom",
-                  "format": "    \u001b[1m\u001b[4mSystem\u001b[0m"
+                  "format": "       \u001b[1m\u001b[4mSystem\u001b[0m"
                 },
                 {
                   "type": "os",
-                  "key": "        OS",
+                  "key": "           OS",
                   "format": "\u001b[1m{3} {12}\u001b[0m"
                 },
                 {
                   "type": "host",
-                  "key": "      Host"
+                  "key": "         Host",
+                  "keyColor": "reset_",
+                  "format": "{2}"
                 },
                 {
                   "type": "uptime",
-                  "key": "    Uptime",
+                  "key": "       Uptime",
                   "format": "\u001b[1m{10}\u001b[0m"
                 },
                 {
+                  "type": "bootmgr",
+                  "key": "      Bootmgr",
+                  "keyColor": "reset_"
+                },
+                {
+                  "type": "command",
+                  "key": "  \u001b[1mSecure Boot\u001b[0m",
+                  "text": "bash -c 'bootctl status 2>/dev/null | awk \"/Secure Boot: enabled/ {print \\\"Enabled\\\"; exit}\"'",
+                  "format": "{#green}\u001b[1m{result}\u001b[0m{#}"
+                },
+                {
+                  "type": "command",
+                  "key": "  \u001b[1mSecure Boot\u001b[0m",
+                  "text": "bash -c 'bootctl status 2>/dev/null | awk \"/Secure Boot: disabled/ {print \\\"Disabled\\\"; exit}\"'",
+                  "format": "{#red}\u001b[1m\u001b[5m{result}\u001b[0m{#}"
+                },
+                {
                   "type": "kernel",
-                  "key": "    Kernel"
+                  "key": "       Kernel",
+                  "keyColor": "reset_"
+                },
+                {
+                  "type": "lm",
+                  "key": "Login Manager",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "shell",
-                  "key": "     Shell"
+                  "key": "        Shell",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "packages",
-                  "key": "  Packages"
+                  "key": "     Packages",
+                  "keyColor": "reset_"
                 },
                 "break",
                 {
                   "type": "custom",
-                  "format": "  \u001b[1m\u001b[4mHardware\u001b[0m"
+                  "format": "     \u001b[1m\u001b[4mHardware\u001b[0m"
                 },
                 {
                   "type": "cpu",
-                  "key": "       CPU"
+                  "key": "          CPU",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "gpu",
-                  "key": "       GPU"
+                  "key": "          GPU",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "display",
-                  "key": "   Display"
+                  "key": "      Display",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "memory",
-                  "key": "    Memory"
+                  "key": "       Memory",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "swap",
-                  "key": "      Swap"
+                  "key": "         Swap",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "disk",
-                  "key": "      Disk",
+                  "key": "         Disk",
+                  "keyColor": "reset_",
                   "folders": "/",
                   "format": "{size-percentage-bar} [       /] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      Disk",
+                  "key": "         Disk",
+                  "keyColor": "reset_",
                   "folders": "/boot",
                   "hideFolders": [],
                   "format": "{size-percentage-bar} [   /boot] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      Disk",
+                  "key": "         Disk",
+                  "keyColor": "reset_",
                   "folders": "/nix",
                   "format": "{size-percentage-bar} [    /nix] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "disk",
-                  "key": "      Disk",
+                  "key": "         Disk",
+                  "keyColor": "reset_",
                   "folders": "/persist",
                   "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
                 },
                 {
                   "type": "battery",
-                  "key": "   Battery"
+                  "key": "      Battery",
+                  "keyColor": "reset_"
+                },
+                {
+                  "type": "keyboard",
+                  "key": "          USB",
+                  "keyColor": "reset_"
+                },
+                {
+                  "type": "camera",
+                  "key": "       Camera",
+                  "keyColor": "reset_"
                 },
                 "break",
                 {
                   "type": "custom",
-                  "format": "   \u001b[1m\u001b[4mDesktop\u001b[0m"
+                  "format": "      \u001b[1m\u001b[4mDesktop\u001b[0m"
                 },
                 {
                   "type": "wm",
-                  "key": "        WM"
+                  "key": "           WM",
+                  "keyColor": "reset_"
+                },
+                {
+                  "type": "wmtheme",
+                  "key": "     WM Theme",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "theme",
-                  "key": "     Theme"
+                  "key": "        Theme",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "font",
-                  "key": " Font (Qt)",
+                  "key": "    Font (Qt)",
+                  "keyColor": "reset_",
                   "format": "{1}"
                 },
                 {
                   "type": "font",
-                  "key": "Font (GTK)",
+                  "key": "   Font (GTK)",
+                  "keyColor": "reset_",
                   "format": "{2}"
                 },
                 {
                   "type": "terminal",
-                  "key": "  Terminal"
+                  "key": "     Terminal",
+                  "keyColor": "reset_"
                 },
                 {
                   "type": "terminalfont",
-                  "key": " Term Font"
+                  "key": "    Term Font",
+                  "keyColor": "reset_"
+                },
+                "break",
+                {
+                  "type": "colors",
+                  "symbol": "block",
+                  "paddingLeft": 15,
+                  "block": {
+                    "width": 3,
+                    "range": [0, 15]
+                  }
+                },
+                "break",
+                {
+                  "type": "media",
+                  "key": "               ♫",
+                  "keyColor": "reset_",
+                  "format": "\u001b[1mPlaying now - {artist} - {title}\u001b[0m"
                 }
               ]
             }
