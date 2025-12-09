@@ -85,7 +85,8 @@ in
                 },
                 {
                   "type": "disk",
-                  "key": "    \u001b[1mDisk\u001b[0m"
+                  "key": "    \u001b[1mDisk\u001b[0m",
+                  "hideFolders": []
                 },
                 {
                   "type": "swap",
