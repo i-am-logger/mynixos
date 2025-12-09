@@ -80,6 +80,10 @@ in
                   "key": "       \u001b[1mGPU\u001b[0m"
                 },
                 {
+                  "type": "display",
+                  "key": "   \u001b[1mDisplay\u001b[0m"
+                },
+                {
                   "type": "memory",
                   "key": "    \u001b[1mMemory\u001b[0m"
                 },
@@ -111,10 +115,6 @@ in
                   "key": "      \u001b[1mDisk\u001b[0m",
                   "folders": "/persist",
                   "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
-                },
-                {
-                  "type": "display",
-                  "key": "   \u001b[1mDisplay\u001b[0m"
                 },
                 {
                   "type": "battery",
