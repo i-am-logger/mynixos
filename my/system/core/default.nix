@@ -131,19 +131,16 @@ in
 
       # Power management - prevent unwanted sleep/suspend (opinionated for workstations)
       # Desktop workstations shouldn't auto-suspend
-      services.logind = {
-        lidSwitch = mkDefault "ignore";
-        lidSwitchDocked = mkDefault "ignore";
-        lidSwitchExternalPower = mkDefault "ignore";
-        powerKey = mkDefault "ignore";
-        powerKeyLongPress = mkDefault "poweroff";
-        suspendKey = mkDefault "ignore";
-        hibernateKey = mkDefault "ignore";
-        # Use settings.Login instead of deprecated extraConfig
-        settings.Login = {
-          IdleAction = mkDefault "ignore";
-          IdleActionSec = mkDefault 0;
-        };
+      services.logind.settings.Login = {
+        HandleLidSwitch = mkDefault "ignore";
+        HandleLidSwitchDocked = mkDefault "ignore";
+        HandleLidSwitchExternalPower = mkDefault "ignore";
+        HandlePowerKey = mkDefault "ignore";
+        HandlePowerKeyLongPress = mkDefault "poweroff";
+        HandleSuspendKey = mkDefault "ignore";
+        HandleHibernateKey = mkDefault "ignore";
+        IdleAction = mkDefault "ignore";
+        IdleActionSec = mkDefault 0;
       };
 
       # Network configuration (NetworkManager is a system service, not hardware)
