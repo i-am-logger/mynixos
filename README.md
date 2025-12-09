@@ -48,9 +48,12 @@ environment.EDITOR = pkgs.helix;    # Not "helix" string
 
 ```
 mynixos/          (the distribution)
-  ├── flake.nix   (options, defaults)
-  ├── options/    (all my.* options)
-  └── my/         (implementations)
+  ├── flake.nix   (imports all modules)
+  └── my/         (options + implementations co-located)
+      └── category/item/
+          ├── options.nix    (type definitions)
+          ├── default.nix    (implementation)
+          └── mynixos.nix    (opinionated defaults)
 
 /etc/nixos/       (your config)
   ├── flake.nix   (imports mynixos)
