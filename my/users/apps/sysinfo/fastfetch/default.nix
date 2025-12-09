@@ -44,7 +44,8 @@ in
                 },
                 {
                   "type": "os",
-                  "key": "        \u001b[1mOS\u001b[0m"
+                  "key": "        \u001b[1mOS\u001b[0m",
+                  "outputColor": "magenta"
                 },
                 {
                   "type": "host",
