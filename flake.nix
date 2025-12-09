@@ -336,111 +336,35 @@
               # Users - Apps: XDG
               ./my/users/apps/xdg
             ]
-            # Option definitions (manual - stable list of ~17 files)
+            # Option definitions
             ++ [
-              (
-                { ... }:
-                {
-                  options.my = import ./options/system.nix { inherit lib pkgs; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/security.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/environment.nix { inherit lib pkgs; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/performance.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/graphical.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/dev.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/streaming.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/ai.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/video.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/infra.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/hardware.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/presets.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/users.nix { inherit lib pkgs; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/storage.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/boot.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/filesystem.nix { inherit lib; };
-                }
-              )
-              (
-                { ... }:
-                {
-                  options.my = import ./options/themes.nix { inherit lib pkgs; };
-                }
-              )
-              (import ./options/secrets.nix)
+              # Top-level options
+              ({ ... }: { options.my = import ./my/system/options.nix { inherit lib pkgs; }; })
+              ({ ... }: { options.my = import ./my/security/security/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/environment/environment/options.nix { inherit lib pkgs; }; })
+              ({ ... }: { options.my = import ./my/performance/performance/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/graphical/graphical/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/dev/development/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/streaming/streaming/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/ai/ai/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/video/virtual/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/themes/themes/options.nix { inherit lib pkgs; }; })
+              
+              # Category-level options
+              ({ ... }: { options.my = import ./my/infra/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/hardware/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/hardware/boot/options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/storage/options.nix { inherit lib; }; })
+              
+              # Cross-cutting options
+              ({ ... }: { options.my = import ./my/presets-options.nix { inherit lib; }; })
+              ({ ... }: { options.my = import ./my/filesystem-options.nix { inherit lib; }; })
+              
+              # Users options
+              ({ ... }: { options.my = import ./my/users/users/options.nix { inherit lib pkgs; }; })
+              
+              # Secrets (special - uses different pattern)
+              (import ./my/secrets/secrets/options.nix)
             ];
 
           config = {
