@@ -53,7 +53,7 @@ in
                 {
                   "type": "uptime",
                   "key": "    \u001b[1mUptime\u001b[0m",
-                  "keyColor": "cyan"
+                  "outputColor": "cyan"
                 },
                 {
                   "type": "kernel",
