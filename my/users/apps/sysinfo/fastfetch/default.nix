@@ -27,7 +27,10 @@ in
                 }
               },
               "display": {
-                "separator": "  "
+                "separator": "  ",
+                "percent": {
+                  "type": 3
+                }
               },
               "modules": [
                 {
@@ -37,7 +40,7 @@ in
                 "separator",
                 {
                   "type": "custom",
-                  "format": "\u001b[1m\u001b[4mSystem\u001b[0m"
+                  "format": "    \u001b[1m\u001b[4mSystem\u001b[0m"
                 },
                 {
                   "type": "os",
@@ -61,12 +64,12 @@ in
                 },
                 {
                   "type": "packages",
-                  "key": "\u001b[1mPackages\u001b[0m"
+                  "key": "  \u001b[1mPackages\u001b[0m"
                 },
                 "break",
                 {
                   "type": "custom",
-                  "format": "\u001b[1m\u001b[4mHardware\u001b[0m"
+                  "format": "  \u001b[1m\u001b[4mHardware\u001b[0m"
                 },
                 {
                   "type": "cpu",
@@ -82,8 +85,7 @@ in
                 },
                 {
                   "type": "disk",
-                  "key": "    \u001b[1mDisk\u001b[0m",
-                  "format": "{1} / {2} ({3}) - {9} [{10}]"
+                  "key": "    \u001b[1mDisk\u001b[0m"
                 },
                 {
                   "type": "swap",
@@ -100,7 +102,7 @@ in
                 "break",
                 {
                   "type": "custom",
-                  "format": "\u001b[1m\u001b[4mDesktop\u001b[0m"
+                  "format": "   \u001b[1m\u001b[4mDesktop\u001b[0m"
                 },
                 {
                   "type": "wm",
@@ -112,7 +114,7 @@ in
                 },
                 {
                   "type": "font",
-                  "key": "\u001b[1mFont (Qt)\u001b[0m",
+                  "key": " \u001b[1mFont (Qt)\u001b[0m",
                   "format": "{1}"
                 },
                 {
@@ -122,7 +124,7 @@ in
                 },
                 {
                   "type": "terminal",
-                  "key": "\u001b[1mTerminal\u001b[0m"
+                  "key": "  \u001b[1mTerminal\u001b[0m"
                 }
               ]
             }
