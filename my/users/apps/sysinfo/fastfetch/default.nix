@@ -81,20 +81,20 @@ in
                   "key": "\u001b[1mMemory\u001b[0m  "
                 },
                 {
-                  "type": "swap",
-                  "key": "\u001b[1mSwap\u001b[0m    "
-                },
-                {
                   "type": "disk",
                   "key": "\u001b[1mDisk\u001b[0m    "
                 },
                 {
-                  "type": "battery",
-                  "key": "\u001b[1mBattery\u001b[0m "
+                  "type": "swap",
+                  "key": "\u001b[1mSwap\u001b[0m    "
                 },
                 {
                   "type": "display",
                   "key": "\u001b[1mDisplay\u001b[0m "
+                },
+                {
+                  "type": "battery",
+                  "key": "\u001b[1mBattery\u001b[0m "
                 },
                 "break",
                 {
