@@ -1,7 +1,7 @@
 { lib, ... }:
 
 let
-  appLib = import ../../lib/app-options.nix { inherit lib; };
+  appLib = import ../../../lib/app-options.nix { inherit lib; };
 in
 {
   options = {
