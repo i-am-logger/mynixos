@@ -65,6 +65,10 @@ in
 
       # Disable GRUB theming since we use systemd-boot
       targets.grub.enable = false;
+
+      # Disable Qt theming to avoid compatibility issues with newer home-manager
+      # (stylix uses qt5ctSettings/qt6ctSettings which were removed in newer HM)
+      targets.qt.enable = false;
     };
   };
 }
