@@ -18,7 +18,7 @@ in
 
       # Networking configuration
       networking.useDHCP = lib.mkIf cfg.networking.enable (lib.mkDefault cfg.networking.useDHCP);
-      networking.wireless.enable = lib.mkIf cfg.networking.enable cfg.networking.wireless.enable;
+      networking.wireless.enable = lib.mkIf cfg.networking.enable (lib.mkDefault cfg.networking.wireless.enable);
     })
 
     # Set hardware types and component options (unconditionally to avoid recursion)
