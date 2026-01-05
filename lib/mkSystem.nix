@@ -97,13 +97,14 @@
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension = "backup";
           home-manager.extraSpecialArgs = { inherit inputs; };
-          
+
           # Inject custom home-manager modules from mynixos
-          home-manager.sharedModules = [
-            # Extend stylix cava module with additional gradient modes
-            ../modules/stylix/cava-extended.nix
-          ];
-          
+          # DISABLED: stylix compatibility issues
+          # home-manager.sharedModules = [
+          #   # Extend stylix cava module with additional gradient modes
+          #   ../modules/stylix/cava-extended.nix
+          # ];
+
           home-manager.users = lib.genAttrs
             (map (user: user.name) users)
             (name:
@@ -113,7 +114,8 @@
         }
 
         # Stylix theming module (required for extraModules to use stylix)
-        inputs.stylix.nixosModules.stylix
+        # DISABLED: stylix has compatibility issues with newer nixpkgs/home-manager
+        # inputs.stylix.nixosModules.stylix
 
         # sops-nix for secrets management
         inputs.sops-nix.nixosModules.sops
