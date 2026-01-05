@@ -42,16 +42,11 @@ in
       # and wrap compilers system-wide
     };
 
-    # Set CCACHE_DIR environment variable for all users
-    home-manager.users = mkIf cfg.enableCcache (
-      mkMerge (
-        map
-          (userName: {
-            ${userName}.home.sessionVariables.CCACHE_DIR = "/tmp/ccache";
-          })
-          userNames
-      )
-    );
+    # Set CCACHE_DIR environment variable system-wide for all users
+    # This ensures manual use of ccache (e.g., in nix-shell) uses the system cache
+    environment.sessionVariables = mkIf cfg.enableCcache {
+      CCACHE_DIR = "/tmp/ccache";
+    };
 
     # Create persist directory if not using dedicated partition
     systemd.tmpfiles.rules =
