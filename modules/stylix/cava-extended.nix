@@ -22,7 +22,7 @@ in
     };
   };
 
-  config = mkIf (cfg.enable && cfg.gradientMode != "custom") {
+  config = mkIf ((config.stylix.enable or false) && (cfg.enable or false) && cfg.gradientMode != "custom") {
     programs.cava.settings.color = mkMerge [
       # VU meter gradient mode: Bars show text color → yellow → orange → red vertically
       # 8 gradient steps: [5555yyor] distribution
@@ -49,7 +49,7 @@ in
 
       # Rainbow gradient mode (extends default stylix behavior)
       # This is handled by stylix's rainbow.enable, but we provide explicit colors
-      (mkIf (cfg.gradientMode == "rainbow" && !cfg.rainbow.enable) {
+      (mkIf (cfg.gradientMode == "rainbow" && !(cfg.rainbow.enable or false)) {
         background = "'#${colors.base00}'";
         gradient = 1;
         gradient_count = 7;
