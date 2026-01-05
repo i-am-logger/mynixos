@@ -60,6 +60,12 @@
                 default = [ ];
                 description = "Additional user files to persist (applied to all users)";
               };
+
+              enableCcache = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable ccache with bind-mount from persist to /tmp/ccache";
+              };
             };
           };
         };
