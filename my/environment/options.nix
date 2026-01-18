@@ -27,8 +27,8 @@
             options = {
               type = lib.mkOption {
                 type = lib.types.enum [ "greetd" "gdm" "sddm" "lightdm" ];
-                default = "greetd";
-                description = "Which display manager to use (mynixos default: greetd)";
+                default = "gdm";
+                description = "Which display manager to use (mynixos default: gdm)";
               };
 
               greetd = lib.mkOption {

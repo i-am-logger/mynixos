@@ -51,7 +51,7 @@ in
       })
 
       (mkIf (dmType == "gdm") {
-        services.xserver.displayManager.gdm = {
+        services.displayManager.gdm = {
           enable = true;
           wayland = dmCfg.gdm.wayland;
         };
