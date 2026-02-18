@@ -41,8 +41,8 @@ in
             # Audio Tools
             (optional (mediaCfg.pipewireTools or true) pipewire) ++
             (optionals (mediaCfg.audioUtils or true) [
-              pavucontrol  # PulseAudio/PipeWire volume control GUI
-              pamixer      # PulseAudio/PipeWire CLI mixer
+              pavucontrol # PulseAudio/PipeWire volume control GUI
+              pamixer # PulseAudio/PipeWire CLI mixer
             ]);
         })
       config.my.users;

@@ -37,12 +37,14 @@ in
     # Define sops secrets for user passwords when secrets are enabled and user opts in
     (mkIf (secretsCfg.enable && usersWithSopsPassword != { }) {
       sops.secrets = listToAttrs (
-        map (name: {
-          name = "users/${name}/password";
-          value = {
-            neededForUsers = true;
-          };
-        }) (attrNames usersWithSopsPassword)
+        map
+          (name: {
+            name = "users/${name}/password";
+            value = {
+              neededForUsers = true;
+            };
+          })
+          (attrNames usersWithSopsPassword)
       );
     })
 
@@ -58,19 +60,20 @@ in
             description = userCfg.description or userCfg.fullName;
             # Prefer hashedPasswordFile (including sops) over hashedPassword for security
             hashedPasswordFile = passwordFile;
-            hashedPassword = if passwordFile == null
+            hashedPassword =
+              if passwordFile == null
               then userCfg.hashedPassword
               else null;
             home = "/home/${name}";
-          group = name; # Create a group with the same name as the user
-          extraGroups = [ "wheel" "networkmanager" ]; # Base groups, features add more
-          shell =
-            if userCfg.shell == "fish" then pkgs.fish
-            else if userCfg.shell == "zsh" then pkgs.zsh
-            else if userCfg.shell == "bash" then pkgs.bash
-            else pkgs.bash; # Default to bash
-          packages = userCfg.packages;
-        })
+            group = name; # Create a group with the same name as the user
+            extraGroups = [ "wheel" "networkmanager" ]; # Base groups, features add more
+            shell =
+              if userCfg.shell == "fish" then pkgs.fish
+              else if userCfg.shell == "zsh" then pkgs.zsh
+              else if userCfg.shell == "bash" then pkgs.bash
+              else pkgs.bash; # Default to bash
+            packages = userCfg.packages;
+          })
         usersToCreate;
 
       # Create matching groups for each user

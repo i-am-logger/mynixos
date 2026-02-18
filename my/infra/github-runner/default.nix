@@ -7,17 +7,21 @@ let
 
   # Collect all repositories from all users with github.username set
   userRepositories = lib.flatten (
-    lib.mapAttrsToList (username: userCfg:
-      let
-        githubUser = userCfg.github.username or null;
-      in
-      lib.optionals (githubUser != null) (
-        map (repo: {
-          inherit repo username;
-          githubUsername = githubUser;
-        }) (userCfg.github.repositories or [])
+    lib.mapAttrsToList
+      (username: userCfg:
+        let
+          githubUser = userCfg.github.username or null;
+        in
+        lib.optionals (githubUser != null) (
+          map
+            (repo: {
+              inherit repo username;
+              githubUsername = githubUser;
+            })
+            (userCfg.github.repositories or [ ])
+        )
       )
-    ) config.my.users
+      config.my.users
   );
 
   # List of repositories to create runner sets for (combined from users and legacy cfg.repositories)
@@ -30,7 +34,7 @@ let
     let
       firstUserCfg = config.my.users.${firstUser};
     in
-    firstUserCfg.github.username or (throw "github.username not set for user ${firstUser}");
+      firstUserCfg.github.username or (throw "github.username not set for user ${firstUser}");
 
   # Auto-detect GPU vendor from mynixos hardware configuration
   autoGpuVendor = config.my.hardware.gpu or null;

@@ -4,7 +4,7 @@ with lib;
 
 let
   # Check if user has YubiKeys configured
-  hasYubikeys = userCfg: (length (userCfg.yubikeys or [])) > 0;
+  hasYubikeys = userCfg: (length (userCfg.yubikeys or [ ])) > 0;
 in
 {
   # SSH configuration - always enabled for all users

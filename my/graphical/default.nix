@@ -1,8 +1,7 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ config
+, lib
+, pkgs
+, ...
 }:
 
 with lib;
@@ -129,14 +128,16 @@ in
         ];
 
         # Add users to graphical-related groups
-        users.users = mapAttrs (name: userCfg: {
-          extraGroups = [
-            "input"
-            "gpu"
-            "video"
-            "render"
-          ];
-        }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+        users.users = mapAttrs
+          (name: userCfg: {
+            extraGroups = [
+              "input"
+              "gpu"
+              "video"
+              "render"
+            ];
+          })
+          (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
       }
 
       # Audio tools are now in my.hardware.audio, not in graphical

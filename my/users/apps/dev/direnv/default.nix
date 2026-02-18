@@ -8,10 +8,10 @@ with lib;
       (name: userCfg:
         mkIf (appHelpers.shouldEnable userCfg "tools" "direnv") {
           programs.direnv = {
-          enable = true;
-          nix-direnv.enable = true;
-        };
-      })
+            enable = true;
+            nix-direnv.enable = true;
+          };
+        })
       config.my.users;
   };
 }

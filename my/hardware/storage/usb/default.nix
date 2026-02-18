@@ -13,8 +13,8 @@ in
   config = mkIf cfg.enable {
     # USB storage and SD card reader kernel modules
     boot.initrd.availableKernelModules = [
-      "usb_storage"  # USB mass storage devices
-      "sd_mod"       # SD/MMC card readers
+      "usb_storage" # USB mass storage devices
+      "sd_mod" # SD/MMC card readers
     ];
   };
 }

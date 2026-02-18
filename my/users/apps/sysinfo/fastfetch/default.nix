@@ -5,7 +5,7 @@ with lib;
 let
   # mynixos logo from assets directory
   mynixosLogo = ../../../../../assets/logos/mynixos.txt;
-  
+
   # Secure Boot check script (single bootctl call with conditional colors)
   secureBootScript = pkgs.writeShellScript "fastfetch-secureboot" ''
     status=$(${pkgs.systemd}/bin/bootctl status 2>/dev/null | ${pkgs.gawk}/bin/awk '/Secure Boot:/ {print $3; exit}')
@@ -24,7 +24,7 @@ in
           home.packages = with pkgs; [
             fastfetch
           ];
-          
+
           # Configure fastfetch to use mynixos logo with categorized system info
           xdg.configFile."fastfetch/config.jsonc".text = ''
             {

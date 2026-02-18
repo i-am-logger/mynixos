@@ -56,7 +56,7 @@ with lib;
           (tree-sitter.withPlugins (_: tree-sitter.allGrammars))
           # nixpkgs-fmt
           # nixfmt
-          nixfmt-rfc-style
+          nixfmt
           # nixpkgs-fmt
         ];
 

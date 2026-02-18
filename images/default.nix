@@ -3,24 +3,26 @@
 let
   # Import nixpkgs with only CodeQL allowed as unfree
   pkgsUnfree = import pkgs.path {
-    system = pkgs.stdenv.system;
-    config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [
-      "codeql"
-    ];
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfreePredicate =
+      pkg:
+      builtins.elem (pkgs.lib.getName pkg) [
+        "codeql"
+      ];
   };
 
   # Entry point script for the container
   entrypoint = pkgs.writeShellScript "runner-entrypoint" ''
     set -e
-    
+
     # Required environment variables:
     # - RUNNER_NAME: Name of the runner
     # - RUNNER_TOKEN: GitHub registration token (provided by ARC)
     # - GITHUB_URL: GitHub repository/org URL
-    
+
     export RUNNER_ALLOW_RUNASROOT=1
     export HOME=/root
-    
+
     # Initialize runner directory with correct permissions
     if [ ! -d "/runner" ]; then
       mkdir -p /runner
@@ -40,7 +42,7 @@ let
         --labels "nixos,nix" \
         --ephemeral
     fi
-    
+
     cd /runner
     # Run the runner
     echo "Starting runner..."
@@ -147,22 +149,22 @@ pkgs.dockerTools.buildLayeredImage {
         mkdir -p {etc,tmp,var,root,runner}
         mkdir -p {nix/var/nix,var/lib}
         mkdir -p {sbin,usr/sbin}
-    
+
         # Create /usr/bin for compatibility (some scripts expect /usr/bin/env)
         mkdir -p usr/bin
         ln -sf ${pkgs.coreutils}/bin/env usr/bin/env
-    
+
         # Create minimal /etc files
         cat > etc/passwd << EOF
     root:x:0:0:root:/root:${pkgs.bash}/bin/bash
     nobody:x:65534:65534:nobody:/:/bin/false
     EOF
-    
+
         cat > etc/group << EOF
     root:x:0:
     nogroup:x:65534:
     EOF
-    
+
         # Set up Nix configuration
         mkdir -p etc/nix
         cat > etc/nix/nix.conf << EOF
@@ -171,7 +173,7 @@ pkgs.dockerTools.buildLayeredImage {
     filter-syscalls = false
     build-users-group =
     EOF
-    
+
         # Set permissions
         chmod 755 runner tmp usr/bin sbin usr/sbin
         chmod 644 etc/passwd etc/group

@@ -29,7 +29,7 @@
 
   # Custom EDID firmware for HDMI audio fix (Elgato 4K X doesn't report ELD properly)
   hardware.firmware = [
-    (pkgs.runCommandNoCC "hdmi-edid-firmware" {} ''
+    (pkgs.runCommand "hdmi-edid-firmware" { } ''
       mkdir -p $out/lib/firmware/edid
       cp ${./firmware/edid/hdmi-audio.bin} $out/lib/firmware/edid/hdmi-audio.bin
     '')

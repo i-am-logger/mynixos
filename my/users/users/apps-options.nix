@@ -38,7 +38,10 @@ in
                             };
                             historyControl = lib.mkOption {
                               type = lib.types.listOf lib.types.str;
-                              default = [ "ignoredups" "ignorespace" ];
+                              default = [
+                                "ignoredups"
+                                "ignorespace"
+                              ];
                               description = "History control options";
                             };
                             shellOptions = lib.mkOption {
@@ -63,7 +66,12 @@ in
                         description = "Bash shell configuration";
                       };
 
-                      fish = appLib.mkAppOption { name = "fish"; default = false; description = "Fish shell"; persistedDirectories = []; };
+                      fish = appLib.mkAppOption {
+                        name = "fish";
+                        default = false;
+                        description = "Fish shell";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -112,7 +120,12 @@ in
                         description = "Yazi terminal file manager";
                         persistedDirectories = [ ".config/yazi" ];
                       };
-                      mc = appLib.mkAppOption { name = "mc"; default = false; description = "Midnight Commander"; persistedDirectories = []; };
+                      mc = appLib.mkAppOption {
+                        name = "mc";
+                        default = false;
+                        description = "Midnight Commander";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -129,7 +142,12 @@ in
                         description = "Zellij terminal multiplexer";
                         persistedDirectories = [ ".config/zellij" ];
                       };
-                      tmux = appLib.mkAppOption { name = "tmux"; default = false; description = "tmux multiplexer"; persistedDirectories = []; };
+                      tmux = appLib.mkAppOption {
+                        name = "tmux";
+                        default = false;
+                        description = "tmux multiplexer";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -146,8 +164,18 @@ in
                         description = "Fastfetch system info";
                         persistedDirectories = [ ];
                       };
-                      btop = appLib.mkAppOption { name = "btop"; default = false; description = "btop system monitor"; persistedDirectories = []; };
-                      neofetch = appLib.mkAppOption { name = "neofetch"; default = false; description = "neofetch system info"; persistedDirectories = []; };
+                      btop = appLib.mkAppOption {
+                        name = "btop";
+                        default = false;
+                        description = "btop system monitor";
+                        persistedDirectories = [ ];
+                      };
+                      neofetch = appLib.mkAppOption {
+                        name = "neofetch";
+                        default = false;
+                        description = "neofetch system info";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -180,14 +208,21 @@ in
                 visualizers = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      cava = appLib.mkAppOption { 
-                        name = "cava"; 
-                        default = false; 
-                        description = "cava audio visualizer"; 
-                        persistedDirectories = [".config/cava/shaders" ".config/cava/themes"];
+                      cava = appLib.mkAppOption {
+                        name = "cava";
+                        default = false;
+                        description = "cava audio visualizer";
+                        persistedDirectories = [
+                          ".config/cava/shaders"
+                          ".config/cava/themes"
+                        ];
                         extraOptions = {
                           gradientMode = lib.mkOption {
-                            type = lib.types.enum [ "rainbow" "vumeter" "custom" ];
+                            type = lib.types.enum [
+                              "rainbow"
+                              "vumeter"
+                              "custom"
+                            ];
                             default = "vumeter";
                             description = ''
                               Gradient color mode for cava visualization (styled by Stylix):
@@ -209,7 +244,12 @@ in
                 network = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      termscp = appLib.mkAppOption { name = "termscp"; default = false; description = "termscp TUI file transfer"; persistedDirectories = []; };
+                      termscp = appLib.mkAppOption {
+                        name = "termscp";
+                        default = false;
+                        description = "termscp TUI file transfer";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -220,7 +260,12 @@ in
                 fun = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      pipes = appLib.mkAppOption { name = "pipes"; default = false; description = "Terminal eye candy (pipes, neo, asciiquarium)"; persistedDirectories = []; };
+                      pipes = appLib.mkAppOption {
+                        name = "pipes";
+                        default = false;
+                        description = "Terminal eye candy (pipes, neo, asciiquarium)";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -262,7 +307,7 @@ in
                             };
                             settings = lib.mkOption {
                               type = lib.types.attrs;
-                              default = {};
+                              default = { };
                               description = "Additional Hyprland settings (passthrough to wayland.windowManager.hyprland.settings)";
                             };
                             persistedDirectories = lib.mkOption {
@@ -291,7 +336,12 @@ in
                         description = "Brave browser";
                         persistedDirectories = [ ".config/BraveSoftware" ];
                       };
-                      firefox = appLib.mkAppOption { name = "firefox"; default = false; description = "Firefox browser"; persistedDirectories = []; };
+                      firefox = appLib.mkAppOption {
+                        name = "firefox";
+                        default = false;
+                        description = "Firefox browser";
+                        persistedDirectories = [ ];
+                      };
                       chromium = appLib.mkAppOption {
                         name = "chromium";
                         default = false;
@@ -314,8 +364,18 @@ in
                         description = "WezTerm terminal";
                         persistedDirectories = [ ".config/wezterm" ];
                       };
-                      kitty = appLib.mkAppOption { name = "kitty"; default = false; description = "Kitty terminal"; persistedDirectories = []; };
-                      ghostty = appLib.mkAppOption { name = "ghostty"; default = false; description = "Ghostty terminal"; persistedDirectories = []; };
+                      kitty = appLib.mkAppOption {
+                        name = "kitty";
+                        default = false;
+                        description = "Kitty terminal";
+                        persistedDirectories = [ ];
+                      };
+                      ghostty = appLib.mkAppOption {
+                        name = "ghostty";
+                        default = false;
+                        description = "Ghostty terminal";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -332,7 +392,12 @@ in
                         description = "Helix editor";
                         persistedDirectories = [ ".config/helix" ];
                       };
-                      marktext = appLib.mkAppOption { name = "marktext"; default = false; description = "MarkText markdown editor"; persistedDirectories = []; };
+                      marktext = appLib.mkAppOption {
+                        name = "marktext";
+                        default = false;
+                        description = "MarkText markdown editor";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -359,7 +424,12 @@ in
                 statusbars = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      waybar = appLib.mkAppOption { name = "waybar"; default = false; description = "Waybar status bar"; persistedDirectories = []; };
+                      waybar = appLib.mkAppOption {
+                        name = "waybar";
+                        default = false;
+                        description = "Waybar status bar";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -386,7 +456,12 @@ in
                 utils = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      calculator = appLib.mkAppOption { name = "calculator"; default = false; description = "Calculator (qalculate)"; persistedDirectories = []; };
+                      calculator = appLib.mkAppOption {
+                        name = "calculator";
+                        default = false;
+                        description = "Calculator (qalculate)";
+                        persistedDirectories = [ ];
+                      };
                       imagemagick = appLib.mkAppOption {
                         name = "ImageMagick";
                         default = false;
@@ -433,14 +508,25 @@ in
                         name = "direnv";
                         default = false;
                         description = "direnv environment manager";
-                        persistedDirectories = [ ".direnv" ".local/share/direnv" ];
+                        persistedDirectories = [
+                          ".direnv"
+                          ".local/share/direnv"
+                        ];
                       };
-                      devenv = appLib.mkAppOption { name = "devenv"; default = false; description = "devenv development environment manager"; persistedDirectories = []; };
+                      devenv = appLib.mkAppOption {
+                        name = "devenv";
+                        default = false;
+                        description = "devenv development environment manager";
+                        persistedDirectories = [ ];
+                      };
                       vscode = appLib.mkAppOption {
                         name = "VSCode";
                         default = false;
                         description = "Visual Studio Code editor";
-                        persistedDirectories = [ ".vscode" ".claude" ];
+                        persistedDirectories = [
+                          ".vscode"
+                          ".claude"
+                        ];
                       };
                       jq = appLib.mkAppOption {
                         name = "jq";
@@ -448,8 +534,18 @@ in
                         description = "jq JSON processor";
                         persistedDirectories = [ ];
                       };
-                      kdiff3 = appLib.mkAppOption { name = "kdiff3"; default = false; description = "KDiff3 diff tool"; persistedDirectories = []; };
-                      githubDesktop = appLib.mkAppOption { name = "githubDesktop"; default = false; description = "GitHub Desktop"; persistedDirectories = []; };
+                      kdiff3 = appLib.mkAppOption {
+                        name = "kdiff3";
+                        default = false;
+                        description = "KDiff3 diff tool";
+                        persistedDirectories = [ ];
+                      };
+                      githubDesktop = appLib.mkAppOption {
+                        name = "githubDesktop";
+                        default = false;
+                        description = "GitHub Desktop";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -470,8 +566,18 @@ in
                 players = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      musikcube = appLib.mkAppOption { name = "musikcube"; default = false; description = "musikcube music player"; persistedDirectories = []; };
-                      audacious = appLib.mkAppOption { name = "audacious"; default = false; description = "Audacious music player"; persistedDirectories = []; };
+                      musikcube = appLib.mkAppOption {
+                        name = "musikcube";
+                        default = false;
+                        description = "musikcube music player";
+                        persistedDirectories = [ ];
+                      };
+                      audacious = appLib.mkAppOption {
+                        name = "audacious";
+                        default = false;
+                        description = "Audacious music player";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -513,7 +619,12 @@ in
                 drawing = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      mypaint = appLib.mkAppOption { name = "mypaint"; default = false; description = "MyPaint drawing application"; persistedDirectories = []; };
+                      mypaint = appLib.mkAppOption {
+                        name = "mypaint";
+                        default = false;
+                        description = "MyPaint drawing application";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -534,9 +645,24 @@ in
                 messaging = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      element = appLib.mkAppOption { name = "element"; default = false; description = "Element Matrix client"; persistedDirectories = []; };
-                      signal = appLib.mkAppOption { name = "signal"; default = false; description = "Signal Desktop messenger"; persistedDirectories = []; };
-                      slack = appLib.mkAppOption { name = "slack"; default = false; description = "Slack communication tool"; persistedDirectories = []; };
+                      element = appLib.mkAppOption {
+                        name = "element";
+                        default = false;
+                        description = "Element Matrix client";
+                        persistedDirectories = [ ];
+                      };
+                      signal = appLib.mkAppOption {
+                        name = "signal";
+                        default = false;
+                        description = "Signal Desktop messenger";
+                        persistedDirectories = [ ];
+                      };
+                      slack = appLib.mkAppOption {
+                        name = "slack";
+                        default = false;
+                        description = "Slack communication tool";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };
@@ -587,7 +713,16 @@ in
                         name = "OpenCode";
                         default = false;
                         description = "OpenCode AI coding assistant";
-                        persistedDirectories = [ ".claude" ".config/opencode" ];
+                        persistedDirectories = [
+                          ".claude"
+                          ".config/opencode"
+                        ];
+                      };
+                      claude-code = appLib.mkAppOption {
+                        name = "Claude Code";
+                        default = false;
+                        description = "Claude Code AI coding assistant";
+                        persistedDirectories = [ ".claude" ];
                       };
                     };
                   };
@@ -609,7 +744,12 @@ in
                 tracking = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      cointop = appLib.mkAppOption { name = "cointop"; default = false; description = "Cointop cryptocurrency tracker"; persistedDirectories = []; };
+                      cointop = appLib.mkAppOption {
+                        name = "cointop";
+                        default = false;
+                        description = "Cointop cryptocurrency tracker";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };

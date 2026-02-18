@@ -1,8 +1,7 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
+{ config
+, lib
+, pkgs
+, ...
 }:
 
 with lib;
@@ -61,10 +60,10 @@ let
 
   # Bindings function - takes user hyprland config and environment-derived commands
   mkBindings =
-    {
-      userHyprland,
-      browserCmd,
-      terminalCmd,
+    { userHyprland
+    , browserCmd
+    , terminalCmd
+    ,
     }:
     {
       # MAINMOD
@@ -282,7 +281,7 @@ let
 
   # Layer rules for better performance
   # Note: In Hyprland 0.45+, noanim and blur are not valid layerrule fields
-  # Use windowrulev2 for animation control instead
+  # Use windowrule for animation control instead
   layerrule = [
     # "noanim, walker" # REMOVED: Invalid field in Hyprland 0.45+
     # "blur, walker" # REMOVED: Invalid field in Hyprland 0.45+
@@ -349,70 +348,42 @@ let
     # background_color = "121212";
   };
 
-  windowRules = {
-    windowrule = [ ]; # Empty since we're converting all rules to windowrulev2
+  # Window rules using the new Hyprland 0.45+ syntax
+  # Format: "match:<prop> <value>, <effect> <value>, ..."
+  # Match props: class, title, initial_class, initial_title, float, tag, xwayland, fullscreen, pin, focus, group, modal, workspace
+  # Effects: float, tile, fullscreen, maximize, move, size, center, pin, no_focus, no_blur, no_shadow, opacity, stay_focused, etc.
+  windowRules = [
+    # Walker - Application launcher overlay
+    "match:class ^(walker)$, float true, stay_focused true, pin true, no_blur true"
 
-    windowrulev2 = [
-      # Walker - Application launcher overlay
-      "float,class:^(walker)$"
-      "stayfocused,class:^(walker)$"
-      "pin,class:^(walker)$"
-      "noborder,class:^(walker)$"
-      "noblur,class:^(walker)$"
+    # 1Password: centered floating window
+    "match:class ^(1Password)$, float true, center true, size 60% 70%"
 
-      # 1Password: 20% margins from edges
-      "float,class:^(1Password)$"
-      "center,class:^(1Password)$"
-      "size 60% 70%,class:^(1Password)$"
-      "workspace 20% 20%,class:^(1Password)$"
+    # PulseAudio Volume Control
+    "match:class ^(org.pulseaudio.pavucontrol)$, float true, center true, size 50% 60%"
 
-      # PulseAudio Volume Control
-      "float,class:^(org.pulseaudio.pavucontrol)$"
-      "center,class:^(org.pulseaudio.pavucontrol)$"
-      "size 50% 60%,class:^(org.pulseaudio.pavucontrol)$"
-      "workspace 25% 20%,class:^(org.pulseaudio.pavucontrol)$"
+    # Bluetooth Manager
+    "match:class ^(.blueman-manager-wrapped)$, float true, center true, size 40% 50%"
 
-      # Bluetooth Manager
-      "float,class:^(.blueman-manager-wrapped)$"
-      "center,class:^(.blueman-manager-wrapped)$"
-      "size 40% 50%,class:^(.blueman-manager-wrapped)$"
-      "workspace 30% 25%,class:^(.blueman-manager-wrapped)$"
+    # Network Manager
+    "match:class ^(nm-connection-editor)$, float true, center true, size 40% 50%"
 
-      # Network Manager
-      "float,class:^(nm-connection-editor)$"
-      "center,class:^(nm-connection-editor)$"
-      "size 40% 50%,class:^(nm-connection-editor)$"
-      "workspace 30% 25%,class:^(nm-connection-editor)$"
+    # GTK Portal
+    "match:class ^(xdg-desktop-portal-gtk)$, float true, center true, size 40% 50%"
 
-      # GTK Portal
-      "float,class:^(xdg-desktop-portal-gtk)$"
-      "center,class:^(xdg-desktop-portal-gtk)$"
-      "size 40% 50%,class:^(xdg-desktop-portal-gtk)$"
-      "workspace 30% 25%,class:^(xdg-desktop-portal-gtk)$"
+    # Brave Save Dialog
+    "match:class ^(brave)$, match:title ^(Save File)$, float true, center true, size 50% 60%"
 
-      # Brave Save Dialog
-      "float,class:^(brave)$,title:^(Save File)$"
-      "center,class:^(brave)$,title:^(Save File)$"
-      "size 50% 60%,class:^(brave)$,title:^(Save File)$"
-      "workspace 25% 20%,class:^(brave)$,title:^(Save File)$"
+    # Slack - Main window rules (tile and suppress maximize)
+    "match:class ^(Slack)$, match:title ^(.*)$, tile true"
+    "match:class ^(Slack)$, suppress_event maximize"
 
-      # Slack - Main window rules
-      "tile,class:^(Slack)$,title:^(.*)$"
-      "suppressevent maximize,class:^(Slack)$"
+    # Slack - Hide/suppress menu windows and popups (empty title)
+    "match:class ^(Slack)$, match:title ^$, no_focus true, no_initial_focus true, float true, size 0 0, move -1000 -1000"
 
-      # Slack - Hide/suppress menu windows and popups
-      "nofocus,class:^(Slack)$,title:^$"
-      "noinitialfocus,class:^(Slack)$,title:^$"
-      "float,class:^(Slack)$,title:^$"
-      "size 0 0,class:^(Slack)$,title:^$"
-      "move -1000 -1000,class:^(Slack)$,title:^$"
-
-      # Slack - Handle context menus and dropdowns
-      "float,class:^(Slack)$,title:^(Context Menu)$"
-      "nofocus,class:^(Slack)$,title:^(Context Menu)$"
-      "size 0 0,class:^(Slack)$,title:^(Context Menu)$"
-    ];
-  };
+    # Slack - Handle context menus and dropdowns
+    "match:class ^(Slack)$, match:title ^(Context Menu)$, float true, no_focus true, size 0 0"
+  ];
 in
 {
   # Option is declared in flake.nix
@@ -421,214 +392,214 @@ in
       mapAttrs
         (
           name: userCfg:
-          let
-            # Get user-level hyprland config (with mynixos opinionated defaults)
-            userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
+            let
+              # Get user-level hyprland config (with mynixos opinionated defaults)
+              userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
 
-            # Get browser/terminal from environment API (single source of truth)
-            browserApp = userCfg.environment.BROWSER or null;
-            terminalApp = userCfg.environment.TERMINAL or null;
+              # Get browser/terminal from environment API (single source of truth)
+              browserApp = userCfg.environment.BROWSER or null;
+              terminalApp = userCfg.environment.TERMINAL or null;
 
-            # Derive command paths from packages
-            # Falls back to opinionated defaults if environment not set
-            browserCmd =
-              if browserApp != null && (browserApp.enable or false) then
-                browserApp.package.meta.mainProgram or browserApp.package.pname or "brave"
-              else
-                "brave";
-
-            terminalCmd =
-              if terminalApp != null && (terminalApp.enable or false) then
-                terminalApp.package.meta.mainProgram or terminalApp.package.pname or "wezterm"
-              else
-                "wezterm";
-          in
-          mkIf (userCfg.graphical.enable && userHyprland.enable) {
-            # GTK configuration
-            # Stylix automatically sets gtk.theme.name and gtk.iconTheme.name
-            gtk = {
-              enable = true;
-            };
-
-            # Notification daemon with Stylix theming
-            services.mako = {
-              enable = true;
-              # Stylix handles colors automatically, we just set behavior
-              settings = {
-                # Behavior
-                default-timeout = 5000; # 5 seconds
-                ignore-timeout = true; # Don't auto-dismiss critical notifications (like GPG/YubiKey)
-                layer = "overlay";
-
-                # Position and sizing - adjusted for better readability
-                anchor = "top-center";
-                width = 800; # Much wider for big text
-                height = 200; # A bit taller too
-                margin = "60,20,10,20"; # top,right,bottom,left - lower and more centered
-                padding = "20";
-                border-size = 2;
-                border-radius = 8;
-
-                # Behavior
-                max-visible = 5;
-                sort = "+time"; # Newest on top
-
-                # Note: Mako doesn't support animations
-                # For smooth animations, consider using swaync or dunst instead
-              };
-
-              # GPG/YubiKey specific - don't timeout critical notifications
-              extraConfig = ''
-                [urgency=critical]
-                ignore-timeout=1
-                default-timeout=0
-
-                [app-name="yubikey-touch-detector"]
-                ignore-timeout=1
-                default-timeout=15000
-                border-color=#f38ba8
-
-                # Do-not-disturb mode - still show critical notifications (like YubiKey)
-                [mode=do-not-disturb]
-                invisible=1
-
-                [mode=do-not-disturb urgency=critical]
-                invisible=0
-
-                [mode=do-not-disturb app-name="yubikey-touch-detector"]
-                invisible=0
-              '';
-
-              # Note: Key bindings are handled via Hyprland keybindings and makoctl
-              # Super+N = dismiss newest notification
-              # Super+Shift+N = dismiss all notifications
-              # Super+Ctrl+N = toggle do-not-disturb mode
-            };
-
-            # DND toggle script
-            home.file.".local/bin/toggle-dnd" = {
-              text = ''
-                #!/usr/bin/env bash
-
-                # Toggle mako do-not-disturb mode and show notification feedback
-
-                # Get current mode
-                current_mode=$(makoctl mode)
-
-                # Toggle the mode
-                makoctl mode -t do-not-disturb
-
-                # Get new mode
-                new_mode=$(makoctl mode)
-
-                # Show appropriate notification
-                if [[ "$new_mode" == "do-not-disturb" ]]; then
-                    # Temporarily disable DND to show the notification, then re-enable it after delay
-                    makoctl mode -r do-not-disturb
-                    notify-send "🔕 Do Not Disturb" "Notifications are now hidden (except critical)" --urgency=normal --expire-time=2500 &
-                    sleep 2.8  # Wait long enough for notification to be visible
-                    makoctl mode -s do-not-disturb
+              # Derive command paths from packages
+              # Falls back to opinionated defaults if environment not set
+              browserCmd =
+                if browserApp != null && (browserApp.enable or false) then
+                  browserApp.package.meta.mainProgram or browserApp.package.pname or "brave"
                 else
-                    notify-send "🔔 Notifications Enabled" "All notifications are now visible" --urgency=normal --expire-time=3000
-                fi
-              '';
-              executable = true;
-            };
+                  "brave";
 
-            # Swappy config for screenshots
-            xdg.configFile."swappy/config".text = swappyConfig;
-
-            # Home packages
-            home.packages = with pkgs; [
-              # XDG portals are provided by programs.hyprland.enable in graphical.nix
-              # Don't add xdg-desktop-portal-hyprland here to avoid conflicts
-              brightnessctl
-              swww
-              waypaper
-              swaybg
-              grimblast
-              slurp
-              swappy
-              wl-clipboard
-              cliphist
-              udiskie
-              vlc
-              hyprpicker
-              wlogout
-              networkmanagerapplet
-              pavucontrol
-              pamixer
-              playerctl
-              gtk3
-            ];
-
-            # Hyprland configuration
-            wayland.windowManager.hyprland = {
-              enable = true;
-              xwayland = {
+              terminalCmd =
+                if terminalApp != null && (terminalApp.enable or false) then
+                  terminalApp.package.meta.mainProgram or terminalApp.package.pname or "wezterm"
+                else
+                  "wezterm";
+            in
+            mkIf (userCfg.graphical.enable && userHyprland.enable) {
+              # GTK configuration
+              # Stylix automatically sets gtk.theme.name and gtk.iconTheme.name
+              gtk = {
                 enable = true;
               };
-              settings = {
-                # General settings - nested under general block
-                general = {
-                  inherit (general)
-                    gaps_in
-                    gaps_out
-                    border_size
-                    layout
-                    ;
+
+              # Notification daemon with Stylix theming
+              services.mako = {
+                enable = true;
+                # Stylix handles colors automatically, we just set behavior
+                settings = {
+                  # Behavior
+                  default-timeout = 5000; # 5 seconds
+                  ignore-timeout = true; # Don't auto-dismiss critical notifications (like GPG/YubiKey)
+                  layer = "overlay";
+
+                  # Position and sizing - adjusted for better readability
+                  anchor = "top-center";
+                  width = 800; # Much wider for big text
+                  height = 200; # A bit taller too
+                  margin = "60,20,10,20"; # top,right,bottom,left - lower and more centered
+                  padding = "20";
+                  border-size = 2;
+                  border-radius = 8;
+
+                  # Behavior
+                  max-visible = 5;
+                  sort = "+time"; # Newest on top
+
+                  # Note: Mako doesn't support animations
+                  # For smooth animations, consider using swaync or dunst instead
                 };
 
-                # Input settings
-                input = mkInput userHyprland;
+                # GPG/YubiKey specific - don't timeout critical notifications
+                extraConfig = ''
+                  [urgency=critical]
+                  ignore-timeout=1
+                  default-timeout=0
 
-                # Layouts
-                inherit (layouts) dwindle master;
+                  [app-name="yubikey-touch-detector"]
+                  ignore-timeout=1
+                  default-timeout=15000
+                  border-color=#f38ba8
 
-                # Misc
-                inherit misc;
+                  # Do-not-disturb mode - still show critical notifications (like YubiKey)
+                  [mode=do-not-disturb]
+                  invisible=1
 
-                # Groups
-                inherit group;
+                  [mode=do-not-disturb urgency=critical]
+                  invisible=0
 
-                # Gestures
-                inherit gestures;
+                  [mode=do-not-disturb app-name="yubikey-touch-detector"]
+                  invisible=0
+                '';
 
-                # Animations
-                inherit animations;
+                # Note: Key bindings are handled via Hyprland keybindings and makoctl
+                # Super+N = dismiss newest notification
+                # Super+Shift+N = dismiss all notifications
+                # Super+Ctrl+N = toggle do-not-disturb mode
+              };
 
-                # Decoration - properly structured for Hyprland 0.51+
-                # This merges with stylix's decoration settings
-                decoration = {
-                  inherit (decorations)
-                    active_opacity
-                    inactive_opacity
-                    fullscreen_opacity
-                    rounding
-                    dim_inactive
-                    dim_strength
-                    ;
+              # DND toggle script
+              home.file.".local/bin/toggle-dnd" = {
+                text = ''
+                  #!/usr/bin/env bash
 
-                  blur = {
-                    inherit (decorationBlur) enabled brightness size;
+                  # Toggle mako do-not-disturb mode and show notification feedback
+
+                  # Get current mode
+                  current_mode=$(makoctl mode)
+
+                  # Toggle the mode
+                  makoctl mode -t do-not-disturb
+
+                  # Get new mode
+                  new_mode=$(makoctl mode)
+
+                  # Show appropriate notification
+                  if [[ "$new_mode" == "do-not-disturb" ]]; then
+                      # Temporarily disable DND to show the notification, then re-enable it after delay
+                      makoctl mode -r do-not-disturb
+                      notify-send "🔕 Do Not Disturb" "Notifications are now hidden (except critical)" --urgency=normal --expire-time=2500 &
+                      sleep 2.8  # Wait long enough for notification to be visible
+                      makoctl mode -s do-not-disturb
+                  else
+                      notify-send "🔔 Notifications Enabled" "All notifications are now visible" --urgency=normal --expire-time=3000
+                  fi
+                '';
+                executable = true;
+              };
+
+              # Swappy config for screenshots
+              xdg.configFile."swappy/config".text = swappyConfig;
+
+              # Home packages
+              home.packages = with pkgs; [
+                # XDG portals are provided by programs.hyprland.enable in graphical.nix
+                # Don't add xdg-desktop-portal-hyprland here to avoid conflicts
+                brightnessctl
+                swww
+                waypaper
+                swaybg
+                grimblast
+                slurp
+                swappy
+                wl-clipboard
+                cliphist
+                udiskie
+                vlc
+                hyprpicker
+                wlogout
+                networkmanagerapplet
+                pavucontrol
+                pamixer
+                playerctl
+                gtk3
+              ];
+
+              # Hyprland configuration
+              wayland.windowManager.hyprland = {
+                enable = true;
+                xwayland = {
+                  enable = true;
+                };
+                settings = {
+                  # General settings - nested under general block
+                  general = {
+                    inherit (general)
+                      gaps_in
+                      gaps_out
+                      border_size
+                      layout
+                      ;
                   };
 
-                  # Shadow color managed by stylix theming
-                };
+                  # Input settings
+                  input = mkInput userHyprland;
 
-                # Window and layer rules
-                inherit layerrule;
-                inherit (windowRules) windowrule windowrulev2;
+                  # Layouts
+                  inherit (layouts) dwindle master;
 
-                # Environment
-                inherit (environment) monitor env;
+                  # Misc
+                  inherit misc;
 
-                # Autostart
-                exec-once = autostart;
-              }
-              // (mkBindings { inherit userHyprland browserCmd terminalCmd; });
-            };
-          }
+                  # Groups
+                  inherit group;
+
+                  # Gestures
+                  inherit gestures;
+
+                  # Animations
+                  inherit animations;
+
+                  # Decoration - properly structured for Hyprland 0.51+
+                  # This merges with stylix's decoration settings
+                  decoration = {
+                    inherit (decorations)
+                      active_opacity
+                      inactive_opacity
+                      fullscreen_opacity
+                      rounding
+                      dim_inactive
+                      dim_strength
+                      ;
+
+                    blur = {
+                      inherit (decorationBlur) enabled brightness size;
+                    };
+
+                    # Shadow color managed by stylix theming
+                  };
+
+                  # Window and layer rules
+                  inherit layerrule;
+                  windowrule = windowRules;
+
+                  # Environment
+                  inherit (environment) monitor env;
+
+                  # Autostart
+                  exec-once = autostart;
+                }
+                // (mkBindings { inherit userHyprland browserCmd terminalCmd; });
+              };
+            }
         ) # End mkIf userHyprland.enable
         config.my.users;
   };

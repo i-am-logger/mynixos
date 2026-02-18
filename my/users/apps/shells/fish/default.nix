@@ -107,7 +107,7 @@ with lib;
               }
             ];
           };
-      })
+        })
       config.my.users;
   };
 }

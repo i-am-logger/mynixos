@@ -11,7 +11,7 @@ let
 
   # Get list of all user names from my.features.users
   userNames = attrNames config.my.users;
-  
+
   # Read mynixos version from version.txt
   mynixosVersion = lib.strings.removeSuffix "\n" (builtins.readFile ../../../version.txt);
 in
@@ -24,12 +24,12 @@ in
       system.nixos.distroName = "mynixos";
       system.nixos.vendorId = "mynixos";
       system.nixos.vendorName = "mynixos";
-      
+
       # Override system derivation name to use mynixos branding
       system.systemBuilderArgs = {
         name = "mynixos-system-${config.system.name}-${mynixosVersion}";
       };
-      
+
       # Additional os-release fields for mynixos branding
       # Override VERSION and PRETTY_NAME to use mynixos version from release-please
       system.nixos.extraOSReleaseArgs = {
@@ -44,8 +44,13 @@ in
         VERSION_ID = mynixosVersion;
         VERSION_CODENAME = "bootstrapper";
         PRETTY_NAME = "mynixos ${mynixosVersion} (Bootstrapper)";
-        # Override ID_LIKE to mynixos (not nixos) - mynixos is its own distribution
-        ID_LIKE = "mynixos";
+        # Keep ID_LIKE as nixos so that applications (like Hyprland's start-hyprland)
+        # can detect NixOS-based systems for compatibility checks
+        ID_LIKE = "nixos";
+        # IMPORTANT: NAME must be "NixOS" for Hyprland's start-hyprland to detect
+        # that we're on a NixOS-based system (it checks NAME == "NixOS" exactly)
+        # See: https://github.com/hyprwm/Hyprland/blob/main/start/src/helpers/Nix.cpp
+        NAME = "NixOS";
       };
 
       # Plymouth boot splash (opinionated)

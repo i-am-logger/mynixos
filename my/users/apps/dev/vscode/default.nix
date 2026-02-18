@@ -23,10 +23,10 @@ with lib;
         # Enable if: app explicitly enabled OR dev feature enabled
         mkIf (appHelpers.shouldEnable userCfg "tools" "vscode") {
           programs.vscode = {
-          enable = true;
-          package = pkgs.vscode;
-        };
-      })
+            enable = true;
+            package = pkgs.vscode;
+          };
+        })
       config.my.users;
   };
 }

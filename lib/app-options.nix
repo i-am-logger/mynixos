@@ -3,12 +3,12 @@
 {
   # Create a structured app option with enable, persisted, and persistedDirectories
   mkAppOption =
-    {
-      name,
-      default ? false,
-      description,
-      persistedDirectories ? [ ],
-      extraOptions ? { }, # Additional app-specific options
+    { name
+    , default ? false
+    , description
+    , persistedDirectories ? [ ]
+    , extraOptions ? { }
+    , # Additional app-specific options
     }:
     lib.mkOption {
       type = lib.types.submodule {

@@ -20,9 +20,9 @@
       securityApp = userCfg.apps.security.${category}.${app} or null;
       financeApp = userCfg.apps.finance.${category}.${app} or null;
       aiApp = userCfg.apps.ai.${category}.${app} or null;
-      
+
       # Find the first non-null app
-      appValue = 
+      appValue =
         if terminalApp != null then terminalApp
         else if graphicalApp != null then graphicalApp
         else if devApp != null then devApp
@@ -33,7 +33,7 @@
         else if financeApp != null then financeApp
         else if aiApp != null then aiApp
         else { enable = false; };
-      
+
       # Check explicit app enable (all apps have .enable)
       appEnabled = appValue.enable or false;
     in

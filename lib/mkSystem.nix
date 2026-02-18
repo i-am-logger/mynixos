@@ -1,24 +1,24 @@
-{
-  inputs,
-  lib,
-  nixpkgs,
-  self,
+{ inputs
+, lib
+, nixpkgs
+, self
+,
 }:
 
 {
   mkSystem =
-    {
-      hostname ? null,
-      hardware ? [ ],
-      # List of hardware modules from mynixos.hardware.* (deprecated, use my.hardware)
-      machine ? null,
-      # Deprecated: use hardware instead
-      users ? [ ],
-      config ? null,
-      extraModules ? [ ],
-      stylix ? null,
-      # Optional stylix configuration module (deprecated, use my.themes)
-      my ? { }, # Direct mynixos configuration (my.features, my.users, my.apps, my.storage, my.themes, etc.)
+    { hostname ? null
+    , hardware ? [ ]
+    , # List of hardware modules from mynixos.hardware.* (deprecated, use my.hardware)
+      machine ? null
+    , # Deprecated: use hardware instead
+      users ? [ ]
+    , config ? null
+    , extraModules ? [ ]
+    , stylix ? null
+    , # Optional stylix configuration module (deprecated, use my.themes)
+      my ? { }
+    , # Direct mynixos configuration (my.features, my.users, my.apps, my.storage, my.themes, etc.)
     }:
     let
       # Extract filesystem configuration from my.filesystem

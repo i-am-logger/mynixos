@@ -35,9 +35,11 @@ in
       };
 
       # Add users with dev enabled (and docker not disabled) to docker group
-      users.users = mapAttrs (name: userCfg: {
-        extraGroups = mkIf ((userCfg.dev.enable or false) && (userCfg.dev.docker.enable or true)) [ "docker" ];
-      }) (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      users.users = mapAttrs
+        (name: userCfg: {
+          extraGroups = mkIf ((userCfg.dev.enable or false) && (userCfg.dev.docker.enable or true)) [ "docker" ];
+        })
+        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
 
       # Docker tools
       environment.systemPackages = with pkgs; [

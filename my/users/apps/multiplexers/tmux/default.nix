@@ -60,6 +60,6 @@ with lib;
             '';
           };
         })
-      (config.my.users or {});
+      (config.my.users or { });
   };
 }

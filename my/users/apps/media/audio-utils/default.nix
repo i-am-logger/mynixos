@@ -8,11 +8,11 @@ with lib;
       (name: userCfg:
         mkIf (userCfg.apps.media.audioUtils.enable or false) {
           home.packages = with pkgs; [
-          # Audio utilities
-          pavucontrol
-          pamixer
-        ];
-      })
+            # Audio utilities
+            pavucontrol
+            pamixer
+          ];
+        })
       config.my.users;
   };
 }

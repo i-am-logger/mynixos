@@ -36,40 +36,40 @@ in
 
       # Additional laptop configuration
       {
-      # Kernel modules for this laptop hardware
-      # Note: Storage and USB modules are now handled via my.hardware.* options above
-      boot = {
-        initrd.kernelModules = [ ];
-        kernelModules = [ "kvm-intel" "i915" ]; # i915 for Intel iGPU in hybrid mode
-        extraModulePackages = [ ];
-      };
+        # Kernel modules for this laptop hardware
+        # Note: Storage and USB modules are now handled via my.hardware.* options above
+        boot = {
+          initrd.kernelModules = [ ];
+          kernelModules = [ "kvm-intel" "i915" ]; # i915 for Intel iGPU in hybrid mode
+          extraModulePackages = [ ];
+        };
 
-      # Hybrid graphics: Intel iGPU + NVIDIA dGPU
-      services.xserver.videoDrivers = [ "intel" "nvidia" ];
+        # Hybrid graphics: Intel iGPU + NVIDIA dGPU
+        services.xserver.videoDrivers = [ "intel" "nvidia" ];
 
-      hardware.graphics.extraPackages = with pkgs; [
-        intel-media-driver
-        vpl-gpu-rt
-      ];
+        hardware.graphics.extraPackages = with pkgs; [
+          intel-media-driver
+          vpl-gpu-rt
+        ];
 
-      # NVIDIA PRIME configuration for hybrid graphics (laptop-specific)
-      hardware.nvidia.prime = {
-        intelBusId = "PCI:0:2:0";
-        nvidiaBusId = "PCI:1:0:0";
-        offload.enable = lib.mkForce false;
-        offload.enableOffloadCmd = lib.mkForce false;
-        sync.enable = true; # Use PRIME sync mode for better performance
-      };
+        # NVIDIA PRIME configuration for hybrid graphics (laptop-specific)
+        hardware.nvidia.prime = {
+          intelBusId = "PCI:0:2:0";
+          nvidiaBusId = "PCI:1:0:0";
+          offload.enable = lib.mkForce false;
+          offload.enableOffloadCmd = lib.mkForce false;
+          sync.enable = true; # Use PRIME sync mode for better performance
+        };
 
-      # Intel microcode updates
-      hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+        # Intel microcode updates
+        hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-      # Networking - enable DHCP by default
-      networking.useDHCP = lib.mkDefault true;
+        # Networking - enable DHCP by default
+        networking.useDHCP = lib.mkDefault true;
 
-      # Platform architecture
-      nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-    }
+        # Platform architecture
+        nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+      }
     ]))
   ];
 }
