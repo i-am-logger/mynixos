@@ -94,11 +94,11 @@ in
                   "Media"
                   "Code"
                 ])
-              # App-specific directories from aggregation
-              ++ (getUserAppDirectories userName)
-              # Feature-declared user directories
-              ++ config.my.system.persistence.features.userDirectories
-              ++ cfg.extraUserDirectories; # Custom additions (applied to all users)
+                # App-specific directories from aggregation
+                ++ (getUserAppDirectories userName)
+                # Feature-declared user directories
+                ++ config.my.system.persistence.features.userDirectories
+                ++ cfg.extraUserDirectories; # Custom additions (applied to all users)
 
               files = cfg.extraUserFiles # Custom files (applied to all users)
                 ++ config.my.system.persistence.features.userFiles # Feature-declared user files

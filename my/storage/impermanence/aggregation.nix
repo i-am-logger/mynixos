@@ -10,10 +10,10 @@ let
     flatten (mapAttrsToList
       (name: value:
         if isAttrs value && value ? enable then
-          # Leaf app node (has enable attribute)
-          [ { name = "${prefix}.${name}"; appConfig = value; } ]
+        # Leaf app node (has enable attribute)
+          [{ name = "${prefix}.${name}"; appConfig = value; }]
         else if isAttrs value then
-          # Subcategory - recurse deeper
+        # Subcategory - recurse deeper
           collectApps "${prefix}.${name}" value
         else
           [ ]

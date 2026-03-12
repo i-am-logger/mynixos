@@ -52,18 +52,17 @@
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      disko,
-      impermanence,
-      home-manager,
-      stylix,
-      vogix,
-      lanzaboote,
-      nixos-hardware,
-      sops-nix,
-      ...
+    { self
+    , nixpkgs
+    , disko
+    , impermanence
+    , home-manager
+    , stylix
+    , vogix
+    , lanzaboote
+    , nixos-hardware
+    , sops-nix
+    , ...
     }@inputs:
     let
       lib = nixpkgs.lib;
@@ -81,10 +80,9 @@
       # Security key type constructors (exported in lib for use in configs)
       securityKeys = {
         yubikey =
-          {
-            serialNumber,
-            gpgKeyId ? null,
-            ...
+          { serialNumber
+          , gpgKeyId ? null
+          , ...
           }:
           {
             type = "yubikey";
@@ -131,11 +129,10 @@
     {
       # Main NixOS module providing the `my.*` namespace
       nixosModules.default =
-        {
-          config,
-          lib,
-          pkgs,
-          ...
+        { config
+        , lib
+        , pkgs
+        , ...
         }:
         let
           cfg = config.my;
