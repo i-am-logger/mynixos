@@ -39,6 +39,11 @@
                       description = "Aggregated directories to persist for this user";
                       readOnly = true;
                     };
+                    files = lib.mkOption {
+                      type = lib.types.listOf lib.types.str;
+                      description = "Aggregated files to persist for this user";
+                      readOnly = true;
+                    };
                     apps = lib.mkOption {
                       type = lib.types.listOf lib.types.str;
                       description = "List of enabled and persisted apps for this user";

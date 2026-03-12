@@ -7,6 +7,13 @@ let
 in
 {
   config = mkIf cfg.enable {
+    # Persistence configuration
+    my.system.persistence.features = {
+      userDirectories = [
+        ".secrets"
+      ];
+    };
+
     # Configure sops-nix
     sops = {
       defaultSopsFile = mkIf (cfg.defaultSopsFile != null) cfg.defaultSopsFile;

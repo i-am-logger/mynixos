@@ -233,5 +233,16 @@ in
         '';
       };
     }
+
+    # Persistence configuration
+    {
+      my.system.persistence.features = {
+        systemDirectories = [
+          "/var/lib/nixos"
+          "/var/lib/systemd"
+          "/var/log"
+        ];
+      };
+    }
   ]);
 }

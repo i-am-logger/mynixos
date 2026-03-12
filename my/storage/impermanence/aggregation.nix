@@ -3,20 +3,28 @@
 with lib;
 
 let
+  # Recursively collect leaf app configs from the nested apps structure.
+  # Leaf nodes are attrsets that have an "enable" attribute.
+  # Non-leaf nodes are attrsets of subcategories to recurse into.
+  collectApps = prefix: attrs:
+    flatten (mapAttrsToList
+      (name: value:
+        if isAttrs value && value ? enable then
+          # Leaf app node (has enable attribute)
+          [ { name = "${prefix}.${name}"; appConfig = value; } ]
+        else if isAttrs value then
+          # Subcategory - recurse deeper
+          collectApps "${prefix}.${name}" value
+        else
+          [ ]
+      )
+      attrs);
+
   # Aggregate persistence directories for a single user
   aggregatePersistenceForUser = userName: userConfig:
     let
-      # Flatten all apps from all categories into a single list
-      allApps = flatten (mapAttrsToList
-        (category: apps:
-          mapAttrsToList
-            (appName: appConfig: {
-              name = "${category}.${appName}";
-              inherit appConfig;
-            })
-            apps
-        )
-        userConfig.apps);
+      # Recursively collect all leaf apps from the nested structure
+      allApps = collectApps "" userConfig.apps;
 
       # Filter to only apps that are enabled and persisted
       enabledPersistedApps = filter
@@ -31,11 +39,17 @@ let
         (app: app.appConfig.persistedDirectories or [ ])
         enabledPersistedApps);
 
+      # Extract all files from enabled persisted apps
+      files = flatten (map
+        (app: app.appConfig.persistedFiles or [ ])
+        enabledPersistedApps);
+
       # Get list of app names
       appNames = map (app: app.name) enabledPersistedApps;
     in
     {
       directories = unique directories;
+      files = unique files;
       apps = appNames;
     };
 

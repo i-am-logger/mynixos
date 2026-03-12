@@ -18,52 +18,42 @@ in
                 shells = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      bash = lib.mkOption {
-                        type = lib.types.submodule {
-                          options = {
-                            enable = lib.mkOption {
-                              type = lib.types.bool;
-                              default = false;
-                              description = "Enable Bash shell";
-                            };
-                            historySize = lib.mkOption {
-                              type = lib.types.int;
-                              default = 10000;
-                              description = "Number of commands to keep in history";
-                            };
-                            historyFileSize = lib.mkOption {
-                              type = lib.types.int;
-                              default = 10000;
-                              description = "Number of lines to keep in history file";
-                            };
-                            historyControl = lib.mkOption {
-                              type = lib.types.listOf lib.types.str;
-                              default = [
-                                "ignoredups"
-                                "ignorespace"
-                              ];
-                              description = "History control options";
-                            };
-                            shellOptions = lib.mkOption {
-                              type = lib.types.listOf lib.types.str;
-                              default = [
-                                "histappend"
-                                "checkwinsize"
-                                "extglob"
-                                "globstar"
-                                "checkjobs"
-                              ];
-                              description = "Shell options (shopt)";
-                            };
-                            persistedDirectories = lib.mkOption {
-                              type = lib.types.listOf lib.types.str;
-                              default = [ ".bash_history" ];
-                              description = "Directories to persist";
-                            };
+                      bash = appLib.mkAppOption {
+                        name = "Bash";
+                        default = false;
+                        description = "Bash shell";
+                        persistedFiles = [ ".bash_history" ];
+                        extraOptions = {
+                          historySize = lib.mkOption {
+                            type = lib.types.int;
+                            default = 10000;
+                            description = "Number of commands to keep in history";
+                          };
+                          historyFileSize = lib.mkOption {
+                            type = lib.types.int;
+                            default = 10000;
+                            description = "Number of lines to keep in history file";
+                          };
+                          historyControl = lib.mkOption {
+                            type = lib.types.listOf lib.types.str;
+                            default = [
+                              "ignoredups"
+                              "ignorespace"
+                            ];
+                            description = "History control options";
+                          };
+                          shellOptions = lib.mkOption {
+                            type = lib.types.listOf lib.types.str;
+                            default = [
+                              "histappend"
+                              "checkwinsize"
+                              "extglob"
+                              "globstar"
+                              "checkjobs"
+                            ];
+                            description = "Shell options (shopt)";
                           };
                         };
-                        default = { };
-                        description = "Bash shell configuration";
                       };
 
                       fish = appLib.mkAppOption {
@@ -287,38 +277,28 @@ in
                 windowManagers = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      hyprland = lib.mkOption {
-                        type = lib.types.submodule {
-                          options = {
-                            enable = lib.mkOption {
-                              type = lib.types.bool;
-                              default = false;
-                              description = "Enable Hyprland window manager";
-                            };
-                            leftHanded = lib.mkOption {
-                              type = lib.types.bool;
-                              default = false;
-                              description = "Left-handed mouse mode";
-                            };
-                            sensitivity = lib.mkOption {
-                              type = lib.types.float;
-                              default = 0.0;
-                              description = "Mouse sensitivity (range: -1.0 to 1.0)";
-                            };
-                            settings = lib.mkOption {
-                              type = lib.types.attrs;
-                              default = { };
-                              description = "Additional Hyprland settings (passthrough to wayland.windowManager.hyprland.settings)";
-                            };
-                            persistedDirectories = lib.mkOption {
-                              type = lib.types.listOf lib.types.str;
-                              default = [ ".config/hypr" ];
-                              description = "Directories to persist";
-                            };
+                      hyprland = appLib.mkAppOption {
+                        name = "Hyprland";
+                        default = false;
+                        description = "Hyprland window manager";
+                        persistedDirectories = [ ".config/hypr" ];
+                        extraOptions = {
+                          leftHanded = lib.mkOption {
+                            type = lib.types.bool;
+                            default = false;
+                            description = "Left-handed mouse mode";
+                          };
+                          sensitivity = lib.mkOption {
+                            type = lib.types.float;
+                            default = 0.0;
+                            description = "Mouse sensitivity (range: -1.0 to 1.0)";
+                          };
+                          settings = lib.mkOption {
+                            type = lib.types.attrs;
+                            default = { };
+                            description = "Additional Hyprland settings (passthrough to wayland.windowManager.hyprland.settings)";
                           };
                         };
-                        default = { };
-                        description = "Hyprland window manager";
                       };
                     };
                   };
@@ -723,6 +703,7 @@ in
                         default = false;
                         description = "Claude Code AI coding assistant";
                         persistedDirectories = [ ".claude" ];
+                        persistedFiles = [ ".claude.json" ];
                       };
                     };
                   };

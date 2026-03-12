@@ -16,6 +16,10 @@ let
   # Get app-specific directories for a user from aggregation
   getUserAppDirectories =
     userName: config.my.system.persistence.aggregated.${userName}.directories or [ ];
+
+  # Get app-specific files for a user from aggregation
+  getUserAppFiles =
+    userName: config.my.system.persistence.aggregated.${userName}.files or [ ];
 in
 {
   config = mkIf cfg.enable {
@@ -67,12 +71,10 @@ in
     environment.persistence."${persistPath}" = {
       hideMounts = true;
 
-      # System directories - opinionated defaults
+      # System directories - only storage-specific paths here
+      # Other system directories are declared by their respective feature modules
       directories = [
         "/etc/nixos"
-        "/var/lib/nixos"
-        "/var/lib/systemd"
-        "/var/log"
       ]
       ++ cfg.extraSystemDirectories # Allow custom additions
       ++ config.my.system.persistence.features.systemDirectories; # Feature-declared system directories
@@ -82,18 +84,13 @@ in
         map
           (userName: {
             ${userName} = {
-              directories = [
-                ".local"
-                ".cache"
-                ".config"
-                ".secrets"
-                "Documents"
-                "Downloads"
-              ]
-              ++ (optionals cfg.persistUserData [
-                "Media"
-                "Code"
-              ])
+              # Base directories are declared by their respective feature modules
+              # (environment, secrets, dev, etc.)
+              directories =
+                (optionals cfg.persistUserData [
+                  "Media"
+                  "Code"
+                ])
               # App-specific directories from aggregation
               ++ (getUserAppDirectories userName)
               # Feature-declared user directories
@@ -101,7 +98,8 @@ in
               ++ cfg.extraUserDirectories; # Custom additions (applied to all users)
 
               files = cfg.extraUserFiles # Custom files (applied to all users)
-                ++ config.my.system.persistence.features.userFiles; # Feature-declared user files
+                ++ config.my.system.persistence.features.userFiles # Feature-declared user files
+                ++ (getUserAppFiles userName); # App-declared user files
             };
           })
           userNames

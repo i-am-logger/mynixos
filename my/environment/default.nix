@@ -14,6 +14,19 @@ in
     })
 
     (mkIf cfg.enable (mkMerge [
+      # Persistence: XDG base and user directories
+      {
+        my.system.persistence.features = {
+          userDirectories = [
+            ".local"
+            ".cache"
+            ".config"
+            "Documents"
+            "Downloads"
+          ];
+        };
+      }
+
       # Base environment configuration
       {
         # Environment variables (from mynixos defaults in flake.nix)

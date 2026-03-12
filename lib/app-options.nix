@@ -7,6 +7,7 @@
     , default ? false
     , description
     , persistedDirectories ? [ ]
+    , persistedFiles ? [ ]
     , extraOptions ? { }
     , # Additional app-specific options
     }:
@@ -21,12 +22,17 @@
           persisted = lib.mkOption {
             type = lib.types.bool;
             default = true;
-            description = "Persist app data directories";
+            description = "Persist app data directories and files";
           };
           persistedDirectories = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = persistedDirectories;
             description = "Directories to persist for this app (relative to user home)";
+          };
+          persistedFiles = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = persistedFiles;
+            description = "Files to persist for this app (relative to user home)";
           };
         } // extraOptions; # Merge in extra app-specific options
       };
@@ -34,6 +40,7 @@
         enable = default;
         persisted = true;
         inherit persistedDirectories;
+        inherit persistedFiles;
       };
       description = "${description}${if default then " (opinionated default: enabled)" else ""}";
     };
