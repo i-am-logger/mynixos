@@ -71,10 +71,13 @@ in
     environment.persistence."${persistPath}" = {
       hideMounts = true;
 
-      # System directories - only storage-specific paths here
-      # Other system directories are declared by their respective feature modules
+      # System directories - core NixOS infrastructure
+      # Additional system directories are declared by feature modules
       directories = [
         "/etc/nixos"
+        "/var/lib/nixos"
+        "/var/lib/systemd"
+        "/var/log"
       ]
       ++ cfg.extraSystemDirectories # Allow custom additions
       ++ config.my.system.persistence.features.systemDirectories; # Feature-declared system directories
