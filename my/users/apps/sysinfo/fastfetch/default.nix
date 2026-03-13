@@ -19,7 +19,7 @@ in
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.terminal.sysinfo.fastfetch.enable or false) {
           home.packages = with pkgs; [
             fastfetch

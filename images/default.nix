@@ -3,7 +3,7 @@
 let
   # Import nixpkgs with only CodeQL allowed as unfree
   pkgsUnfree = import pkgs.path {
-    system = pkgs.stdenv.hostPlatform.system;
+    inherit (pkgs.stdenv.hostPlatform) system;
     config.allowUnfreePredicate =
       pkg:
       builtins.elem (pkgs.lib.getName pkg) [

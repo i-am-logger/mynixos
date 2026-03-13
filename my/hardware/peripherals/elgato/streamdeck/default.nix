@@ -260,7 +260,7 @@ in
 
     # Add streamdeck-ui with Qt platform fixes (only for users with streaming enabled)
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.graphical.streaming.enable or false) {
           home.packages = with pkgs; [
             streamdeck-ui

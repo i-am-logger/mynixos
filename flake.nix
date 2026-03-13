@@ -49,23 +49,33 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Development tooling
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     { self
     , nixpkgs
-    , disko
     , impermanence
-    , home-manager
-    , stylix
-    , vogix
     , lanzaboote
-    , nixos-hardware
-    , sops-nix
+    , treefmt-nix
+    , git-hooks
     , ...
     }@inputs:
     let
-      lib = nixpkgs.lib;
+      inherit (nixpkgs) lib;
+
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      forAllSystems = lib.genAttrs supportedSystems;
 
       # mynixos library functions
       mynixosLib = import ./lib {
@@ -76,6 +86,11 @@
           self
           ;
       };
+
+      # treefmt configuration (shared between formatter and checks)
+      treefmtEval = forAllSystems (system:
+        treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix
+      );
 
       # Security key type constructors (exported in lib for use in configs)
       securityKeys = {
@@ -129,19 +144,20 @@
     {
       # Main NixOS module providing the `my.*` namespace
       nixosModules.default =
-        { config
-        , lib
+        { lib
         , pkgs
         , ...
         }:
         let
-          cfg = config.my;
+          # Use module's own pkgs when available, ensuring correct pkgs scope
+          mkOptionsModule = path: args: { pkgs ? args.pkgs or null, ... }:
+            { options.my = import path (args // lib.optionalAttrs (pkgs != null) { inherit pkgs; }); };
         in
         {
           config = {
             # Make appHelpers available to all modules
             _module.args = {
-              appHelpers = mynixosLib.appHelpers;
+              inherit (mynixosLib) appHelpers;
             };
           };
 
@@ -348,114 +364,29 @@
           # Option definitions
           ++ [
             # Top-level options
-            (
-              { ... }:
-              {
-                options.my = import ./my/system/options.nix { inherit lib pkgs; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/security/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/environment/options.nix { inherit lib pkgs; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/performance/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/graphical/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/dev/development/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/streaming/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/ai/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/video/virtual/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/themes/options.nix { inherit lib pkgs; };
-              }
-            )
+            (mkOptionsModule ./my/system/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/security/options.nix { inherit lib; })
+            (mkOptionsModule ./my/environment/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/performance/options.nix { inherit lib; })
+            (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
+            (mkOptionsModule ./my/dev/development/options.nix { inherit lib; })
+            (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
+            (mkOptionsModule ./my/ai/options.nix { inherit lib; })
+            (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
+            (mkOptionsModule ./my/themes/options.nix { inherit lib pkgs; })
 
             # Category-level options
-            (
-              { ... }:
-              {
-                options.my = import ./my/infra/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/hardware/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/hardware/boot/options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/storage/options.nix { inherit lib; };
-              }
-            )
+            (mkOptionsModule ./my/infra/options.nix { inherit lib; })
+            (mkOptionsModule ./my/hardware/options.nix { inherit lib; })
+            (mkOptionsModule ./my/hardware/boot/options.nix { inherit lib; })
+            (mkOptionsModule ./my/storage/options.nix { inherit lib; })
 
             # Cross-cutting options
-            (
-              { ... }:
-              {
-                options.my = import ./my/presets-options.nix { inherit lib; };
-              }
-            )
-            (
-              { ... }:
-              {
-                options.my = import ./my/filesystem-options.nix { inherit lib; };
-              }
-            )
+            (mkOptionsModule ./my/presets-options.nix { inherit lib; })
+            (mkOptionsModule ./my/filesystem-options.nix { inherit lib; })
 
             # Users options
-            (
-              { ... }:
-              {
-                options.my = import ./my/users/users/options.nix { inherit lib pkgs; };
-              }
-            )
+            (mkOptionsModule ./my/users/users/options.nix { inherit lib pkgs; })
 
             # Users opinionated defaults (mynixos.nix files)
             ./my/users/terminal/mynixos.nix
@@ -467,11 +398,6 @@
             # Secrets (special - uses different pattern)
             (import ./my/secrets/options.nix)
           ];
-
-          config = {
-            # Placeholder - actual implementations will be in separate module files
-            # that import based on my.* options
-          };
         };
 
       # Export library functions
@@ -479,7 +405,44 @@
         inherit securityKeys hardware;
       };
 
-      # Formatter for nix code
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+      # Formatter (treefmt: nix + shell + yaml)
+      formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
+
+      # Checks (run via `nix flake check`)
+      checks = forAllSystems (system: {
+        formatting = treefmtEval.${system}.config.build.check self;
+
+        pre-commit = git-hooks.lib.${system}.run {
+          src = self;
+          hooks = {
+            treefmt = {
+              enable = true;
+              package = treefmtEval.${system}.config.build.wrapper;
+            };
+            statix.enable = true;
+            deadnix.enable = true;
+          };
+        };
+      });
+
+      # Dev shell with pre-commit hooks installed
+      devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          inherit (self.checks.${system}) pre-commit;
+        in
+        {
+          default = pkgs.mkShell {
+            inherit (pre-commit) shellHook;
+            buildInputs = pre-commit.enabledPackages ++ [
+              pkgs.statix
+              pkgs.deadnix
+              pkgs.shellcheck
+              pkgs.shfmt
+              pkgs.nixpkgs-fmt
+            ];
+          };
+        }
+      );
     };
 }

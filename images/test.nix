@@ -3,7 +3,7 @@
 pkgs.testers.nixosTest {
   name = "github-runner-image-test";
 
-  nodes.machine = { config, pkgs, ... }: {
+  nodes.machine = _: {
     virtualisation = {
       diskSize = 8192;
       memorySize = 2048;

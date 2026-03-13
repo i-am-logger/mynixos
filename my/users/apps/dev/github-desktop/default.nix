@@ -1,12 +1,12 @@
-{ config, lib, pkgs, appHelpers, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
-        mkIf (appHelpers.shouldEnable userCfg "tools" "githubDesktop") {
+      (_name: userCfg:
+        mkIf (userCfg.apps.dev.tools.githubDesktop.enable or false) {
           home.packages = with pkgs; [
             github-desktop
           ];

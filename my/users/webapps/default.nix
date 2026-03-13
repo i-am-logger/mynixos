@@ -89,7 +89,7 @@ in
     # Browser-based webapps (per-user configuration)
     {
       home-manager.users = mapAttrs
-        (name: userCfg:
+        (_name: userCfg:
           let
             # Get user-level webapp config (with mynixos opinionated defaults)
             userWebapps = userCfg.graphical.webapps or { };

@@ -2,7 +2,6 @@
 # Wires vogix NixOS and Home Manager modules based on my.themes.vogix configuration
 { config
 , lib
-, pkgs
 , vogix
 , ...
 }:
@@ -35,7 +34,7 @@ in
     # Configure home-manager for each user with vogix enabled
     home-manager.users = mapAttrs
       (
-        name: userCfg:
+        _name: userCfg:
           let
             userVogixCfg = userCfg.themes.vogix or { };
             userEnabled = userVogixCfg.enable or false;

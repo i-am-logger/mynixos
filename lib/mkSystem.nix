@@ -9,18 +9,28 @@
   mkSystem =
     { hostname ? null
     , hardware ? [ ]
-    , # List of hardware modules from mynixos.hardware.* (deprecated, use my.hardware)
-      machine ? null
-    , # Deprecated: use hardware instead
-      users ? [ ]
+    , machine ? null
+    , users ? [ ]
     , config ? null
     , extraModules ? [ ]
     , stylix ? null
-    , # Optional stylix configuration module (deprecated, use my.themes)
-      my ? { }
-    , # Direct mynixos configuration (my.features, my.users, my.apps, my.storage, my.themes, etc.)
+    , my ? { }
     }:
     let
+      # Deprecation warnings
+      warnMachine = v:
+        if machine != null
+        then lib.warn "mkSystem: 'machine' parameter is deprecated, use 'hardware' instead" v
+        else v;
+      warnStylix = v:
+        if stylix != null
+        then lib.warn "mkSystem: 'stylix' parameter is deprecated, use 'my.themes' instead" v
+        else v;
+      warnMyHostname = v:
+        if my.hostname or null != null
+        then lib.warn "mkSystem: 'my.hostname' is deprecated, use 'my.system.hostname' or the 'hostname' parameter instead" v
+        else v;
+
       # Extract filesystem configuration from my.filesystem
       filesystemType = my.filesystem.type or null;
       filesystemConfig = my.filesystem.config or null;
@@ -54,105 +64,94 @@
         else
           [ ];
     in
-    lib.nixosSystem {
-      specialArgs = {
-        inherit inputs;
-        inherit (inputs)
-          secrets
-          disko
-          impermanence
-          stylix
-          vogix
-          lanzaboote
-          self
-          ;
-      };
+    warnMachine (warnStylix (warnMyHostname (
+      lib.nixosSystem {
+        specialArgs = {
+          inherit inputs;
+          inherit (inputs)
+            secrets
+            disko
+            impermanence
+            stylix
+            vogix
+            lanzaboote
+            self
+            ;
+        };
 
-      modules =
-        (builtins.trace "Hardware modules: ${builtins.toString hardware}" hardware)
-        ++ [
-          # mynixos - Typed functional DSL
-          self.nixosModules.default
-        ]
-        # Filesystem configuration (disko or nixos)
-        ++ filesystemModules
-        ++ (lib.optionals (machine != null) [
-          # Machine hardware (deprecated approach)
-          machine.path
-        ])
-        ++ (lib.optionals (machine != null && machine.disko != null) [
-          # Disko partitioning (if machine uses it)
-          inputs.disko.nixosModules.disko
-          {
-            disko.devices = import machine.disko { lib = nixpkgs.lib; };
-          }
-        ])
-        ++ (lib.optionals (machine != null && machine.nixos-hardware != null) [
-          # NixOS hardware module (if specified)
-          inputs.nixos-hardware.nixosModules.${machine.nixos-hardware}
-        ])
-        ++ (lib.optionals (config != null) [
-          # System-specific configuration
-          config
-        ])
-        ++ [
+        modules =
+          hardware
+          ++ [
+            # mynixos - Typed functional DSL
+            self.nixosModules.default
+          ]
+          # Filesystem configuration (disko or nixos)
+          ++ filesystemModules
+          ++ (lib.optionals (machine != null) [
+            machine.path
+          ])
+          ++ (lib.optionals (machine != null && machine.disko != null) [
+            inputs.disko.nixosModules.disko
+            {
+              disko.devices = import machine.disko { inherit (nixpkgs) lib; };
+            }
+          ])
+          ++ (lib.optionals (machine != null && machine.nixos-hardware != null) [
+            inputs.nixos-hardware.nixosModules.${machine.nixos-hardware}
+          ])
+          ++ (lib.optionals (config != null) [
+            config
+          ])
+          ++ [
 
-          # Set hostname (supports both new my.system.hostname and deprecated my.hostname for backwards compatibility)
-          {
-            networking.hostName =
-              if hostname != null then
-                hostname
-              else if my.system.hostname or null != null then
-                my.system.hostname
-              else if my.hostname or null != null then
-                my.hostname
-              else
-                throw "Either hostname parameter, my.system.hostname, or my.hostname must be set";
-          }
+            # Set hostname
+            {
+              networking.hostName =
+                if hostname != null then
+                  hostname
+                else if my.system.hostname or null != null then
+                  my.system.hostname
+                else if my.hostname or null != null then
+                  my.hostname
+                else
+                  throw "Either hostname parameter, my.system.hostname, or my.hostname must be set";
+            }
 
-          # NixOS users
-          {
-            imports = map (user: user.nixosUser) users;
-          }
+            # NixOS users
+            {
+              imports = map (user: user.nixosUser) users;
+            }
 
-          # Home Manager for users
-          inputs.home-manager.nixosModules.home-manager
-          {
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "backup";
-            home-manager.extraSpecialArgs = { inherit inputs; };
+            # Home Manager for users
+            inputs.home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useUserPackages = true;
+                backupFileExtension = "backup";
+                extraSpecialArgs = { inherit inputs; };
 
-            # Inject custom home-manager modules from mynixos
-            # DISABLED: stylix compatibility issues
-            # home-manager.sharedModules = [
-            #   # Extend stylix cava module with additional gradient modes
-            #   ../modules/stylix/cava-extended.nix
-            # ];
+                users = lib.genAttrs (map (user: user.name) users) (
+                  name:
+                  let
+                    user = lib.findFirst (u: u.name == name) null users;
+                  in
+                  {
+                    imports = [ user.homeManager ];
+                  }
+                );
+              };
+            }
 
-            home-manager.users = lib.genAttrs (map (user: user.name) users) (
-              name:
-              let
-                user = lib.findFirst (u: u.name == name) null users;
-              in
-              {
-                imports = [ user.homeManager ];
-              }
-            );
-          }
-
-          # Stylix theming module (required for extraModules to use stylix)
-          # DISABLED: stylix has compatibility issues with newer nixpkgs/home-manager
-          # inputs.stylix.nixosModules.stylix
-
-          # sops-nix for secrets management
-          inputs.sops-nix.nixosModules.sops
-        ]
-        # Theme configuration (stylix, etc.)
-        ++ themeModules
-        # Direct my.* configuration
-        ++ (lib.optionals (my != { }) [
-          { inherit my; }
-        ])
-        ++ extraModules;
-    };
+            # sops-nix for secrets management
+            inputs.sops-nix.nixosModules.sops
+          ]
+          # Theme configuration (stylix, etc.)
+          ++ themeModules
+          # Direct my.* configuration
+          ++ (lib.optionals (my != { }) [
+            { inherit my; }
+          ])
+          ++ extraModules;
+      }
+    )));
 }

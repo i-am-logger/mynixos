@@ -1,4 +1,4 @@
-{ name, lib, pkgs, ... }:
+{ name, lib, ... }:
 
 {
   options = {
@@ -27,7 +27,7 @@
     };
 
     shell = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
+      type = lib.types.nullOr (lib.types.enum [ "fish" "bash" "zsh" ]);
       default = null;
       description = "Default shell (fish, bash, zsh)";
     };

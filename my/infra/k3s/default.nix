@@ -10,22 +10,28 @@ in
     # Enable k3s
     services.k3s = {
       enable = true;
-      role = cfg.role;
+      inherit (cfg) role;
       extraFlags = toString (
         optionals cfg.disableTraefik [ "--disable=traefik" ]
       );
     };
 
-    # Install essential k8s tools
-    environment.systemPackages = with pkgs; [
-      kubectl
-      kubernetes-helm
-      k3s
-    ];
+    # Install essential k8s tools, set KUBECONFIG, and prevent NetworkManager from managing k3s interfaces
+    environment = {
+      systemPackages = with pkgs; [
+        kubectl
+        kubernetes-helm
+        k3s
+      ];
 
-    # Set KUBECONFIG environment variable system-wide
-    environment.variables = {
-      KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+      variables = {
+        KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+      };
+
+      etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
+        [keyfile]
+        unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
+      '';
     };
 
     # Open API port and trust k3s network interfaces
@@ -50,11 +56,5 @@ in
         chmod 644 /etc/rancher/k3s/k3s.yaml
       '';
     };
-
-    # Prevent NetworkManager from managing k3s interfaces
-    environment.etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
-      [keyfile]
-      unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
-    '';
   };
 }

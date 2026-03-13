@@ -19,78 +19,137 @@ in
   config = mkIf cfg.enable (mkMerge [
     # Base system configuration
     {
-      # Distribution identity
-      system.nixos.distroId = "mynixos";
-      system.nixos.distroName = "mynixos";
-      system.nixos.vendorId = "mynixos";
-      system.nixos.vendorName = "mynixos";
+      # Distribution identity and branding
+      system = {
+        nixos = {
+          distroId = "mynixos";
+          distroName = "mynixos";
+          vendorId = "mynixos";
+          vendorName = "mynixos";
 
-      # Override system derivation name to use mynixos branding
-      system.systemBuilderArgs = {
-        name = "mynixos-system-${config.system.name}-${mynixosVersion}";
-      };
+          # Additional os-release fields for mynixos branding
+          # Override VERSION and PRETTY_NAME to use mynixos version from release-please
+          extraOSReleaseArgs = {
+            HOME_URL = "https://github.com/i-am-logger/mynixos";
+            VENDOR_URL = "https://github.com/i-am-logger/mynixos";
+            DOCUMENTATION_URL = "https://github.com/i-am-logger/mynixos#readme";
+            SUPPORT_URL = "https://github.com/i-am-logger/mynixos/discussions";
+            BUG_REPORT_URL = "https://github.com/i-am-logger/mynixos/issues";
+            ANSI_COLOR = "0;38;2;126;186;228";
+            # Override version fields with mynixos version from release-please
+            VERSION = "${mynixosVersion} (Bootstrapper)";
+            VERSION_ID = mynixosVersion;
+            VERSION_CODENAME = "bootstrapper";
+            PRETTY_NAME = "mynixos ${mynixosVersion} (Bootstrapper)";
+            # Keep ID_LIKE as nixos so that applications (like Hyprland's start-hyprland)
+            # can detect NixOS-based systems for compatibility checks
+            ID_LIKE = "nixos";
+            # IMPORTANT: NAME must be "NixOS" for Hyprland's start-hyprland to detect
+            # that we're on a NixOS-based system (it checks NAME == "NixOS" exactly)
+            # See: https://github.com/hyprwm/Hyprland/blob/main/start/src/helpers/Nix.cpp
+            NAME = "NixOS";
+          };
+        };
 
-      # Additional os-release fields for mynixos branding
-      # Override VERSION and PRETTY_NAME to use mynixos version from release-please
-      system.nixos.extraOSReleaseArgs = {
-        HOME_URL = "https://github.com/i-am-logger/mynixos";
-        VENDOR_URL = "https://github.com/i-am-logger/mynixos";
-        DOCUMENTATION_URL = "https://github.com/i-am-logger/mynixos#readme";
-        SUPPORT_URL = "https://github.com/i-am-logger/mynixos/discussions";
-        BUG_REPORT_URL = "https://github.com/i-am-logger/mynixos/issues";
-        ANSI_COLOR = "0;38;2;126;186;228";
-        # Override version fields with mynixos version from release-please
-        VERSION = "${mynixosVersion} (Bootstrapper)";
-        VERSION_ID = mynixosVersion;
-        VERSION_CODENAME = "bootstrapper";
-        PRETTY_NAME = "mynixos ${mynixosVersion} (Bootstrapper)";
-        # Keep ID_LIKE as nixos so that applications (like Hyprland's start-hyprland)
-        # can detect NixOS-based systems for compatibility checks
-        ID_LIKE = "nixos";
-        # IMPORTANT: NAME must be "NixOS" for Hyprland's start-hyprland to detect
-        # that we're on a NixOS-based system (it checks NAME == "NixOS" exactly)
-        # See: https://github.com/hyprwm/Hyprland/blob/main/start/src/helpers/Nix.cpp
-        NAME = "NixOS";
+        # Override system derivation name to use mynixos branding
+        systemBuilderArgs = {
+          name = "mynixos-system-${config.system.name}-${mynixosVersion}";
+        };
+
+        # Auto-upgrade configuration
+        autoUpgrade = {
+          enable = mkDefault true;
+          channel = mkDefault "https://nixos.org/channels/nixos-unstable";
+        };
       };
 
       # Plymouth boot splash (opinionated)
-      boot.plymouth = {
-        enable = true;
-        extraConfig = ''
-          [Daemon]
-          ShowDelay=0
-          DeviceTimeout=8
-        '';
+      boot = {
+        plymouth = {
+          enable = true;
+          extraConfig = ''
+            [Daemon]
+            ShowDelay=0
+            DeviceTimeout=8
+          '';
+        };
+
+        initrd.enable = true;
+        kernelParams = [
+          # Plymouth boot splash
+          "splash"
+          "quiet"
+          "vt.global_cursor_default=0"
+          "loglevel=3"
+          "rd.systemd.show_status=false"
+          "rd.udev.log_level=3"
+          "acpi_osi=Linux"
+        ];
+
+        # Boot loader configuration (opinionated)
+        loader = {
+          timeout = lib.mkDefault 2;
+          efi = {
+            canTouchEfiVariables = lib.mkDefault true;
+            efiSysMountPoint = lib.mkDefault "/boot";
+          };
+          systemd-boot.consoleMode = lib.mkDefault "max";
+          grub.configurationLimit = mkDefault 100;
+        };
+
+        tmp.cleanOnBoot = mkDefault true;
       };
 
-      boot.initrd.enable = true;
-      boot.kernelParams = [
-        # Plymouth boot splash
-        "splash"
-        "quiet"
-        "vt.global_cursor_default=0"
-        "loglevel=3"
-        "rd.systemd.show_status=false"
-        "rd.udev.log_level=3"
-        "acpi_osi=Linux"
-      ];
+      systemd = {
+        services.plymouth-quit-wait.enable = lib.mkDefault true;
+        services.plymouth-quit.enable = lib.mkDefault true;
 
-      systemd.services.plymouth-quit-wait.enable = lib.mkDefault true;
-      systemd.services.plymouth-quit.enable = lib.mkDefault true;
-
-      # Boot loader configuration (opinionated)
-      boot.loader = {
-        timeout = lib.mkDefault 2;
-        efi = {
-          canTouchEfiVariables = lib.mkDefault true;
-          efiSysMountPoint = lib.mkDefault "/boot";
+        oomd = {
+          enable = true;
+          enableRootSlice = true;
+          enableUserSlices = true;
         };
-        systemd-boot.consoleMode = lib.mkDefault "max";
       };
 
       # PAM fixes for SSH/GPG agent
-      environment.sessionVariables = {
-        SSH_AUTH_SOCK = "\${SSH_AUTH_SOCK:-$(gpgconf --list-dirs agent-ssh-socket)}";
+      environment = {
+        sessionVariables = {
+          SSH_AUTH_SOCK = "\${SSH_AUTH_SOCK:-$(gpgconf --list-dirs agent-ssh-socket)}";
+        };
+
+        # Prevent NetworkManager from managing container interfaces
+        etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
+          [keyfile]
+          unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:br-*
+        '';
+
+        # System packages
+        systemPackages = with pkgs; [
+          # Managing secrets
+          sops
+          pass
+
+          # CLI tools
+          mc
+          yazi
+          helix
+          fastfetch
+          tree
+          btop
+
+          # Hardware utilities
+          usbutils
+          pciutils
+          screen
+
+          # Network tools
+          tcpdump
+          wget
+          curl
+
+          # Boot splash
+          plymouth
+        ];
       };
 
       programs.gnupg.agent = {
@@ -99,18 +158,34 @@ in
       };
 
       # DRM device permissions (generic, not NVIDIA-specific)
-      services.udev.extraRules = ''
-        # Fix X11 socket permissions for all GPUs
-        KERNEL=="card[0-9]*", SUBSYSTEM=="drm", GROUP="video", MODE="0666"
-      '';
+      services = {
+        udev.extraRules = ''
+          # Fix X11 socket permissions for all GPUs
+          KERNEL=="card[0-9]*", SUBSYSTEM=="drm", GROUP="video", MODE="0666"
+        '';
+
+        # Opinionated system services (can be disabled with mkForce)
+        usbmuxd.enable = lib.mkDefault true; # iOS device support
+        fwupd.enable = lib.mkDefault true; # Firmware updates
+        trezord.enable = lib.mkDefault true; # Trezor hardware wallet
+        timesyncd.enable = lib.mkDefault true; # Network time synchronization
+
+        # Power management - prevent unwanted sleep/suspend (opinionated for workstations)
+        # Desktop workstations shouldn't auto-suspend
+        logind.settings.Login = {
+          HandleLidSwitch = mkDefault "ignore";
+          HandleLidSwitchDocked = mkDefault "ignore";
+          HandleLidSwitchExternalPower = mkDefault "ignore";
+          HandlePowerKey = mkDefault "ignore";
+          HandlePowerKeyLongPress = mkDefault "poweroff";
+          HandleSuspendKey = mkDefault "ignore";
+          HandleHibernateKey = mkDefault "ignore";
+          IdleAction = mkDefault "ignore";
+          IdleActionSec = mkDefault 0;
+        };
+      };
 
       # Performance tunables moved to my.features.performance
-
-      systemd.oomd = {
-        enable = true;
-        enableRootSlice = true;
-        enableUserSlices = true;
-      };
 
       # Timezone and locale (configured below with mkDefault for easy override)
 
@@ -121,75 +196,11 @@ in
         useXkbConfig = true;
       };
 
-      # Boot configuration (with mkDefault for user override)
-      boot.loader.grub.configurationLimit = mkDefault 100;
-      boot.tmp.cleanOnBoot = mkDefault true;
-
-      # Opinionated system services (can be disabled with mkForce)
-      services.usbmuxd.enable = lib.mkDefault true; # iOS device support
-      services.fwupd.enable = lib.mkDefault true; # Firmware updates
-      services.trezord.enable = lib.mkDefault true; # Trezor hardware wallet
-      services.timesyncd.enable = lib.mkDefault true; # Network time synchronization
-
       # Graphics hardware support
       hardware.graphics.enable = true;
 
-      # Power management - prevent unwanted sleep/suspend (opinionated for workstations)
-      # Desktop workstations shouldn't auto-suspend
-      services.logind.settings.Login = {
-        HandleLidSwitch = mkDefault "ignore";
-        HandleLidSwitchDocked = mkDefault "ignore";
-        HandleLidSwitchExternalPower = mkDefault "ignore";
-        HandlePowerKey = mkDefault "ignore";
-        HandlePowerKeyLongPress = mkDefault "poweroff";
-        HandleSuspendKey = mkDefault "ignore";
-        HandleHibernateKey = mkDefault "ignore";
-        IdleAction = mkDefault "ignore";
-        IdleActionSec = mkDefault 0;
-      };
-
       # Network configuration (NetworkManager is a system service, not hardware)
       networking.networkmanager.enable = lib.mkDefault true;
-
-      # Prevent NetworkManager from managing container interfaces
-      environment.etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
-        [keyfile]
-        unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:br-*
-      '';
-
-      # System packages
-      environment.systemPackages = with pkgs; [
-        # Managing secrets
-        sops
-        pass
-
-        # CLI tools
-        mc
-        yazi
-        helix
-        fastfetch
-        tree
-        btop
-
-        # Hardware utilities
-        usbutils
-        pciutils
-        screen
-
-        # Network tools
-        tcpdump
-        wget
-        curl
-
-        # Boot splash
-        plymouth
-      ];
-
-      # Auto-upgrade configuration
-      system.autoUpgrade = {
-        enable = mkDefault true;
-        channel = mkDefault "https://nixos.org/channels/nixos-unstable";
-      };
 
       # Nix configuration
       nix = {

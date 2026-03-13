@@ -1,11 +1,11 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           browser = userCfg.environment.BROWSER;
           hasFirefox = browser != null && browser.enable && browser.package.pname or "" == "firefox";
@@ -14,7 +14,7 @@ with lib;
           programs.firefox = mkMerge [
             {
               enable = true;
-              package = browser.package;
+              inherit (browser) package;
             }
             # Merge settings if provided
             browser.settings

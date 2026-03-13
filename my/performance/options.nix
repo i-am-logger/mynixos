@@ -9,7 +9,7 @@
         enable = lib.mkEnableOption "performance optimizations";
 
         zramPercent = lib.mkOption {
-          type = lib.types.int;
+          type = lib.types.ints.between 0 100;
           default = 15;
           description = "Percentage of RAM to use for zram compressed swap";
         };

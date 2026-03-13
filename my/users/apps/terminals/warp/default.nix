@@ -5,11 +5,12 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
-        home.packages = with pkgs; [
-          warp-terminal
-        ];
-      })
+      (_name: userCfg:
+        mkIf (userCfg.apps.graphical.terminals.warp.enable or false) {
+          home.packages = with pkgs; [
+            warp-terminal
+          ];
+        })
       config.my.users;
   };
 }

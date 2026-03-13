@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           terminal = userCfg.environment.TERMINAL;
           isGraphical = userCfg.graphical.enable or false;

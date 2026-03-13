@@ -42,12 +42,14 @@ in
     ];
 
     # NVIDIA kernel modules
-    boot.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
-    boot.extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
+    boot = {
+      kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
+      extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
 
-    boot.kernelParams = [
-      "nvidia-drm.modeset=1" # Enable DRM kernel mode setting
-    ];
+      kernelParams = [
+        "nvidia-drm.modeset=1" # Enable DRM kernel mode setting
+      ];
+    };
 
     # NVIDIA udev rules for proper device permissions
     services.udev.extraRules = ''

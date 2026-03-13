@@ -37,7 +37,7 @@
                 type = lib.types.submodule {
                   options = {
                     settings = lib.mkOption {
-                      type = lib.types.attrs;
+                      type = lib.types.attrsOf lib.types.anything;
                       default = {
                         default_session = {
                           command = "Hyprland";

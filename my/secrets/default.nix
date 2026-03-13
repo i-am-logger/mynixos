@@ -21,7 +21,7 @@ in
       # Age key configuration
       age = {
         keyFile = mkIf (cfg.ageKeyFile != null) cfg.ageKeyFile;
-        sshKeyPaths = cfg.sshKeyPaths;
+        inherit (cfg) sshKeyPaths;
       };
 
       # GPG/YubiKey configuration

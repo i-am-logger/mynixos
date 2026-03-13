@@ -2,6 +2,9 @@
 # Defines my.themes.* with stylix and vogix as submodules
 { lib, pkgs, ... }:
 
+let
+  inherit (import ../../lib/app-options.nix { inherit lib; }) floatBetween;
+in
 {
   themes = lib.mkOption {
     description = "Theming configuration";
@@ -74,22 +77,22 @@
                 type = lib.types.submodule {
                   options = {
                     applications = lib.mkOption {
-                      type = lib.types.float;
+                      type = floatBetween 0.0 1.0;
                       default = 0.95;
                       description = "Opacity for applications (0.0-1.0)";
                     };
                     desktop = lib.mkOption {
-                      type = lib.types.float;
+                      type = floatBetween 0.0 1.0;
                       default = 0.95;
                       description = "Opacity for desktop (0.0-1.0)";
                     };
                     popups = lib.mkOption {
-                      type = lib.types.float;
+                      type = floatBetween 0.0 1.0;
                       default = 0.95;
                       description = "Opacity for popups (0.0-1.0)";
                     };
                     terminal = lib.mkOption {
-                      type = lib.types.float;
+                      type = floatBetween 0.0 1.0;
                       default = 0.95;
                       description = "Opacity for terminal (0.0-1.0)";
                     };

@@ -1,6 +1,11 @@
 { lib }:
 
 {
+  # Float type constrained to a range [min, max]
+  floatBetween = min: max:
+    lib.types.addCheck lib.types.float (x: x >= min && x <= max)
+    // { description = "float between ${toString min} and ${toString max}"; };
+
   # Create a structured app option with enable, persisted, and persistedDirectories
   mkAppOption =
     { name
@@ -11,13 +16,16 @@
     , extraOptions ? { }
     , # Additional app-specific options
     }:
+    let
+      desc = "${name}: ${description}";
+    in
     lib.mkOption {
       type = lib.types.submodule {
         options = {
           enable = lib.mkOption {
             type = lib.types.bool;
             inherit default;
-            description = "${description}${if default then " (opinionated default: enabled)" else ""}";
+            description = "${desc}${if default then " (opinionated default: enabled)" else ""}";
           };
           persisted = lib.mkOption {
             type = lib.types.bool;
@@ -42,17 +50,6 @@
         inherit persistedDirectories;
         inherit persistedFiles;
       };
-      description = "${description}${if default then " (opinionated default: enabled)" else ""}";
+      description = "${desc}${if default then " (opinionated default: enabled)" else ""}";
     };
-
-  # Create an app option with opinionated default (enabled by default)
-  # Users can override with my.users.<name>.apps.<category>.<app>.enable = false
-  mkAppEnableOption = description: lib.mkOption {
-    type = lib.types.bool;
-    default = true;
-    description = "${description} (opinionated default: enabled)";
-  };
-
-  # Create an app category submodule with multiple apps
-  mkAppCategory = { apps }: lib.types.submodule { options = apps; };
 }

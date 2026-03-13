@@ -10,7 +10,7 @@ in
   config = mkIf anyUserTerminal {
     # Per-user home-manager configuration
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           termCfg = userCfg.terminal or { };
         in

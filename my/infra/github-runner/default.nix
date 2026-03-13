@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.my.infra.github-runner;
+  persistPath = config.my.storage.impermanence.persistPath or "/persist";
 
   # Collect all repositories from all users with github.username set
   userRepositories = lib.flatten (
@@ -58,7 +59,7 @@ let
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        EnvironmentFile = "/persist/etc/github-runner-token";
+        EnvironmentFile = "${persistPath}/etc/github-runner-token";
       };
 
       script = ''
@@ -317,8 +318,27 @@ in
     };
 
     # Set KUBECONFIG environment variable
-    environment.variables = {
-      KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+    environment = {
+      variables = {
+        KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+      };
+
+      # Prevent NetworkManager from managing k3s interfaces
+      etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
+        [keyfile]
+        unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
+      '';
+
+      # Install k8s tools and GitHub Actions packages
+      systemPackages = with pkgs; [
+        kubectl
+        kubernetes-helm
+        k3s
+        git
+        jq
+        arc-status-script
+        arc-tui-script
+      ];
     };
 
     # Open API port and trust k3s network interfaces
@@ -327,41 +347,24 @@ in
       trustedInterfaces = [ "cni0" "flannel.1" ];
     };
 
-    # Prevent NetworkManager from managing k3s interfaces
-    environment.etc."NetworkManager/conf.d/k3s-unmanaged.conf".text = ''
-      [keyfile]
-      unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*
-    '';
-
-    # Install k8s tools and GitHub Actions packages
-    environment.systemPackages = with pkgs; [
-      kubectl
-      kubernetes-helm
-      k3s
-      git
-      jq
-      arc-status-script
-      arc-tui-script
-    ];
-
     # Create GitHub token environment file from pass
     # This runs once at activation to populate the token file
     # To set the token: pass insert github/runner-pat
     system.activationScripts.createGithubRunnerToken = {
       text = ''
-              if [ ! -f /persist/etc/github-runner-token ]; then
+              if [ ! -f ${persistPath}/etc/github-runner-token ]; then
                 echo "Creating GitHub runner token file..."
-                mkdir -p /persist/etc
+                mkdir -p ${persistPath}/etc
 
                 # Try to get PAT from pass (run as configured user)
                 if ${pkgs.sudo}/bin/sudo -u ${autoRunnerUser} ${pkgs.pass}/bin/pass show github/runner-pat &>/dev/null; then
                   GITHUB_TOKEN=$(${pkgs.sudo}/bin/sudo -u ${autoRunnerUser} ${pkgs.pass}/bin/pass show github/runner-pat)
-                  cat > /persist/etc/github-runner-token << EOF
+                  cat > ${persistPath}/etc/github-runner-token << EOF
         GITHUB_TOKEN=$GITHUB_TOKEN
         GITHUB_USERNAME=${githubUsername}
         EOF
-                  chmod 644 /persist/etc/github-runner-token
-                  chown root:root /persist/etc/github-runner-token
+                  chmod 600 ${persistPath}/etc/github-runner-token
+                  chown root:root ${persistPath}/etc/github-runner-token
                   echo "GitHub runner token file created from pass"
                 else
                   echo "WARNING: GitHub PAT not found in pass at github/runner-pat"

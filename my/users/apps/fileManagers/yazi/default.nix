@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           fileManager = userCfg.environment.FILE_MANAGER;
           hasYazi = fileManager != null && fileManager.enable && fileManager.package.pname or "" == "yazi";
@@ -18,7 +18,7 @@ with lib;
           programs.yazi = mkMerge [
             {
               enable = true;
-              package = fileManager.package;
+              inherit (fileManager) package;
               enableBashIntegration = true;
               enableFishIntegration = true;
               enableZshIntegration = true;

@@ -7,9 +7,6 @@ let
   anyUserStreaming = any (userCfg: userCfg.graphical.streaming.enable or false) (attrValues config.my.users);
 
   # mynixos opinionated defaults for streaming
-  defaults = {
-    obs = true; # OBS enabled by default when user streaming is enabled
-  };
 in
 {
   config = mkMerge [
@@ -36,10 +33,10 @@ in
 
         # Add users to streaming-related groups
         users.users = mapAttrs
-          (name: userCfg: {
+          (_name: _userCfg: {
             extraGroups = [ "udev" "usb" "audio" ];
           })
-          (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+          (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
       }
 
       # Default to enable video.virtual when any user has streaming enabled
@@ -51,7 +48,7 @@ in
       # OBS Studio with plugins (per-user configuration)
       {
         home-manager.users = mapAttrs
-          (name: userCfg:
+          (_name: userCfg:
             # Enable OBS for users with graphical.streaming.enable = true
             mkIf (userCfg.graphical.streaming.enable or false) {
               home.packages = with pkgs; [

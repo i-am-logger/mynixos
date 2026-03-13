@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.communication.element.enable or false) {
           home.packages = with pkgs; [
             element-desktop

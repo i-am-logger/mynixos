@@ -5,7 +5,7 @@
     uefi = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable UEFI boot";
+      description = "Enable UEFI boot (default: true)";
     };
 
     secure = lib.mkEnableOption "Secure Boot with Lanzaboote";

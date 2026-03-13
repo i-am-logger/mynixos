@@ -8,10 +8,10 @@ IMAGE="github-runner:nixos-latest"
 
 # Check if image exists
 if ! docker images | grep -q "github-runner"; then
-    echo "Error: Image $IMAGE not found. Please build and load it first:"
-    echo "  nix build /etc/nixos#github-runner-image"
-    echo "  docker load < result"
-    exit 1
+  echo "Error: Image $IMAGE not found. Please build and load it first:"
+  echo "  nix build /etc/nixos#github-runner-image"
+  echo "  docker load < result"
+  exit 1
 fi
 
 echo "✓ Image found: $IMAGE"
@@ -19,53 +19,53 @@ echo ""
 
 # Test 1: Basic tools
 echo "Test 1: Core Utilities"
-docker run --rm "$IMAGE" bash --version > /dev/null && echo "  ✓ bash"
-docker run --rm "$IMAGE" git --version > /dev/null && echo "  ✓ git"
-docker run --rm "$IMAGE" curl --version > /dev/null && echo "  ✓ curl"
-docker run --rm "$IMAGE" wget --version > /dev/null && echo "  ✓ wget"
+docker run --rm "$IMAGE" bash --version >/dev/null && echo "  ✓ bash"
+docker run --rm "$IMAGE" git --version >/dev/null && echo "  ✓ git"
+docker run --rm "$IMAGE" curl --version >/dev/null && echo "  ✓ curl"
+docker run --rm "$IMAGE" wget --version >/dev/null && echo "  ✓ wget"
 
 # Test 2: Build tools
 echo ""
 echo "Test 2: Build Tools"
-docker run --rm "$IMAGE" gcc --version > /dev/null && echo "  ✓ gcc"
-docker run --rm "$IMAGE" make --version > /dev/null && echo "  ✓ make"
-docker run --rm "$IMAGE" cmake --version > /dev/null && echo "  ✓ cmake"
+docker run --rm "$IMAGE" gcc --version >/dev/null && echo "  ✓ gcc"
+docker run --rm "$IMAGE" make --version >/dev/null && echo "  ✓ make"
+docker run --rm "$IMAGE" cmake --version >/dev/null && echo "  ✓ cmake"
 
 # Test 3: Rust
 echo ""
 echo "Test 3: Rust Toolchain"
-docker run --rm "$IMAGE" rustc --version > /dev/null && echo "  ✓ rustc"
-docker run --rm "$IMAGE" cargo --version > /dev/null && echo "  ✓ cargo"
+docker run --rm "$IMAGE" rustc --version >/dev/null && echo "  ✓ rustc"
+docker run --rm "$IMAGE" cargo --version >/dev/null && echo "  ✓ cargo"
 
 # Test 4: Node.js
 echo ""
 echo "Test 4: Node.js"
 NODE_VERSION=$(docker run --rm "$IMAGE" node --version)
 echo "  ✓ node $NODE_VERSION"
-[[ "$NODE_VERSION" == v20* ]] || (echo "  ✗ Expected Node.js v20.x" && exit 1)
+[[ $NODE_VERSION == v20* ]] || (echo "  ✗ Expected Node.js v20.x" && exit 1)
 
 # Test 5: GitHub tools
 echo ""
 echo "Test 5: GitHub Tools"
-docker run --rm "$IMAGE" gh --version > /dev/null && echo "  ✓ gh CLI"
-docker run --rm "$IMAGE" codeql --version > /dev/null && echo "  ✓ CodeQL"
+docker run --rm "$IMAGE" gh --version >/dev/null && echo "  ✓ gh CLI"
+docker run --rm "$IMAGE" codeql --version >/dev/null && echo "  ✓ CodeQL"
 
 # Test 6: Nix
 echo ""
 echo "Test 6: Nix"
-docker run --rm "$IMAGE" nix --version > /dev/null && echo "  ✓ nix"
-docker run --rm "$IMAGE" nixpkgs-fmt --version > /dev/null && echo "  ✓ nixpkgs-fmt"
+docker run --rm "$IMAGE" nix --version >/dev/null && echo "  ✓ nix"
+docker run --rm "$IMAGE" nixpkgs-fmt --version >/dev/null && echo "  ✓ nixpkgs-fmt"
 
 # Test 7: Standard paths
 echo ""
 echo "Test 7: Standard Paths"
 docker run --rm "$IMAGE" test -L /usr/bin/env && echo "  ✓ /usr/bin/env exists"
-docker run --rm "$IMAGE" /usr/bin/env bash -c "echo ok" > /dev/null && echo "  ✓ /usr/bin/env works"
+docker run --rm "$IMAGE" /usr/bin/env bash -c "echo ok" >/dev/null && echo "  ✓ /usr/bin/env works"
 
 # Test 8: Rust build
 echo ""
 echo "Test 8: Rust Build"
-docker run --rm "$IMAGE" bash -c "cd /tmp && cargo init --quiet testproject && cd testproject && cargo build --quiet 2>&1" > /dev/null
+docker run --rm "$IMAGE" bash -c "cd /tmp && cargo init --quiet testproject && cd testproject && cargo build --quiet 2>&1" >/dev/null
 echo "  ✓ Cargo project builds successfully"
 
 # Test 9: Environment

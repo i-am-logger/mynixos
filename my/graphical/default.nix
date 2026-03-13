@@ -43,7 +43,7 @@ in
           settings = {
             default_session = {
               command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${dmCfg.greetd.settings.default_session.command}";
-              user = dmCfg.greetd.settings.default_session.user;
+              inherit (dmCfg.greetd.settings.default_session) user;
             };
           };
         };
@@ -52,7 +52,7 @@ in
       (mkIf (dmType == "gdm") {
         services.displayManager.gdm = {
           enable = true;
-          wayland = dmCfg.gdm.wayland;
+          inherit (dmCfg.gdm) wayland;
         };
       })
 
@@ -129,7 +129,7 @@ in
 
         # Add users to graphical-related groups
         users.users = mapAttrs
-          (name: userCfg: {
+          (_name: _userCfg: {
             extraGroups = [
               "input"
               "gpu"
@@ -137,7 +137,7 @@ in
               "render"
             ];
           })
-          (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+          (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
       }
 
       # Audio tools are now in my.hardware.audio, not in graphical

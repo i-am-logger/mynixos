@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -8,7 +8,7 @@ with lib;
     # This module only implements the home-manager configuration
 
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           env = userCfg.environment;
 
@@ -16,7 +16,6 @@ with lib;
           preferredBrowser = if env.BROWSER != null then env.BROWSER.package else null;
           preferredTerminal = if env.TERMINAL != null then env.TERMINAL.package else null;
           preferredEditor = if env.EDITOR != null then env.EDITOR.package else null;
-          preferredFileManager = if env.FILE_MANAGER != null then env.FILE_MANAGER.package else null;
 
           # Map package to desktop file name
           browserDesktopFile = pname:
@@ -25,20 +24,9 @@ with lib;
             else if pname == "chromium" then "chromium-browser.desktop"
             else "${pname}.desktop";
 
-          terminalDesktopFile = pname:
-            if pname == "wezterm" then "org.wezfurlong.wezterm.desktop"
-            else if pname == "kitty" then "kitty.desktop"
-            else if pname == "alacritty" then "Alacritty.desktop"
-            else "${pname}.desktop";
-
           editorDesktopFile = pname:
             if pname == "helix" then "helix.desktop"
             else if pname == "neovim" then "nvim.desktop"
-            else "${pname}.desktop";
-
-          fileManagerDesktopFile = pname:
-            if pname == "yazi" then "yazi.desktop"
-            else if pname == "ranger" then "ranger.desktop"
             else "${pname}.desktop";
         in
         mkMerge [

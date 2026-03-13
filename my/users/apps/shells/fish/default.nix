@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.terminal.shells.fish.enable or false) {
           home.packages = with pkgs; [
             # thefuck has been removed, using pay-respects instead
@@ -74,11 +74,11 @@ with lib;
             plugins = [
               {
                 name = "puffer";
-                src = pkgs.fishPlugins.puffer.src;
+                inherit (pkgs.fishPlugins.puffer) src;
               }
               {
                 name = "fzf-fish";
-                src = pkgs.fishPlugins.fzf-fish.src;
+                inherit (pkgs.fishPlugins.fzf-fish) src;
               }
               # {
               #   name = "forgit";
@@ -86,15 +86,15 @@ with lib;
               # }
               {
                 name = "foreign-env";
-                src = pkgs.fishPlugins.foreign-env.src;
+                inherit (pkgs.fishPlugins.foreign-env) src;
               }
               {
                 name = "grc";
-                src = pkgs.fishPlugins.grc.src;
+                inherit (pkgs.fishPlugins.grc) src;
               }
               {
                 name = "colored-man-pages";
-                src = pkgs.fishPlugins.colored-man-pages.src;
+                inherit (pkgs.fishPlugins.colored-man-pages) src;
               }
               {
                 name = "z";

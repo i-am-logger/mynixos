@@ -6,7 +6,7 @@ with lib;
   # Option is declared in flake.nix
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.terminal.sysinfo.btop.enable or false) {
           programs.btop = {
             enable = true;

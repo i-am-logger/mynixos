@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+_:
 
 {
   # Windows dual-boot hardware configuration

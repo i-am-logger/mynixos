@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -6,7 +6,7 @@ let
   cfg = config.my.hardware.bluetooth;
 in
 {
-  config = mkIf (cfg.enable) {
+  config = mkIf cfg.enable {
     # Realtek Bluetooth configuration
     hardware.bluetooth = {
       enable = true;

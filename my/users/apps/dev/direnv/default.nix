@@ -1,12 +1,12 @@
-{ config, lib, pkgs, appHelpers, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
-        mkIf (appHelpers.shouldEnable userCfg "tools" "direnv") {
+      (_name: userCfg:
+        mkIf (userCfg.apps.dev.tools.direnv.enable or false) {
           programs.direnv = {
             enable = true;
             nix-direnv.enable = true;

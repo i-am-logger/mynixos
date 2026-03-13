@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -7,7 +7,7 @@ with lib;
   # This is opinionated: jujutsu is provided as an alternative to git
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (name: _userCfg: {
         programs.jujutsu = {
           enable = true;
 
@@ -17,7 +17,7 @@ with lib;
               {
                 name = config.my.users.${name}.fullName;
               } // optionalAttrs (config.my.users.${name}.email or null != null) {
-              email = config.my.users.${name}.email;
+              inherit (config.my.users.${name}) email;
             };
 
             # Opinionated aliases

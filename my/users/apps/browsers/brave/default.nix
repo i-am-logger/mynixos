@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           browser = userCfg.environment.BROWSER;
           hasBrave = browser != null && browser.enable && browser.package.pname or "" == "brave";
