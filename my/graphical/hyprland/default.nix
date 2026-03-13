@@ -243,6 +243,7 @@ let
     monitor = [
       ",highres,auto,1"
     ];
+    env = [ ];
   };
 
   general = {
