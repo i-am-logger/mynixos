@@ -7,7 +7,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.fileUtils.lsd.enable or false) {
+        mkIf userCfg.apps.terminal.fileUtils.lsd.enable {
           programs.lsd = {
             enable = true;
             settings = {

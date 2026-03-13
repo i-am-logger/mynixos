@@ -6,13 +6,13 @@ with lib;
 
 let
   # Auto-enable when any user has graphical.enable = true
-  anyUserGraphical = any (userCfg: userCfg.graphical.enable or false) (attrValues config.my.users);
+  anyUserGraphical = any (userCfg: userCfg.graphical.enable) (attrValues config.my.users);
 in
 {
   config = mkIf anyUserGraphical {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.graphical.enable or false) {
+        mkIf userCfg.graphical.enable {
           programs.waybar = {
             enable = true;
 

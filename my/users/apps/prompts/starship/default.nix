@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.prompts.starship.enable or false) {
+        mkIf userCfg.apps.terminal.prompts.starship.enable {
           programs.starship = {
             enable = true;
             # Load settings from the original TOML file

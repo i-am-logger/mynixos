@@ -5,7 +5,7 @@ with lib;
 let
   # Check if any user has Chromium enabled
   anyUserChromium = any
-    (userCfg: userCfg.apps.graphical.browsers.chromium.enable or false)
+    (userCfg: userCfg.apps.graphical.browsers.chromium.enable)
     (attrValues config.my.users);
 in
 {
@@ -14,7 +14,7 @@ in
     {
       home-manager.users = mapAttrs
         (_name: userCfg:
-          mkIf (userCfg.apps.graphical.browsers.chromium.enable or false) {
+          mkIf userCfg.apps.graphical.browsers.chromium.enable {
             programs.chromium = {
               enable = true;
             };

@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.shells.fish.enable or false) {
+        mkIf userCfg.apps.terminal.shells.fish.enable {
           home.packages = with pkgs; [
             # thefuck has been removed, using pay-respects instead
             grc

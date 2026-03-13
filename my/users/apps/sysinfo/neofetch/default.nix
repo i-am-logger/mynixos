@@ -7,7 +7,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.sysinfo.neofetch.enable or false) {
+        mkIf userCfg.apps.terminal.sysinfo.neofetch.enable {
           home.packages = with pkgs; [
             neofetch
             w3m

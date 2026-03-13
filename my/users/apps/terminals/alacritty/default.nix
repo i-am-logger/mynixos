@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.graphical.terminals.alacritty.enable or false) {
+        mkIf userCfg.apps.graphical.terminals.alacritty.enable {
           programs.alacritty = {
             enable = true;
           };

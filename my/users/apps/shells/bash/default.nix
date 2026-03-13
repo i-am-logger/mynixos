@@ -9,7 +9,7 @@ with lib;
         let
           cfg = userCfg.apps.terminal.shells.bash;
         in
-        mkIf (cfg.enable or false) {
+        mkIf cfg.enable {
           programs.bash = {
             enable = true;
             enableCompletion = true;

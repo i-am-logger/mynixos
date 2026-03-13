@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.graphical.utils.calculator.enable or false) {
+        mkIf userCfg.apps.graphical.utils.calculator.enable {
           home.packages = with pkgs; [
             qalculate-gtk # Calculator with qalc CLI
           ];

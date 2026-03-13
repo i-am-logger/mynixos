@@ -13,7 +13,7 @@ with lib;
           let
             cfg = userCfg.apps.terminal.visualizers.cava;
           in
-          mkIf (cfg.enable or false) (mkMerge [
+          mkIf cfg.enable (mkMerge [
             {
               programs.cava = {
                 enable = true;
@@ -52,7 +52,7 @@ with lib;
             }
 
             # Enable stylix theming with gradient mode from user config (only if stylix is enabled)
-            (mkIf (config.my.themes.enable or false && config.my.themes.stylix.enable or false) {
+            (mkIf (config.my.themes.enable && config.my.themes.stylix.enable) {
               stylix.targets.cava = {
                 enable = true;
                 inherit (cfg) gradientMode;
