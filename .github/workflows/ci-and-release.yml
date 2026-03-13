@@ -48,7 +48,15 @@ jobs:
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [nix-flake-check, nix-lint]
+    # always() prevents auto-skip when dependencies are skipped (release merges)
+    # Then check: either CI passed or was skipped (release-please commits skip CI)
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
