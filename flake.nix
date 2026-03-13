@@ -418,6 +418,9 @@
           typeValidationTests = import ./tests/type-validation.nix {
             inherit lib nixpkgs system self inputs;
           };
+          smokeTests = import ./tests/integration-smoke.nix {
+            inherit self inputs system;
+          };
         in
         {
           formatting = treefmtEval.${system}.config.build.check self;
@@ -435,6 +438,7 @@
           };
         } // lib.mapAttrs' (name: value: lib.nameValuePair "module-eval-${name}" value) moduleEvalTests
         // lib.mapAttrs' (name: value: lib.nameValuePair name value) typeValidationTests
+        // smokeTests
       );
 
       # Dev shell with pre-commit hooks installed
