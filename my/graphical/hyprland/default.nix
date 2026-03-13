@@ -25,8 +25,8 @@ let
   '';
 
   # Hyprland configuration modules
-  animations = {
-    enabled = true;
+  mkAnimations = userHyprland: {
+    enabled = userHyprland.animations_enabled;
     bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
     animation = [
       "windows, 1, 2, myBezier"
@@ -221,22 +221,22 @@ let
 
   # Decoration settings for Hyprland 0.51+
   # blur must be nested under decoration, not at top level
-  decorations = {
-    active_opacity = 1.0;
-    inactive_opacity = 1.0;
+  mkDecorations = userHyprland: {
+    inherit (userHyprland)
+      active_opacity
+      inactive_opacity
+      rounding
+      dim_inactive
+      dim_strength
+      ;
     fullscreen_opacity = 1.0;
-    rounding = 8;
-    dim_inactive = true;
-    dim_strength = 0.3; # 0.0 ~ 1.0
-    # Note: blur is defined here but home-manager may flatten it
-    # See decorationBlur below for workaround
   };
 
   # Separate blur config for explicit nesting
-  decorationBlur = {
-    enabled = true;
+  mkDecorationBlur = userHyprland: {
+    enabled = userHyprland.blur_enabled;
     brightness = 0.7;
-    size = 3;
+    size = userHyprland.blur_size;
   };
 
   environment = {
@@ -246,11 +246,13 @@ let
     env = [ ];
   };
 
-  general = {
-    gaps_in = 10;
-    gaps_out = 10;
-    border_size = 3;
-    layout = "dwindle";
+  mkGeneral = userHyprland: {
+    inherit (userHyprland)
+      gaps_in
+      gaps_out
+      border_size
+      layout
+      ;
   };
 
   group = {
@@ -508,65 +510,73 @@ in
                 xwayland = {
                   enable = true;
                 };
-                settings = {
-                  # General settings - nested under general block
-                  general = {
-                    inherit (general)
-                      gaps_in
-                      gaps_out
-                      border_size
-                      layout
-                      ;
-                  };
+                settings =
+                  let
+                    generalCfg = mkGeneral userHyprland;
+                    decorationsCfg = mkDecorations userHyprland;
+                    blurCfg = mkDecorationBlur userHyprland;
+                    animationsCfg = mkAnimations userHyprland;
+                    baseSettings = {
+                      # General settings - nested under general block
+                      general = {
+                        inherit (generalCfg)
+                          gaps_in
+                          gaps_out
+                          border_size
+                          layout
+                          ;
+                      };
 
-                  # Input settings
-                  input = mkInput userHyprland;
+                      # Input settings
+                      input = mkInput userHyprland;
 
-                  # Layouts
-                  inherit (layouts) dwindle master;
+                      # Layouts
+                      inherit (layouts) dwindle master;
 
-                  # Misc
-                  inherit misc;
+                      # Misc
+                      inherit misc;
 
-                  # Groups
-                  inherit group;
+                      # Groups
+                      inherit group;
 
-                  # Gestures
-                  inherit gestures;
+                      # Gestures
+                      inherit gestures;
 
-                  # Animations
-                  inherit animations;
+                      # Animations
+                      animations = animationsCfg;
 
-                  # Decoration - properly structured for Hyprland 0.51+
-                  # This merges with stylix's decoration settings
-                  decoration = {
-                    inherit (decorations)
-                      active_opacity
-                      inactive_opacity
-                      fullscreen_opacity
-                      rounding
-                      dim_inactive
-                      dim_strength
-                      ;
+                      # Decoration - properly structured for Hyprland 0.51+
+                      # This merges with stylix's decoration settings
+                      decoration = {
+                        inherit (decorationsCfg)
+                          active_opacity
+                          inactive_opacity
+                          fullscreen_opacity
+                          rounding
+                          dim_inactive
+                          dim_strength
+                          ;
 
-                    blur = {
-                      inherit (decorationBlur) enabled brightness size;
-                    };
+                        blur = {
+                          inherit (blurCfg) enabled brightness size;
+                        };
 
-                    # Shadow color managed by stylix theming
-                  };
+                        # Shadow color managed by stylix theming
+                      };
 
-                  # Window and layer rules
-                  inherit layerrule;
-                  windowrule = windowRules;
+                      # Window and layer rules
+                      inherit layerrule;
+                      windowrule = windowRules;
 
-                  # Environment
-                  inherit (environment) monitor env;
+                      # Environment
+                      inherit (environment) monitor;
 
-                  # Autostart
-                  exec-once = autostart;
-                }
-                // (mkBindings { inherit browserCmd terminalCmd; });
+                      # Autostart
+                      exec-once = autostart;
+                    }
+                    // (mkBindings { inherit browserCmd terminalCmd; });
+                  in
+                  lib.recursiveUpdate baseSettings (userHyprland.extraSettings or { });
               };
             }
         ) # End mkIf userHyprland.enable
