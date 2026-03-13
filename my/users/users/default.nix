@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -15,7 +15,7 @@ let
 
   # Only create users that have fullName defined (fully configured users)
   # Users with only mounts/email/yubikeys defined won't be created (they come from myLib.users)
-  usersToCreate = filterAttrs (_name: userCfg: userCfg.fullName or null != null) cfg;
+  usersToCreate = activeUsers cfg;
 
   # Get users that want sops-managed passwords
   usersWithSopsPassword = filterAttrs

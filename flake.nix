@@ -155,9 +155,9 @@
         in
         {
           config = {
-            # Make appHelpers available to all modules
+            # Make helpers available to all modules
             _module.args = {
-              inherit (mynixosLib) appHelpers;
+              inherit (mynixosLib) appHelpers activeUsers;
             };
           };
 

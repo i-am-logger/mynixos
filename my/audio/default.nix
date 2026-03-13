@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -31,7 +31,7 @@ in
       (_name: _userCfg: {
         extraGroups = [ "audio" ];
       })
-      (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
+      (activeUsers config.my.users);
 
     # Audio utilities
     environment.systemPackages = with pkgs; [

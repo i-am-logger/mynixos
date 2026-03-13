@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -114,7 +114,7 @@ in
                 ) userCfg.yubikeys}"
                 else ""
               )
-              (lib.filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users)
+              (activeUsers config.my.users)
           )
         );
 
@@ -174,7 +174,7 @@ in
           (_name: _userCfg: {
             extraGroups = [ "plugdev" "pcscd" ];
           })
-          (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
+          (activeUsers config.my.users);
       };
     })
 
