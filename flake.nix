@@ -285,11 +285,11 @@
             ./my/users/apps/editors/marktext
 
             # Users - Apps: File Managers
-            ./my/users/apps/fileManagers/mc
-            ./my/users/apps/fileManagers/yazi
+            ./my/users/apps/file-managers/mc
+            ./my/users/apps/file-managers/yazi
 
             # Users - Apps: File Utils
-            ./my/users/apps/fileUtils/lsd
+            ./my/users/apps/file-utils/lsd
 
             # Users - Apps: Finance
             ./my/users/apps/finance/cointop
@@ -331,15 +331,15 @@
             ./my/users/apps/ssh
 
             # Users - Apps: Status bars
-            ./my/users/apps/statusbars/waybar
+            ./my/users/apps/status-bars/waybar
 
             # Users - Apps: Sync
             ./my/users/apps/sync/rclone
 
             # Users - Apps: System Info
-            ./my/users/apps/sysinfo/btop
-            ./my/users/apps/sysinfo/fastfetch
-            ./my/users/apps/sysinfo/neofetch
+            ./my/users/apps/system-info/btop
+            ./my/users/apps/system-info/fastfetch
+            ./my/users/apps/system-info/neofetch
 
             # Users - Apps: Terminals
             ./my/users/apps/terminals/alacritty
