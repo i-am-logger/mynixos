@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.5...mynixos-v0.1.6) (2026-03-13)
+
+
+### Bug Fixes
+
+* remove pkgs from option-definition time to prevent infinite recursion ([#76](https://github.com/i-am-logger/mynixos/issues/76)) ([1950d93](https://github.com/i-am-logger/mynixos/commit/1950d936e2cfb9633695429085cfbd0508f1f14d)), closes [#75](https://github.com/i-am-logger/mynixos/issues/75)
+
 ## [0.1.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.4...mynixos-v0.1.5) (2026-03-13)
 
 
