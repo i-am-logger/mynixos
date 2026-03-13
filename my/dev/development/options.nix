@@ -9,7 +9,7 @@
         enable = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Auto-set to true when any user has dev = true (managed by mynixos)";
+          description = "Auto-set to true when any user has dev.enable = true (managed by mynixos)";
         };
       };
     };

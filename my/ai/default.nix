@@ -5,6 +5,9 @@ with lib;
 let
   cfg = config.my.ai;
 
+  # Auto-enable AI when any user has ai.enable = true
+  anyUserAI = any (userCfg: userCfg.ai.enable or false) (attrValues config.my.users);
+
   # mynixos opinionated defaults for AI features
   defaults = {
     mcpServers = false; # MCP servers disabled by default
@@ -52,73 +55,78 @@ let
   };
 in
 {
-  config = mkIf cfg.enable (mkMerge [
-    # Base AI configuration - Ollama with ROCm support (opinionated)
-    {
-      # ROCm packages for AMD GPU acceleration
-      environment.systemPackages = with pkgs; [
-        rocmPackages.rocm-runtime
-        rocmPackages.rocm-device-libs
-        rocmPackages.rocm-smi
-        rocmPackages.hipify
-      ];
+  config = mkMerge [
+    # Set system flag
+    { my.ai.enable = anyUserAI; }
 
-      # Environment variables for ROCm and Ollama
-      environment.variables = {
-        HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion; # AMD GPU override for ROCm compatibility
-        ROC_ENABLE_PRE_VEGA = "1"; # Enable older AMD GPU support
-        OLLAMA_HOST = "127.0.0.1:11434";
-        OLLAMA_NUM_PARALLEL = "1";
-        OLLAMA_MAX_LOADED_MODELS = "1";
-        OLLAMA_FLASH_ATTENTION = "true";
-      };
-
-      # Ollama service with ROCm acceleration
-      # Uses DynamicUser (nixpkgs default) - do NOT set user/group manually
-      services.ollama = {
-        enable = true;
-        package = pkgs.ollama-rocm; # ROCm acceleration via package selection
-        # user/group intentionally omitted - nixpkgs uses DynamicUser by default
-        home = "/var/lib/ollama";
-        models = "/var/lib/ollama/models";
-        loadModels = [
-          "qwen2.5-coder:32b"
-          "llama3.3:70b"
+    (mkIf cfg.enable (mkMerge [
+      # Base AI configuration - Ollama with ROCm support (opinionated)
+      {
+        # ROCm packages for AMD GPU acceleration
+        environment.systemPackages = with pkgs; [
+          rocmPackages.rocm-runtime
+          rocmPackages.rocm-device-libs
+          rocmPackages.rocm-smi
+          rocmPackages.hipify
         ];
-      };
 
-      # DynamicUser handles user/group automatically - no manual creation needed
+        # Environment variables for ROCm and Ollama
+        environment.variables = {
+          HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion; # AMD GPU override for ROCm compatibility
+          ROC_ENABLE_PRE_VEGA = "1"; # Enable older AMD GPU support
+          OLLAMA_HOST = "127.0.0.1:11434";
+          OLLAMA_NUM_PARALLEL = "1";
+          OLLAMA_MAX_LOADED_MODELS = "1";
+          OLLAMA_FLASH_ATTENTION = "true";
+        };
 
-      # Override systemd service to add ROCm environment variables
-      systemd.services.ollama.environment = {
-        HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
-        ROC_ENABLE_PRE_VEGA = "1";
-      };
-    }
+        # Ollama service with ROCm acceleration
+        # Uses DynamicUser (nixpkgs default) - do NOT set user/group manually
+        services.ollama = {
+          enable = true;
+          package = pkgs.ollama-rocm; # ROCm acceleration via package selection
+          # user/group intentionally omitted - nixpkgs uses DynamicUser by default
+          home = "/var/lib/ollama";
+          models = "/var/lib/ollama/models";
+          loadModels = [
+            "qwen2.5-coder:32b"
+            "llama3.3:70b"
+          ];
+        };
 
-    # MCP Servers (Model Context Protocol) - per-user configuration
-    {
-      home-manager.users = mapAttrs
-        (_name: userCfg:
-          let
-            # Get user-level AI config (with mynixos opinionated defaults)
-            userAI = userCfg.ai or { };
-          in
-          mkIf (userAI.mcpServers or defaults.mcpServers) {
-            home.packages = lib.attrValues mcp-packages;
-          })
-        config.my.users;
-    }
+        # DynamicUser handles user/group automatically - no manual creation needed
 
-    # Persistence configuration
-    {
-      my.system.persistence.features = {
-        systemDirectories = [
-          # DynamicUser manages /var/lib/private/ollama internally
-          # We persist the parent directory with root ownership
-          "/var/lib/private"
-        ];
-      };
-    }
-  ]);
+        # Override systemd service to add ROCm environment variables
+        systemd.services.ollama.environment = {
+          HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
+          ROC_ENABLE_PRE_VEGA = "1";
+        };
+      }
+
+      # MCP Servers (Model Context Protocol) - per-user configuration
+      {
+        home-manager.users = mapAttrs
+          (_name: userCfg:
+            let
+              # Get user-level AI config (with mynixos opinionated defaults)
+              userAI = userCfg.ai or { };
+            in
+            mkIf (userAI.mcpServers or defaults.mcpServers) {
+              home.packages = lib.attrValues mcp-packages;
+            })
+          config.my.users;
+      }
+
+      # Persistence configuration
+      {
+        my.system.persistence.features = {
+          systemDirectories = [
+            # DynamicUser manages /var/lib/private/ollama internally
+            # We persist the parent directory with root ownership
+            "/var/lib/private"
+          ];
+        };
+      }
+    ]))
+  ];
 }

@@ -9,7 +9,7 @@
         enable = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Enable AI tools (MCP servers, requires system-level my.features.ai.enable)";
+          description = "Enable AI tools (auto-enables system-level my.ai.enable)";
         };
       };
     };
