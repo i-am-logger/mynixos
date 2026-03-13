@@ -4,11 +4,10 @@
       "release-type": "simple",
       "package-name": "mynixos",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
         { "type": "fix", "section": "Bug Fixes" },
-        { "type": "refactor", "section": "Code Refactoring" },
+        { "type": "refactor", "section": "Code Refactoring", "bump": "minor" },
         { "type": "docs", "section": "Documentation" },
         { "type": "chore", "section": "Miscellaneous", "hidden": false }
       ],
