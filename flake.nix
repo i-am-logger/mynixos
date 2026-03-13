@@ -410,21 +410,28 @@
       formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
 
       # Checks (run via `nix flake check`)
-      checks = forAllSystems (system: {
-        formatting = treefmtEval.${system}.config.build.check self;
-
-        pre-commit = git-hooks.lib.${system}.run {
-          src = self;
-          hooks = {
-            treefmt = {
-              enable = true;
-              package = treefmtEval.${system}.config.build.wrapper;
-            };
-            statix.enable = true;
-            deadnix.enable = true;
+      checks = forAllSystems (system:
+        let
+          moduleEvalTests = import ./tests/module-eval.nix {
+            inherit lib nixpkgs system self inputs;
           };
-        };
-      });
+        in
+        {
+          formatting = treefmtEval.${system}.config.build.check self;
+
+          pre-commit = git-hooks.lib.${system}.run {
+            src = self;
+            hooks = {
+              treefmt = {
+                enable = true;
+                package = treefmtEval.${system}.config.build.wrapper;
+              };
+              statix.enable = true;
+              deadnix.enable = true;
+            };
+          };
+        } // lib.mapAttrs' (name: value: lib.nameValuePair "module-eval-${name}" value) moduleEvalTests
+      );
 
       # Dev shell with pre-commit hooks installed
       devShells = forAllSystems (system:
