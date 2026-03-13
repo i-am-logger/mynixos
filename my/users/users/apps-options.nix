@@ -294,6 +294,9 @@ in
                             default = 0.0;
                             description = "Mouse sensitivity (range: -1.0 to 1.0)";
                           };
+                          # types.anything is intentional: settings are passed through to
+                          # wayland.windowManager.hyprland.settings whose schema is complex
+                          # and validated downstream by the Hyprland home-manager module.
                           settings = lib.mkOption {
                             type = lib.types.attrsOf lib.types.anything;
                             default = { };

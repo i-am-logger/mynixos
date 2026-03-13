@@ -37,13 +37,29 @@
                 type = lib.types.submodule {
                   options = {
                     settings = lib.mkOption {
-                      type = lib.types.attrsOf lib.types.anything;
-                      default = {
-                        default_session = {
-                          command = "Hyprland";
-                          user = "greeter";
+                      type = lib.types.submodule {
+                        options = {
+                          default_session = lib.mkOption {
+                            type = lib.types.submodule {
+                              options = {
+                                command = lib.mkOption {
+                                  type = lib.types.str;
+                                  default = "Hyprland";
+                                  description = "Command to run for the default session";
+                                };
+                                user = lib.mkOption {
+                                  type = lib.types.str;
+                                  default = "greeter";
+                                  description = "User to run the greeter as";
+                                };
+                              };
+                            };
+                            default = { };
+                            description = "Default session configuration";
+                          };
                         };
                       };
+                      default = { };
                       description = "greetd settings (mynixos default: tuigreet with Hyprland)";
                     };
                   };

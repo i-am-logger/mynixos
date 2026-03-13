@@ -15,6 +15,9 @@ let
         description = "Application package";
       };
 
+      # types.anything is intentional: settings are passed through to varying
+      # home-manager program modules (programs.firefox, programs.wezterm, etc.)
+      # whose schemas differ per program and are validated downstream.
       settings = lib.mkOption {
         type = lib.types.attrsOf lib.types.anything;
         default = { };
