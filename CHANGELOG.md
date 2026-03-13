@@ -5,6 +5,14 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.2...mynixos-v0.1.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* gate release-please on CI with always() to handle skipped jobs ([bf48a14](https://github.com/i-am-logger/mynixos/commit/bf48a148fb083f11095ee5cea4c92a6592cb7f34))
+* make release-please independent of CI jobs to prevent auto-skip ([80a0e34](https://github.com/i-am-logger/mynixos/commit/80a0e34ac9e2b897d8ae962b38104287beecd3a1))
+
 ## [0.1.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.1...mynixos-v0.1.2) (2026-03-13)
 
 
