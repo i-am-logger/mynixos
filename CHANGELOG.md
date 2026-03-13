@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.3...mynixos-v0.1.4) (2026-03-13)
+
+
+### Code Refactoring
+
+* extract activeUsers helper for filterAttrs fullName pattern ([8d4291b](https://github.com/i-am-logger/mynixos/commit/8d4291bdf492c18ff22f5cf8653b30ca47b5c2b0))
+* extract activeUsers helper for filterAttrs fullName pattern ([25392ce](https://github.com/i-am-logger/mynixos/commit/25392cee549ce7bdaf9c691d87ee2ee31f202e17)), closes [#45](https://github.com/i-am-logger/mynixos/issues/45)
+* replace attrsOf anything with proper types ([b8ebe41](https://github.com/i-am-logger/mynixos/commit/b8ebe4159a264e42dcb3cb4ba1be4c7579ed0238))
+* replace attrsOf anything with proper types ([3fcf133](https://github.com/i-am-logger/mynixos/commit/3fcf133a8c9952e51c69f428625e8982aea69ecd)), closes [#47](https://github.com/i-am-logger/mynixos/issues/47)
+* standardize allowUnfreePredicate into single source ([f532a7d](https://github.com/i-am-logger/mynixos/commit/f532a7dcc8f27016a7c07310eb1b99cf27382a90))
+* standardize allowUnfreePredicate into single source ([45e4d80](https://github.com/i-am-logger/mynixos/commit/45e4d80dfe7258813d474b991c9de645005a29ae)), closes [#44](https://github.com/i-am-logger/mynixos/issues/44)
+
 ## [0.1.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.2...mynixos-v0.1.3) (2026-03-13)
 
 
