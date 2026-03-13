@@ -22,9 +22,9 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v16
+        uses: DeterminateSystems/nix-installer-action@v17
         with:
           extra-conf: |
             extra-substituters = https://nix-community.cachix.org https://cache.nixos.org
@@ -41,9 +41,9 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v16
+        uses: DeterminateSystems/nix-installer-action@v17
       - name: Run statix
         run: nix run nixpkgs#statix -- check .
       - name: Run deadnix
@@ -59,7 +59,7 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Generate module coverage report
         run: bash scripts/module-coverage.sh --lcov
       - name: Upload coverage to Codecov
