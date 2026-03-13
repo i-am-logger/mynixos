@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.graphical.terminals.kitty.enable or false) {
+        mkIf userCfg.apps.graphical.terminals.kitty.enable {
           programs.kitty = {
             enable = true;
             settings = {

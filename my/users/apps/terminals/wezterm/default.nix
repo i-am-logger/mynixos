@@ -8,7 +8,7 @@ with lib;
       (_name: userCfg:
         let
           terminal = userCfg.environment.TERMINAL;
-          isGraphical = userCfg.graphical.enable or false;
+          isGraphical = userCfg.graphical.enable;
           # Enable wezterm when:
           # 1. User explicitly set TERMINAL to wezterm, OR
           # 2. User has graphical.enable = true AND didn't set TERMINAL (opinionated default)

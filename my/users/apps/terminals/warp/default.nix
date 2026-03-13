@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.graphical.terminals.warp.enable or false) {
+        mkIf userCfg.apps.graphical.terminals.warp.enable {
           home.packages = with pkgs; [
             warp-terminal
           ];

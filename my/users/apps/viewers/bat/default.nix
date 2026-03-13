@@ -7,7 +7,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.viewers.bat.enable or false) {
+        mkIf userCfg.apps.terminal.viewers.bat.enable {
           programs.bat = {
             enable = true;
           };

@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.viewers.feh.enable or false) {
+        mkIf userCfg.apps.terminal.viewers.feh.enable {
           home.packages = with pkgs; [
             feh
           ];

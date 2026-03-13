@@ -14,7 +14,7 @@ with lib;
           let
             cfg = userCfg.apps.ai.tools.claude-code;
           in
-          mkIf (cfg.enable or false) {
+          mkIf cfg.enable {
             # Use home-manager module for claude-code
             programs.claude-code = {
               enable = true;

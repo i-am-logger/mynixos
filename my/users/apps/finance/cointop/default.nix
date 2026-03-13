@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.finance.cointop.enable or false) {
+        mkIf userCfg.apps.finance.cointop.enable {
           home.packages = with pkgs; [
             cointop
           ];

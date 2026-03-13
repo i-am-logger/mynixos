@@ -9,7 +9,7 @@ with lib;
         let
           cfg = userCfg.apps.ai.tools.opencode;
         in
-        mkIf (cfg.enable or false) {
+        mkIf cfg.enable {
           # Use home-manager module for opencode
           programs.opencode = {
             enable = true;

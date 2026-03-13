@@ -19,7 +19,7 @@ with lib;
     # Per-user VSCode installation via home-manager
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.dev.tools.vscode.enable or false) {
+        mkIf userCfg.apps.dev.tools.vscode.enable {
           programs.vscode = {
             enable = true;
             package = pkgs.vscode;

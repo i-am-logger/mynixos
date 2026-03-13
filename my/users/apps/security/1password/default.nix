@@ -5,7 +5,7 @@ with lib;
 let
   # Check if any user has 1Password enabled
   anyUser1Password = any
-    (userCfg: userCfg.apps.security.onePassword.enable or false)
+    (userCfg: userCfg.apps.security.onePassword.enable)
     (attrValues config.my.users);
 in
 {

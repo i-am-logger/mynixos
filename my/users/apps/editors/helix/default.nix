@@ -13,7 +13,7 @@ with lib;
         _name: userCfg:
           let
             editor = userCfg.environment.EDITOR;
-            isGraphical = userCfg.graphical.enable or false;
+            isGraphical = userCfg.graphical.enable;
             # Enable helix when:
             # 1. User explicitly set EDITOR to helix, OR
             # 2. User has graphical.enable = true AND didn't set EDITOR (opinionated default)

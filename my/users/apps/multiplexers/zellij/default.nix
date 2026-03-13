@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.terminal.multiplexers.zellij.enable or false) {
+        mkIf userCfg.apps.terminal.multiplexers.zellij.enable {
           programs.zellij = {
             enable = true;
             enableFishIntegration = false;

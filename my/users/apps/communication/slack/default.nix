@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.apps.communication.slack.enable or false) {
+        mkIf userCfg.apps.communication.slack.enable {
           home.packages = with pkgs; [
             slack
           ];
