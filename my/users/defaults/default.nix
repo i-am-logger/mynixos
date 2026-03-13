@@ -20,6 +20,9 @@ let
             type = types.enum validPrograms;
             description = "Program name";
           };
+          # types.anything is intentional: settings are passed through to varying
+          # home-manager program modules (programs.firefox, programs.kitty, etc.)
+          # whose schemas differ per program and are validated downstream.
           settings = mkOption {
             type = types.attrsOf types.anything;
             default = { };
