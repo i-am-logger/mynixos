@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf userCfg.apps.media.pipewireTools.enable {
+        mkIf userCfg.apps.media.tools.pipewireTools.enable or false {
           home.packages = with pkgs; [
             # PipeWire CLI tools
             pipewire

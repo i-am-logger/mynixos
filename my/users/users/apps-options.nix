@@ -427,6 +427,18 @@ in
                         description = "Ghostty terminal";
                         persistedDirectories = [ ];
                       };
+                      alacritty = appLib.mkAppOption {
+                        name = "alacritty";
+                        default = false;
+                        description = "Alacritty terminal";
+                        persistedDirectories = [ ];
+                      };
+                      warp = appLib.mkAppOption {
+                        name = "warp";
+                        default = false;
+                        description = "Warp terminal";
+                        persistedDirectories = [ ];
+                      };
                     };
                   };
                   default = { };

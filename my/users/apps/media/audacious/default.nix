@@ -6,7 +6,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf userCfg.apps.media.audacious.enable {
+        mkIf userCfg.apps.media.players.audacious.enable or false {
           home.packages = with pkgs; [
             audacious
           ];

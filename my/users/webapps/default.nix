@@ -3,20 +3,17 @@
 with lib;
 
 let
-  # Auto-enable when any user has graphical.webapps.enable = true
-  anyUserWebapps = any (userCfg: (userCfg.graphical.webapps.enable or false)) (attrValues config.my.users);
+  # Auto-enable when any user has graphical + webapps enabled
+  anyUserWebapps = any
+    (userCfg:
+      (userCfg.graphical.enable or false) && (userCfg.graphical.webapps.enable or false)
+    )
+    (attrValues config.my.users);
 
   # Check if any user has specific apps enabled
   anyUserSlack = any (userCfg: (userCfg.graphical.webapps.slack or false)) (attrValues config.my.users);
   anyUserSignal = any (userCfg: (userCfg.graphical.webapps.signal or false)) (attrValues config.my.users);
   anyUser1Password = any (userCfg: (userCfg.graphical.webapps.onePassword or false)) (attrValues config.my.users);
-
-  # Users who have webapps enabled but not graphical
-  usersWithWebappsNoGraphical = filter
-    (name:
-      let userCfg = config.my.users.${name};
-      in (userCfg.graphical.webapps.enable or false) && !(userCfg.graphical.enable or false))
-    (attrNames config.my.users);
 
   # mynixos opinionated defaults for webapps
   defaults = {
@@ -74,19 +71,6 @@ let
 in
 {
   config = mkIf anyUserWebapps (mkMerge [
-    # Browser dependency guard: webapps require a graphical environment because
-    # browser-based PWAs are rendered via Chromium (bundled with Widevine for DRM).
-    # The module provisions its own Chromium instance, so users do not need to
-    # explicitly enable apps.graphical.browsers.chromium.
-    {
-      assertions = map
-        (name: {
-          assertion = false;
-          message = "my.users.${name}.graphical.webapps.enable requires graphical.enable = true. Webapps are browser-based PWAs that need a graphical environment (Chromium is used as the rendering engine).";
-        })
-        usersWithWebappsNoGraphical;
-    }
-
     # Allow unfree packages for webapps (chromium, widevine, etc.)
     {
       my.system.allowedUnfreePackages = [
@@ -117,7 +101,7 @@ in
             # Get user-level webapp config (with mynixos opinionated defaults)
             userWebapps = userCfg.graphical.webapps or { };
           in
-          mkIf (userCfg.graphical.webapps.enable or false) {
+          mkIf ((userCfg.graphical.enable or false) && (userCfg.graphical.webapps.enable or false)) {
             # Icon theme packages
             home.packages = with pkgs; [
               papirus-icon-theme
