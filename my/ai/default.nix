@@ -56,8 +56,8 @@ let
 in
 {
   config = mkMerge [
-    # Set system flag
-    { my.ai.enable = anyUserAI; }
+    # Auto-derive system AI flag from user config (overridable)
+    { my.ai.enable = mkDefault anyUserAI; }
 
     (mkIf cfg.enable (mkMerge [
       # Base AI configuration - Ollama with ROCm support (opinionated)

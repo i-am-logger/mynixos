@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 
 {
   environment = lib.mkOption {
@@ -9,15 +9,15 @@
         enable = lib.mkEnableOption "environment configuration (variables, XDG, locale)";
 
         editor = lib.mkOption {
-          type = lib.types.package;
-          default = pkgs.helix;
-          description = "Default text editor package (mynixos default: helix)";
+          type = lib.types.nullOr lib.types.package;
+          default = null;
+          description = "Default text editor package (mynixos default: helix). Null means use the mynixos default.";
         };
 
         browser = lib.mkOption {
-          type = lib.types.package;
-          default = pkgs.brave;
-          description = "Default web browser package (mynixos default: brave)";
+          type = lib.types.nullOr lib.types.package;
+          default = null;
+          description = "Default web browser package (mynixos default: brave). Null means use the mynixos default.";
         };
 
         displayManager = lib.mkOption {
