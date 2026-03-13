@@ -7,6 +7,7 @@ CLAUDE.md
 # Build artifacts
 result
 result-*
+coverage.lcov
 
 # Nix
 .direnv/
