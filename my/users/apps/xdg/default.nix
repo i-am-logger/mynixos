@@ -7,7 +7,7 @@ with lib;
   # This is opinionated: XDG directories are essential for a well-configured system
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (_name: _userCfg: {
         home.packages = with pkgs; [
           xdg-utils
         ];

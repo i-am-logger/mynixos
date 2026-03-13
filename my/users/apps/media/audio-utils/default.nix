@@ -5,7 +5,7 @@ with lib;
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.media.audioUtils.enable or false) {
           home.packages = with pkgs; [
             # Audio utilities

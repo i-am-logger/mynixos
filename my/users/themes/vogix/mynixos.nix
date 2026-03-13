@@ -11,7 +11,7 @@
   options.my.users = lib.mkOption {
     type = lib.types.attrsOf (
       lib.types.submodule (
-        { config, ... }:
+        _:
         {
           config = {
             # Enable vogix for all users by default

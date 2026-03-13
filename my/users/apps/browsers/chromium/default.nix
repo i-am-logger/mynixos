@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -13,7 +13,7 @@ in
     # Per-user Chromium via home-manager
     {
       home-manager.users = mapAttrs
-        (name: userCfg:
+        (_name: userCfg:
           mkIf (userCfg.apps.graphical.browsers.chromium.enable or false) {
             programs.chromium = {
               enable = true;

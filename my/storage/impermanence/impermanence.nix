@@ -8,7 +8,7 @@ with lib;
 
 let
   cfg = config.my.storage.impermanence;
-  persistPath = cfg.persistPath;
+  inherit (cfg) persistPath;
 
   # Get all user names from my.features.users
   userNames = attrNames config.my.users;
@@ -116,7 +116,9 @@ in
           if [ ! -e /etc/nixos ] || [ -z "$(ls -A /etc/nixos 2>/dev/null)" ]; then
             echo "Cloning flake repository into /etc/nixos..."
             mkdir -p /etc/nixos
-            git clone ${cfg.cloneFlakeRepo} /etc/nixos
+            if ! ${pkgs.git}/bin/git clone ${cfg.cloneFlakeRepo} /etc/nixos; then
+              echo "ERROR: Failed to clone ${cfg.cloneFlakeRepo} into /etc/nixos" >&2
+            fi
           fi
         '';
         deps = [

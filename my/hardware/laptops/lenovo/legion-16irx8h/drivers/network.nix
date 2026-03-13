@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ lib, ... }:
 
 {
   # Network hardware configuration for Lenovo Legion Pro 7 16IRX8H

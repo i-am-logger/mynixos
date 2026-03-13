@@ -6,7 +6,7 @@
     default = { };
     type = lib.types.attrsOf (
       lib.types.submodule (
-        { name, ... }:
+        { ... }:
         {
           imports = [
             ./base-options.nix

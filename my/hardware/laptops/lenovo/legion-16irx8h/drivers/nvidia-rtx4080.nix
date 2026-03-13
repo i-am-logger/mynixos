@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+_:
 
 {
   # NVIDIA RTX 4080 Laptop GPU configuration

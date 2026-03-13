@@ -14,41 +14,28 @@
 
   # Get assertions for environment conflicts
   mkEnvironmentAssertions = config:
+    let
+      categories = [
+        { singular = "browser"; plural = "browsers"; }
+        { singular = "terminal"; plural = "terminals"; }
+        { singular = "editor"; plural = "editors"; }
+        { singular = "launcher"; plural = "launchers"; }
+        { singular = "fileManager"; plural = "fileManagers"; }
+        { singular = "shell"; plural = "shells"; }
+        { singular = "multiplexer"; plural = "multiplexers"; }
+      ];
+
+      mkConflictAssertion = userName: env: { singular, plural }: {
+        assertion = !((env.${singular} or null) != null && (env.${plural} or null) != null);
+        message = "User ${userName}: Cannot set both environment.${singular} and environment.${plural}";
+      };
+    in
     lib.flatten (lib.mapAttrsToList
       (userName: userCfg:
         let
           env = userCfg.environment or { };
         in
-        [
-          {
-            assertion = !((env.browser or null) != null && (env.browsers or null) != null);
-            message = "User ${userName}: Cannot set both environment.browser and environment.browsers";
-          }
-          {
-            assertion = !((env.terminal or null) != null && (env.terminals or null) != null);
-            message = "User ${userName}: Cannot set both environment.terminal and environment.terminals";
-          }
-          {
-            assertion = !((env.editor or null) != null && (env.editors or null) != null);
-            message = "User ${userName}: Cannot set both environment.editor and environment.editors";
-          }
-          {
-            assertion = !((env.launcher or null) != null && (env.launchers or null) != null);
-            message = "User ${userName}: Cannot set both environment.launcher and environment.launchers";
-          }
-          {
-            assertion = !((env.fileManager or null) != null && (env.fileManagers or null) != null);
-            message = "User ${userName}: Cannot set both environment.fileManager and environment.fileManagers";
-          }
-          {
-            assertion = !((env.shell or null) != null && (env.shells or null) != null);
-            message = "User ${userName}: Cannot set both environment.shell and environment.shells";
-          }
-          {
-            assertion = !((env.multiplexer or null) != null && (env.multiplexers or null) != null);
-            message = "User ${userName}: Cannot set both environment.multiplexer and environment.multiplexers";
-          }
-        ]
+        map (mkConflictAssertion userName env) categories
       )
       (lib.attrByPath [ "my" "users" ] { } config));
 }

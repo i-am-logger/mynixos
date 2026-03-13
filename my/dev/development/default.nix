@@ -17,10 +17,10 @@ in
     # Base development groups
     (mkIf config.my.dev.enable {
       users.users = mapAttrs
-        (name: userCfg: {
+        (_name: _userCfg: {
           extraGroups = [ "disk" "dialout" ];
         })
-        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+        (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
     })
 
     # Docker - runs as user (rootless)
@@ -36,10 +36,10 @@ in
 
       # Add users with dev enabled (and docker not disabled) to docker group
       users.users = mapAttrs
-        (name: userCfg: {
+        (_name: userCfg: {
           extraGroups = mkIf ((userCfg.dev.enable or false) && (userCfg.dev.docker.enable or true)) [ "docker" ];
         })
-        (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+        (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
 
       # Docker tools
       environment.systemPackages = with pkgs; [

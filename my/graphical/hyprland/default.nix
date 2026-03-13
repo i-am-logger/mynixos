@@ -33,7 +33,6 @@ let
       "windowsIn, 1, 2, myBezier, slide"
       "windowsOut, 1, 2, myBezier, slide"
       "windowsMove, 1, 2, myBezier"
-      # "windowsOut, 1, 2, default, popin 80%"
       "border, 1, 2, default"
       "borderangle, 1, 2, default"
       "fade, 1, 2, default"
@@ -44,11 +43,8 @@ let
   autostart = [
     "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP &"
     "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-    # "gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Amber'"
-    # "gsettings set org.gnome.desktop.interface cursor-size 24"
     "1password --silent &"
     "wl-paste --watch cliphist store"
-    # "waybar &"  # Backup option if systemd service doesn't work
   ];
 
   # mynixos opinionated defaults for Hyprland input settings
@@ -60,10 +56,8 @@ let
 
   # Bindings function - takes user hyprland config and environment-derived commands
   mkBindings =
-    { userHyprland
-    , browserCmd
+    { browserCmd
     , terminalCmd
-    ,
     }:
     {
       # MAINMOD
@@ -248,18 +242,6 @@ let
   environment = {
     monitor = [
       ",highres,auto,1"
-      # ",highrr,auto,1"
-      # ", preferred, auto, 1"
-      # "eDP-1,disable"
-    ];
-
-    env = [
-      # "XCURSOR_SIZE,24"
-      # "XCURSOR_THEME,Bibata-Modern-Amber"
-      # "GDK_SCALE,2"
-      # "XDG_SESSION_TYPE,wayland"
-      # "WLR_NO_HARDWARE_CURSORS,1"
-      # "HYPRLAND_SOCKET_PATH,/tmp/hypr"
     ];
   };
 
@@ -279,26 +261,12 @@ let
     };
   };
 
-  # Layer rules for better performance
-  # Note: In Hyprland 0.45+, noanim and blur are not valid layerrule fields
-  # Use windowrule for animation control instead
-  layerrule = [
-    # "noanim, walker" # REMOVED: Invalid field in Hyprland 0.45+
-    # "blur, walker" # REMOVED: Invalid field in Hyprland 0.45+
-  ];
+  layerrule = [ ];
 
-  gestures = {
-    #workspace_swipe = true
-    #workspace_swipe_fingers = 4
-    #workspace_swipe_distance = 250
-    #workspace_swipe_invert = true
-    #workspace_swipe_min_speed_to_force = 15
-  };
+  gestures = { };
 
   # Input function (takes user config as parameter)
   mkInput = userHyprland: {
-    #kb_layout = us
-    #kb_variant = us,il
     #kb_model =
     #kb_options = caps:escape
     #kb_rules =
@@ -391,7 +359,7 @@ in
     home-manager.users =
       mapAttrs
         (
-          name: userCfg:
+          _name: userCfg:
             let
               # Get user-level hyprland config (with mynixos opinionated defaults)
               userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
@@ -597,7 +565,7 @@ in
                   # Autostart
                   exec-once = autostart;
                 }
-                // (mkBindings { inherit userHyprland browserCmd terminalCmd; });
+                // (mkBindings { inherit browserCmd terminalCmd; });
               };
             }
         ) # End mkIf userHyprland.enable

@@ -1,16 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
-        {
-          home.packages = with pkgs; [
-            alacritty
-          ];
-
+      (_name: userCfg:
+        mkIf (userCfg.apps.graphical.terminals.alacritty.enable or false) {
           programs.alacritty = {
             enable = true;
           };

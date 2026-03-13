@@ -6,7 +6,7 @@ let
   cfg = config.my.hardware.audio;
 in
 {
-  config = mkIf (cfg.enable) {
+  config = mkIf cfg.enable {
     # PipeWire audio configuration
 
     # Disable PulseAudio in favor of PipeWire
@@ -28,10 +28,10 @@ in
 
     # Add users to audio group
     users.users = mapAttrs
-      (name: userCfg: {
+      (_name: _userCfg: {
         extraGroups = [ "audio" ];
       })
-      (filterAttrs (name: userCfg: userCfg.fullName or null != null) config.my.users);
+      (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
 
     # Audio utilities
     environment.systemPackages = with pkgs; [

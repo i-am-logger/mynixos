@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -32,15 +32,17 @@ in
         # Environment variables (from mynixos defaults in flake.nix)
         # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
         # Note: BROWSER needs full path to binary for XDG to work correctly
-        environment.variables = {
-          EDITOR = "${cfg.editor}/bin/hx";
-          VIEWER = "${cfg.editor}/bin/hx";
-          BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
-          DEFAULT_BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
-        };
+        environment = {
+          variables = {
+            EDITOR = "${cfg.editor}/bin/hx";
+            VIEWER = "${cfg.editor}/bin/hx";
+            BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+            DEFAULT_BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+          };
 
-        environment.pathsToLink = [ "libexec" ];
-        environment.sessionVariables.DEFAULT_BROWSER = mkDefault "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+          pathsToLink = [ "libexec" ];
+          sessionVariables.DEFAULT_BROWSER = mkDefault "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+        };
 
         # XDG MIME defaults - using .desktop file pattern
         xdg.mime.defaultApplications = mkDefault {
@@ -88,7 +90,7 @@ in
       # Set home.stateVersion for all users (opinionated)
       {
         home-manager.users = mapAttrs
-          (name: userCfg: {
+          (_name: _userCfg: {
             home.stateVersion = lib.mkDefault "25.05";
           })
           config.my.users;

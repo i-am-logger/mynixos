@@ -22,14 +22,14 @@ let
     export GITHUB_PERSONAL_ACCESS_TOKEN=$(${pkgs.gh}/bin/gh auth token 2>/dev/null || echo "")
 
     if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
-      echo "Warning: No GitHub token found. Please run 'gh auth login' first."
-      echo "Some functionality may be limited without authentication."
+      echo "Warning: No GitHub token found. Please run 'gh auth login' first." >&2
+      echo "Some functionality may be limited without authentication." >&2
     fi
 
     # Run the Nix-installed github-mcp-server
     ${pkgs.github-mcp-server}/bin/github-mcp-server "$@" || {
-      echo "Error: Failed to run github-mcp-server"
-      echo "Please check your GitHub authentication and network connection"
+      echo "Error: Failed to run github-mcp-server" >&2
+      echo "Please check your GitHub authentication and network connection" >&2
       exit 1
     }
   '';
@@ -99,7 +99,7 @@ in
     # MCP Servers (Model Context Protocol) - per-user configuration
     {
       home-manager.users = mapAttrs
-        (name: userCfg:
+        (_name: userCfg:
           let
             # Get user-level AI config (with mynixos opinionated defaults)
             userAI = userCfg.ai or { };

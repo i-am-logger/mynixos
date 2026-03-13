@@ -15,11 +15,11 @@ let
 
   # Only create users that have fullName defined (fully configured users)
   # Users with only mounts/email/yubikeys defined won't be created (they come from myLib.users)
-  usersToCreate = filterAttrs (name: userCfg: userCfg.fullName or null != null) cfg;
+  usersToCreate = filterAttrs (_name: userCfg: userCfg.fullName or null != null) cfg;
 
   # Get users that want sops-managed passwords
   usersWithSopsPassword = filterAttrs
-    (name: userCfg: userCfg.secrets.hashedPassword or false)
+    (_name: userCfg: userCfg.secrets.hashedPassword or false)
     usersToCreate;
 
   # Get password file path for a user
@@ -72,12 +72,12 @@ in
               else if userCfg.shell == "zsh" then pkgs.zsh
               else if userCfg.shell == "bash" then pkgs.bash
               else pkgs.bash; # Default to bash
-            packages = userCfg.packages;
+            inherit (userCfg) packages;
           })
         usersToCreate;
 
       # Create matching groups for each user
-      users.groups = mapAttrs (name: _: { }) usersToCreate;
+      users.groups = mapAttrs (_name: _: { }) usersToCreate;
 
       # Enable required programs based on user shells
       programs.fish.enable = mkIf (any (u: u.shell or null == "fish") (attrValues usersToCreate)) true;
@@ -124,9 +124,9 @@ in
               if hasPrefix "/dev/" mount.device
               then mount.device
               else "/dev/disk/by-uuid/${mount.device}";
-            fsType = mount.fsType;
-            options = mount.options;
-            noCheck = mount.noCheck;
+            inherit (mount) fsType;
+            inherit (mount) options;
+            inherit (mount) noCheck;
           };
         })
         allMounts);

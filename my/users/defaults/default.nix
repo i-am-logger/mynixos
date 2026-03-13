@@ -21,7 +21,7 @@ let
             description = "Program name";
           };
           settings = mkOption {
-            type = types.attrs;
+            type = types.attrsOf types.anything;
             default = { };
             description = "Program-specific settings to merge with programs.<name>";
           };
@@ -78,7 +78,7 @@ in
   config = {
     # Enable home-manager programs.* based on user defaults
     home-manager.users = mapAttrs
-      (userName: userCfg:
+      (_userName: userCfg:
         let
           defaults = userCfg.defaults or { };
 

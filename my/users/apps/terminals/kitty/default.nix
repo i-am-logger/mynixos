@@ -1,16 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.graphical.terminals.kitty.enable or false) {
-          home.packages = with pkgs; [
-            kitty
-          ];
-
           programs.kitty = {
             enable = true;
             settings = {

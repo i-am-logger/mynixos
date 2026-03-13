@@ -6,7 +6,7 @@ with lib;
   # Option is declared in flake.nix
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           termCfg = userCfg.terminal or { };
           isTmux = (termCfg.multiplexer or "zellij") == "tmux";

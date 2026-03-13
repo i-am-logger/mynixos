@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -6,7 +6,7 @@ with lib;
   # Option is declared in flake.nix
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.terminal.viewers.bat.enable or false) {
           programs.bat = {
             enable = true;

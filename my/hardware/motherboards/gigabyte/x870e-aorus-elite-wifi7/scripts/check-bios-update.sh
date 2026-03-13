@@ -23,19 +23,19 @@ echo
 
 # Get current BIOS version
 if [ -f /sys/class/dmi/id/bios_version ]; then
-    CURRENT_VERSION=$(cat /sys/class/dmi/id/bios_version)
-    CURRENT_DATE=$(cat /sys/class/dmi/id/bios_date)
-    echo -e "${BLUE}Current BIOS:${NC}"
-    echo "  Version: ${CURRENT_VERSION}"
-    echo "  Date:    ${CURRENT_DATE}"
-    
-    # Check if it's a beta BIOS
-    if [[ "$CURRENT_VERSION" == *"b"* ]]; then
-        echo -e "  ${YELLOW}⚠️  WARNING: You're running a BETA BIOS!${NC}"
-    fi
+  CURRENT_VERSION=$(cat /sys/class/dmi/id/bios_version)
+  CURRENT_DATE=$(cat /sys/class/dmi/id/bios_date)
+  echo -e "${BLUE}Current BIOS:${NC}"
+  echo "  Version: ${CURRENT_VERSION}"
+  echo "  Date:    ${CURRENT_DATE}"
+
+  # Check if it's a beta BIOS
+  if [[ $CURRENT_VERSION == *"b"* ]]; then
+    echo -e "  ${YELLOW}⚠️  WARNING: You're running a BETA BIOS!${NC}"
+  fi
 else
-    echo -e "${RED}Error: Cannot read BIOS version${NC}"
-    CURRENT_VERSION="Unknown"
+  echo -e "${RED}Error: Cannot read BIOS version${NC}"
+  CURRENT_VERSION="Unknown"
 fi
 
 echo
@@ -44,10 +44,10 @@ echo
 
 # Check if we can reach Gigabyte's website
 echo "Checking Gigabyte support page..."
-if curl -s -f -I --max-time 5 "$SUPPORT_URL" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓${NC} Website is accessible"
+if curl -s -f -I --max-time 5 "$SUPPORT_URL" >/dev/null 2>&1; then
+  echo -e "${GREEN}✓${NC} Website is accessible"
 else
-    echo -e "${YELLOW}⚠${NC}  Cannot verify website accessibility"
+  echo -e "${YELLOW}⚠${NC}  Cannot verify website accessibility"
 fi
 
 echo
@@ -73,12 +73,12 @@ mkdir -p "$DOWNLOAD_DIR"
 # Check if there are existing BIOS files
 EXISTING_FILES=$(find "$DOWNLOAD_DIR" -name "*.zip" -o -name "*.exe" -o -name "*.bin" 2>/dev/null | wc -l)
 if [ "$EXISTING_FILES" -gt 0 ]; then
-    echo -e "${GREEN}✓${NC} Found existing files in ${DOWNLOAD_DIR}:"
-    find "$DOWNLOAD_DIR" -name "*.zip" -o -name "*.exe" -o -name "*.bin" 2>/dev/null | while read file; do
-        SIZE=$(du -h "$file" | cut -f1)
-        echo "  - $(basename "$file") ($SIZE)"
-    done
-    echo
+  echo -e "${GREEN}✓${NC} Found existing files in ${DOWNLOAD_DIR}:"
+  find "$DOWNLOAD_DIR" -name "*.zip" -o -name "*.exe" -o -name "*.bin" 2>/dev/null | while read -r file; do
+    SIZE=$(du -h "$file" | cut -f1)
+    echo "  - $(basename "$file") ($SIZE)"
+  done
+  echo
 fi
 
 echo "════════════════════════════════════════════════════════════════════"
@@ -124,13 +124,13 @@ echo "════════════════════════�
 
 # Offer to open browser
 if command -v xdg-open >/dev/null 2>&1; then
-    echo
-    read -p "Open support page in browser? [y/N] " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Opening browser..."
-        xdg-open "$SUPPORT_URL" 2>/dev/null &
-    fi
+  echo
+  read -p "Open support page in browser? [y/N] " -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Opening browser..."
+    xdg-open "$SUPPORT_URL" 2>/dev/null &
+  fi
 fi
 
 echo

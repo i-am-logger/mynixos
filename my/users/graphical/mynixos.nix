@@ -15,14 +15,18 @@
           windowManagers.hyprland.enable = lib.mkDefault true;
 
           # Browsers
-          browsers.brave.enable = lib.mkDefault true;
-          browsers.firefox.enable = lib.mkDefault false;
-          browsers.chromium.enable = lib.mkDefault false;
+          browsers = {
+            brave.enable = lib.mkDefault true;
+            firefox.enable = lib.mkDefault false;
+            chromium.enable = lib.mkDefault false;
+          };
 
           # Terminals
-          terminals.wezterm.enable = lib.mkDefault true;
-          terminals.kitty.enable = lib.mkDefault false;
-          terminals.ghostty.enable = lib.mkDefault false;
+          terminals = {
+            wezterm.enable = lib.mkDefault true;
+            kitty.enable = lib.mkDefault false;
+            ghostty.enable = lib.mkDefault false;
+          };
 
           # Launchers
           launchers.walker.enable = lib.mkDefault true;
@@ -31,8 +35,10 @@
           statusbars.waybar.enable = lib.mkDefault true;
 
           # Editors (graphical)
-          editors.helix.enable = lib.mkDefault true;
-          editors.marktext.enable = lib.mkDefault false;
+          editors = {
+            helix.enable = lib.mkDefault true;
+            marktext.enable = lib.mkDefault false;
+          };
 
           # File managers (graphical use)
           # yazi already enabled by terminal if terminal.enable
@@ -41,8 +47,10 @@
           viewers.feh.enable = lib.mkDefault true;
 
           # Utilities
-          utils.calculator.enable = lib.mkDefault false;
-          utils.imagemagick.enable = lib.mkDefault true;
+          utils = {
+            calculator.enable = lib.mkDefault false;
+            imagemagick.enable = lib.mkDefault true;
+          };
 
           # Sync
           sync.rclone.enable = lib.mkDefault true;

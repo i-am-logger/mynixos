@@ -1,4 +1,4 @@
-{ config, lib, pkgs, appHelpers, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -19,9 +19,8 @@ with lib;
 
     # Per-user VSCode installation via home-manager
     home-manager.users = mapAttrs
-      (name: userCfg:
-        # Enable if: app explicitly enabled OR dev feature enabled
-        mkIf (appHelpers.shouldEnable userCfg "tools" "vscode") {
+      (_name: userCfg:
+        mkIf (userCfg.apps.dev.tools.vscode.enable or false) {
           programs.vscode = {
             enable = true;
             package = pkgs.vscode;

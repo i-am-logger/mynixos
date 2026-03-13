@@ -16,7 +16,7 @@ let
       };
 
       settings = lib.mkOption {
-        type = lib.types.attrs;
+        type = lib.types.attrsOf lib.types.anything;
         default = { };
         description = "Application-specific settings (passed to home-manager)";
       };

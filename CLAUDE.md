@@ -4,129 +4,90 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-mynixos is a typed functional DSL for NixOS configuration providing type-safe, composable APIs for system configuration. It uses a `my.*` namespace to expose strongly-typed options that replace imperative NixOS modules with functional composition.
+mynixos is a typed functional DSL for NixOS configuration providing type-safe, composable APIs for system configuration. It uses a `my.*` namespace to expose strongly-typed options that replace imperative NixOS modules with functional composition. User configs live separately in `/etc/nixos/Systems/`; mynixos provides only types, options, and implementations.
+
+## Build Commands
+
+```bash
+nix flake check          # Evaluate flake and check syntax
+nix fmt                  # Format all Nix files (uses nixpkgs-fmt)
+nix flake show           # Check flake outputs
+```
+
+CI runs `nix flake check` (which includes treefmt formatting via `checks.formatting`), `statix check .`, and `deadnix --fail .` on every PR.
 
 ## Core Architecture
 
-### The `my.*` Namespace Structure
+### The `my/` Module Structure
 
-The entire configuration surface is organized into typed namespaces:
+All modules live under `my/category/item/` using a three-file pattern:
 
-- **`my.features`** - High-level feature bundles (security, graphical, github-runner, ai, webapps, streaming, development, system, performance, audio, impermanence, motd)
-- **`my.users`** - User configurations with packages, passkeys, shells, editors, mounts, yubikeys
-- **`my.hardware`** - Hardware detection and configuration (cpu, gpu, bluetooth, audio)
-- **`my.apps`** - Individual application configurations organized by category (browsers, terminals, editors, shells, fileManagers, multiplexers, etc.)
-- **`my.presets`** - Preset configurations that enable opinionated app stacks (workstation)
-- **`my.infra`** - Infrastructure services (k3s)
-- **`my.storage`** - Storage configuration (impermanence with tmpfs root + persistent storage)
-- **`my.boot`** - Boot configuration (uefi, secure boot, dual-boot)
-- **`my.filesystem`** - Filesystem configuration type and path (disko or nixos)
-- **`my.themes`** - Theming system configuration (stylix)
-
-### Key Design Principles
-
-1. **Type Safety First** - All options are strongly typed; invalid configurations are caught at evaluation time
-2. **Functional Composition** - Features compose cleanly through the type system
-3. **Opinionated Defaults** - Sensible defaults marked with `mkDefault` (e.g., `my.apps.browsers.brave = mkDefault true`)
-4. **Separation of Types and Data** - mynixos provides types/options/implementations; user configs in `/etc/nixos/Systems/` provide the data
-
-### Module Organization
-
-- **`modules/features/`** - Feature implementations that read from `my.features.*` (users.nix, security.nix, graphical.nix, hyprland.nix, themes.nix, github-runner.nix, ai.nix, webapps.nix, streaming.nix, development.nix, system.nix, audio.nix, performance.nix, impermanence.nix, motd.nix)
-- **`modules/apps/`** - Individual app modules organized by category (browsers/, terminals/, editors/, shells/, etc.)
-- **`modules/presets/`** - Preset configurations (workstation.nix)
-- **`modules/hardware/`** - Hardware-specific modules (cpu/, gpu/, bluetooth/, boot/, motherboards/, laptops/)
-- **`modules/security/`** - Security modules (yubikey.nix)
-- **`modules/infra/`** - Infrastructure services (services/k3s.nix)
-- **`lib/`** - Core library functions (mkSystem.nix, mkInstallerISO.nix)
-- **`images/`** - Installer ISO and container image builders
-
-### Critical Implementation Details
-
-#### User Management (modules/features/users.nix)
-
-- Users are only created in NixOS if `fullName` is defined
-- Users without `fullName` can still have mounts, yubikeys, and email configured (they come from external user definitions)
-- All user mounts are processed regardless of whether the user is created by mynixos
-
-#### Hardware Configuration Flow
-
-1. Hardware modules are passed to `mkSystem` via the `hardware` parameter (list of paths)
-2. CPU/GPU auto-detection triggers appropriate driver modules
-3. Motherboard/laptop configs live in `modules/hardware/{motherboards,laptops}/` and are exported via `mynixos.hardware.*`
-
-#### Filesystem Configuration
-
-- `my.filesystem.type` can be `"disko"` (declarative partitioning) or `"nixos"` (standard NixOS)
-- `my.filesystem.config` points to the configuration file path
-- `mkSystem` automatically imports the appropriate modules based on type
-
-#### Theme System
-
-- `my.themes.type` currently only supports `"stylix"`
-- `my.themes.config` points to a stylix configuration module
-- Opinionated defaults for fonts, opacity, cursor theme, etc.
-
-## Common Development Tasks
-
-### Building the Flake
-
-```bash
-# Check flake outputs
-nix flake show
-
-# Check flake evaluation
-nix flake check
-
-# Format Nix code
-nix fmt
+```
+my/category/item/
+├── options.nix    # Type definitions (mkOption, mkEnableOption, submodules)
+├── default.nix    # Implementation (mkIf, mkMerge for conditional config)
+└── mynixos.nix    # Opinionated defaults (mkDefault values, optional)
 ```
 
-### Testing Changes
+Options are imported in flake.nix's options section. Implementations are imported in flake.nix's imports list. The `modules/` directory is legacy and only holds custom home-manager modules not yet upstreamed.
 
-When modifying mynixos modules:
+### `my.*` Namespace
 
-1. Changes to `my.*` options in flake.nix require careful consideration of downstream impacts
-2. Test with a real system config in `/etc/nixos/Systems/`
-3. Verify type safety by intentionally passing invalid values
+- **`my.system`** - Core system config (hostname, kernel, scripts)
+- **`my.users`** - User configs with apps, features (graphical, dev, terminal, ai), environment, defaults
+- **`my.hardware`** - Hardware detection (cpu, gpu, bluetooth, boot, cooling, memory, peripherals, storage, usb)
+- **`my.security`** - Security features (yubikey)
+- **`my.graphical`** - Desktop environment (hyprland)
+- **`my.dev`** - Development tools
+- **`my.ai`** - AI tools (Ollama with ROCm)
+- **`my.themes`** - Theming (vogix by default, stylix legacy/disabled)
+- **`my.infra`** - Infrastructure services (github-runner, k3s)
+- **`my.storage`** - Impermanence (tmpfs root + persistent storage)
+- **`my.environment`** - Environment variables and paths
+- **`my.performance`** - Performance tuning
+- **`my.streaming`** - Streaming setup
+- **`my.video`** - Virtual video devices
+- **`my.presets`** - Preset configurations
+- **`my.filesystem`** - Filesystem type (`"disko"` or `"nixos"`) and config path
 
-### Adding a New App Module
+### System Assembly (`lib/mkSystem.nix`)
 
-1. Create `modules/apps/<category>/<app-name>.nix`
-2. Add option to `my.apps.<category>.<app-name>` in flake.nix (lines 633-833)
-3. Import the module in flake.nix's imports list (lines 120-166)
-4. Implement using `mkIf` to conditionally enable based on `my.apps.<category>.<app-name>`
+`mkSystem` takes: `hostname`, `hardware` (list of module paths), `users` (list with nixosUser and homeManager), `config`, `extraModules`, `my` (direct mynixos config). It assembles:
+1. Hardware modules
+2. The mynixos module itself (`self.nixosModules.default`)
+3. Filesystem modules (disko or nixos based on `my.filesystem.type`)
+4. User definitions mapped to NixOS users + home-manager configs
+5. sops-nix, theme modules (vogix by default), extra modules
 
-### Adding a New Feature
+### Key Library Functions (`lib/`)
 
-1. Create `modules/features/<feature-name>.nix`
-2. Add option to `my.features.<feature-name>` in flake.nix (lines 190-457)
-3. Import the module in flake.nix's imports list (lines 100-114)
-4. Implement feature logic based on `config.my.features.<feature-name>`
+- **`mkSystem`** - Main system builder (see above)
+- **`appHelpers.shouldEnable(userCfg, category, app)`** - Dynamically searches all feature namespaces to check if an app is enabled
+- **`mkAppOption`** - Creates structured app options with enable, persisted, persistedDirectories, persistedFiles
 
-### Working with Hardware Profiles
+### Key Design Patterns
 
-Hardware profiles in `modules/hardware/{motherboards,laptops}/` should:
-- Include a `default.nix` that imports all driver modules
-- Separate concerns into individual driver files (network.nix, bluetooth.nix, gpu.nix, etc.)
-- Be exportable via `mynixos.hardware.*` in flake.nix (lines 74-85)
-- Be generic enough for anyone with that hardware to use
+**App Configuration:** Apps are per-user under `config.my.users.<name>.apps.<feature>.<category>.<app>`. Each app has `.enable`, `.persisted`, `.persistedDirectories`, `.persistedFiles`. Implementations map over `config.my.users` and use `home-manager.users = mapAttrs`.
 
-### Image Building and Testing
+**Persistence Aggregation:** Apps contribute persistence paths to `my.system.persistence.aggregated`, features to `my.system.persistence.features`. Aggregation modules: `my/storage/impermanence/{aggregation.nix, feature-aggregation.nix, impermanence.nix}`.
 
-GitHub runner image testing (see images/TESTING.md):
+**User Management:** Users are only created in NixOS if `fullName` is defined. Users without `fullName` can still have mounts, yubikeys, and email. Each user can enable feature bundles (graphical, dev, terminal, ai) and configure 50+ individual apps.
 
-```bash
-# Run comprehensive tests (20 test suites)
-nix build /etc/nixos#checks.x86_64-linux.github-runner-test
+**Hardware Profiles:** Exported via `mynixos.lib.hardware.*` for external use. Profiles in `my/hardware/{motherboards,laptops}/` include a `default.nix` importing all driver modules.
 
-# Build runner image
-nix build /etc/nixos#github-runner-image
+## Adding a New App Module
 
-# Load and test manually
-docker load < result
-docker run --rm -it github-runner:nixos-latest bash
-```
+1. Create `my/users/apps/<category>/<app-name>/` with `options.nix`, `default.nix`, and optionally `mynixos.nix`
+2. Import the implementation module in flake.nix's imports list
+3. Add the option in the appropriate section of flake.nix's options
+4. Use `mkIf` to conditionally enable based on the user's app setting
+
+## Adding a New Feature
+
+1. Create `my/<feature-name>/` with `options.nix` and `default.nix`
+2. Add option import to flake.nix's options section
+3. Import the implementation in flake.nix's imports list
+4. Implement feature logic using `mkIf config.my.<feature-name>.*`
 
 ## Important Constraints
 
@@ -136,43 +97,32 @@ When working on a feature branch, maintain a single commit. Use `git commit --am
 
 ### No Generated Signatures
 
-Do NOT add "Generated with Claude Code" or similar text to:
-- Files in the repository
-- Git commit messages
-- Pull request descriptions
-- Code comments
+Do NOT add "Generated with Claude Code" or similar text to files, commits, PRs, or comments.
 
 ### Opinionated Defaults Pattern
 
 Use `mkDefault` for opinionated defaults that users can override:
-
 ```nix
 my.apps.browsers.brave = mkDefault true;  # Enabled by default but overridable
 ```
 
 Regular boolean options without defaults:
-
 ```nix
 my.apps.browsers.firefox = mkEnableOption "Firefox browser";  # Disabled by default
 ```
 
-### External Dependencies
-
-This flake depends on:
-- `nixpkgs` (nixos-unstable)
-- `disko` - Declarative disk partitioning
-- `impermanence` - Tmpfs root with persistent storage
-- `home-manager` (custom fork: i-am-logger/home-manager#feature/webapps-module)
-- `stylix` - Theming system
-- `lanzaboote` - Secure boot
-- `nixos-hardware` (custom fork: i-am-logger/nixos-hardware)
-- `sops-nix` - Secrets management
-
 ## Code Style
 
-- Use `with lib;` at the top of module files for common lib functions
+- Use `with lib;` at the top of module files
 - Prefer `mkIf` over explicit conditionals
 - Use `mkMerge` when conditionally merging multiple attribute sets
-- Type all options explicitly in flake.nix
-- Keep module implementations in separate files, not in flake.nix's config section
-- Use descriptive variable names (`cfg` for `config.my.<namespace>`)
+- Use `cfg` for `config.my.<namespace>`
+- Keep implementations in `my/` files, not in flake.nix's config section
+- All modules explicitly imported in flake.nix (no dynamic discovery)
+
+## External Dependencies
+
+- `nixpkgs` (nixos-unstable), `disko`, `impermanence`
+- `home-manager` (custom fork: i-am-logger/home-manager#feature/webapps-module)
+- `stylix`, `vogix`, `lanzaboote`, `sops-nix`
+- `nixos-hardware` (custom fork: i-am-logger/nixos-hardware)

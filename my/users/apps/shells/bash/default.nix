@@ -1,11 +1,11 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           cfg = userCfg.apps.terminal.shells.bash;
         in
@@ -15,11 +15,11 @@ with lib;
             enableCompletion = true;
 
             # Configuration from user options
-            historyControl = cfg.historyControl;
+            inherit (cfg) historyControl;
             historyFile = "$HOME/.bash_history";
-            historyFileSize = cfg.historyFileSize;
-            historySize = cfg.historySize;
-            shellOptions = cfg.shellOptions;
+            inherit (cfg) historyFileSize;
+            inherit (cfg) historySize;
+            inherit (cfg) shellOptions;
           };
 
           # fzf integration for enhanced history search (Ctrl+R, Ctrl+T, Alt+C)

@@ -10,7 +10,7 @@ in
   config = mkIf anyUserMedia {
     # Per-user home-manager packages
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         let
           mediaCfg = userCfg.graphical.media or { };
         in

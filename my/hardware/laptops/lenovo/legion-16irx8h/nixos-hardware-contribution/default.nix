@@ -15,17 +15,19 @@
     ../../../common/hidpi.nix
   ];
 
-  boot.initrd.kernelModules = [ "nvidia" ];
-  boot.extraModulePackages = [
-    config.boot.kernelPackages.lenovo-legion-module
-    config.boot.kernelPackages.nvidia_x11
-  ];
+  boot = {
+    initrd.kernelModules = [ "nvidia" ];
+    extraModulePackages = [
+      config.boot.kernelPackages.lenovo-legion-module
+      config.boot.kernelPackages.nvidia_x11
+    ];
 
-  # Audio fix for Legion Pro 7 16IRX8H - force specific codec model
-  # This fixes the audio issue where speakers don't work out of the box
-  boot.extraModprobeConfig = ''
-    options snd-hda-intel model=lenovo-legion-7i
-  '';
+    # Audio fix for Legion Pro 7 16IRX8H - force specific codec model
+    # This fixes the audio issue where speakers don't work out of the box
+    extraModprobeConfig = ''
+      options snd-hda-intel model=lenovo-legion-7i
+    '';
+  };
 
   hardware = {
     nvidia = {

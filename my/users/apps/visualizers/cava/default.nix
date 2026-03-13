@@ -1,6 +1,5 @@
 { config
 , lib
-, pkgs
 , ...
 }:
 
@@ -10,10 +9,9 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (
-        name: userCfg:
+        _name: userCfg:
           let
             cfg = userCfg.apps.terminal.visualizers.cava;
-            hasGraphical = userCfg.graphical.enable or false;
           in
           mkIf (cfg.enable or false) (mkMerge [
             {
@@ -57,7 +55,7 @@ with lib;
             (mkIf (config.my.themes.enable or false && config.my.themes.stylix.enable or false) {
               stylix.targets.cava = {
                 enable = true;
-                gradientMode = cfg.gradientMode;
+                inherit (cfg) gradientMode;
               };
             })
           ])

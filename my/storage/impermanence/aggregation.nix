@@ -21,7 +21,7 @@ let
       attrs);
 
   # Aggregate persistence directories for a single user
-  aggregatePersistenceForUser = userName: userConfig:
+  aggregatePersistenceForUser = _userName: userConfig:
     let
       # Recursively collect all leaf apps from the nested structure
       allApps = collectApps "" userConfig.apps;

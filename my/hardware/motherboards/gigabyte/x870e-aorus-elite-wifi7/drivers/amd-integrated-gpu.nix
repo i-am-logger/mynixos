@@ -3,18 +3,20 @@
 {
   # AMD Radeon integrated graphics driver configuration
 
-  # Load AMD GPU kernel modules
-  boot.initrd.kernelModules = [ "amdgpu" ];
-  boot.kernelModules = [ "amdgpu" "kvm-amd" ];
+  # Load AMD GPU kernel modules and parameters
+  boot = {
+    initrd.kernelModules = [ "amdgpu" ];
+    kernelModules = [ "amdgpu" "kvm-amd" ];
 
-  # AMD GPU kernel parameters for optimal performance
-  boot.kernelParams = [
-    "amdgpu.dc_feature_mask=0xffffffff" # Enable all DC features including DSC
-    "amdgpu.deep_color=1" # HDR support
-    "amdgpu.dc=1" # Display Core
-    "amdgpu.dpm=1" # Dynamic Power Management
-    "amdgpu.dp_mst=1" # DisplayPort Multi-Stream Transport
-  ];
+    # AMD GPU kernel parameters for optimal performance
+    kernelParams = [
+      "amdgpu.dc_feature_mask=0xffffffff" # Enable all DC features including DSC
+      "amdgpu.deep_color=1" # HDR support
+      "amdgpu.dc=1" # Display Core
+      "amdgpu.dpm=1" # Dynamic Power Management
+      "amdgpu.dp_mst=1" # DisplayPort Multi-Stream Transport
+    ];
+  };
 
   # Graphics hardware configuration
   hardware.graphics = {

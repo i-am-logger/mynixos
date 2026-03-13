@@ -4,7 +4,7 @@ with lib;
 
 let
   cfg = config.stylix.targets.cava;
-  colors = config.lib.stylix.colors;
+  inherit (config.lib.stylix) colors;
 in
 {
   # Extend stylix.targets.cava with additional gradient options

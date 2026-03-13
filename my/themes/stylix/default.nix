@@ -1,14 +1,9 @@
-{ config
-, lib
-, pkgs
+{ lib
 , ...
 }:
 
 with lib;
 
-let
-  cfg = config.my.themes.stylix;
-in
 {
   # DISABLED: stylix has compatibility issues with newer nixpkgs/home-manager
   # config = mkIf cfg.enable {

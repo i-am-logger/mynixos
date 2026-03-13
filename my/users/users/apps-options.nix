@@ -2,6 +2,7 @@
 
 let
   appLib = import ../../../lib/app-options.nix { inherit lib; };
+  inherit (appLib) floatBetween;
 in
 {
   options = {
@@ -289,12 +290,12 @@ in
                             description = "Left-handed mouse mode";
                           };
                           sensitivity = lib.mkOption {
-                            type = lib.types.float;
+                            type = floatBetween (-1.0) 1.0;
                             default = 0.0;
                             description = "Mouse sensitivity (range: -1.0 to 1.0)";
                           };
                           settings = lib.mkOption {
-                            type = lib.types.attrs;
+                            type = lib.types.attrsOf lib.types.anything;
                             default = { };
                             description = "Additional Hyprland settings (passthrough to wayland.windowManager.hyprland.settings)";
                           };

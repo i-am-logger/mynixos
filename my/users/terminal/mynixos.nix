@@ -12,8 +12,10 @@
       config = lib.mkIf (config.terminal.enable or false) {
         apps.terminal = {
           # Shells (bash is default, fish optional)
-          shells.bash.enable = lib.mkDefault true;
-          shells.fish.enable = lib.mkDefault false;
+          shells = {
+            bash.enable = lib.mkDefault true;
+            fish.enable = lib.mkDefault false;
+          };
 
           # Prompts
           prompts.starship.enable = lib.mkDefault true;
@@ -26,13 +28,17 @@
           fileUtils.lsd.enable = lib.mkDefault true;
 
           # File managers
-          fileManagers.yazi.enable = lib.mkDefault true;
-          fileManagers.mc.enable = lib.mkDefault false;
+          fileManagers = {
+            yazi.enable = lib.mkDefault true;
+            mc.enable = lib.mkDefault false;
+          };
 
           # System info
-          sysinfo.fastfetch.enable = lib.mkDefault true;
-          sysinfo.btop.enable = lib.mkDefault true;
-          sysinfo.neofetch.enable = lib.mkDefault false;
+          sysinfo = {
+            fastfetch.enable = lib.mkDefault true;
+            btop.enable = lib.mkDefault true;
+            neofetch.enable = lib.mkDefault false;
+          };
 
           # Network tools
           network.termscp.enable = lib.mkDefault false;

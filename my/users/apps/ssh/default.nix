@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -11,7 +11,7 @@ in
   # This is opinionated: SSH is essential for development and remote access
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg: {
+      (_name: userCfg: {
         programs.ssh = {
           enable = true;
           enableDefaultConfig = false;

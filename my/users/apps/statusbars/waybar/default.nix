@@ -11,7 +11,7 @@ in
 {
   config = mkIf anyUserGraphical {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.graphical.enable or false) {
           programs.waybar = {
             enable = true;

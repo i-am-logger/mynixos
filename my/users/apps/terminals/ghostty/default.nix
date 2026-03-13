@@ -1,16 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 {
   config = {
     home-manager.users = mapAttrs
-      (name: userCfg:
+      (_name: userCfg:
         mkIf (userCfg.apps.graphical.terminals.ghostty.enable or false) {
-          home.packages = with pkgs; [
-            ghostty
-          ];
-
           # Copy shader files from source
           # Note: You'll need to copy the shaders directory from /etc/nixos/home/gui/ghostty/shaders
           # to your theme or config location and adjust the source path below

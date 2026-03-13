@@ -10,7 +10,7 @@ with lib;
   config = {
     home-manager.users = mapAttrs
       (
-        name: userCfg:
+        _name: userCfg:
           let
             editor = userCfg.environment.EDITOR;
             isGraphical = userCfg.graphical.enable or false;
@@ -168,9 +168,11 @@ with lib;
                     l = ":toggle lsp.display-inlay-hints";
                     n = ":toggle lsp.auto-signature_help";
 
-                    space.space = "file_picker";
-                    space.w = ":w";
-                    space.q = ":q";
+                    space = {
+                      space = "file_picker";
+                      w = ":w";
+                      q = ":q";
+                    };
                   };
 
                   backspace = {

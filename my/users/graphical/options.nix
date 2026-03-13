@@ -26,45 +26,6 @@
           };
         };
 
-        windowManager = lib.mkOption {
-          description = "Window manager configuration";
-          default = { };
-          type = lib.types.submodule {
-            options = {
-              hyprland = lib.mkOption {
-                description = "Hyprland window manager configuration";
-                default = { };
-                type = lib.types.submodule {
-                  options = {
-                    enable = lib.mkOption {
-                      type = lib.types.bool;
-                      default = true;
-                      description = "Enable user-specific Hyprland config (opinionated default: enabled when user graphical = true)";
-                    };
-
-                    leftHanded = lib.mkOption {
-                      type = lib.types.bool;
-                      default = false;
-                      description = "Left-handed mouse mode (opinionated default: false)";
-                    };
-
-                    sensitivity = lib.mkOption {
-                      type = lib.types.float;
-                      default = 0.0;
-                      description = "Mouse sensitivity (opinionated default: 0.0, range: -1.0 to 1.0)";
-                    };
-
-                    # NOTE: defaultBrowser and defaultTerminal removed
-                    # Browser/terminal now come from environment API:
-                    # - my.users.<name>.environment.BROWSER
-                    # - my.users.<name>.environment.TERMINAL
-                  };
-                };
-              };
-            };
-          };
-        };
-
         webapps = lib.mkOption {
           description = "Browser-based web applications";
           default = { };
