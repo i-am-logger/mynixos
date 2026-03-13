@@ -5,6 +5,36 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.4...mynixos-v0.1.5) (2026-03-13)
+
+
+### Bug Fixes
+
+* add CI concurrency to cancel stale workflow runs ([d406df7](https://github.com/i-am-logger/mynixos/commit/d406df7ca1a20d54e5c3a5d2e009ce52227fb5a3))
+* correct app option paths and add missing terminal options ([99d9e0d](https://github.com/i-am-logger/mynixos/commit/99d9e0d274bac3ba4db423a7119a1177961f14a9))
+* force Node.js 24 for GitHub Actions runners ([453b1e7](https://github.com/i-am-logger/mynixos/commit/453b1e7547990d7d8deb842ebb4f65008945a9a7))
+* make refactor commits trigger minor version bumps ([1c04508](https://github.com/i-am-logger/mynixos/commit/1c045086bc14af9ccddb789211e340408be71f7d))
+* update GitHub Actions to Node.js 24 compatible versions ([547547b](https://github.com/i-am-logger/mynixos/commit/547547b1e346d4b20e27202f5c1aa2c60554b9c3))
+
+
+### Code Refactoring
+
+* add browser dependency guard for webapps ([#71](https://github.com/i-am-logger/mynixos/issues/71)) ([c6c78bf](https://github.com/i-am-logger/mynixos/commit/c6c78bf24c054fe835196659bf0d77232bd2e3c2)), closes [#52](https://github.com/i-am-logger/mynixos/issues/52)
+* add path validation for persistence options ([#65](https://github.com/i-am-logger/mynixos/issues/65)) ([a189d09](https://github.com/i-am-logger/mynixos/commit/a189d0900fb7c2be62edf40a17eef131e7684856)), closes [#49](https://github.com/i-am-logger/mynixos/issues/49)
+* add typed options for common Hyprland settings ([#69](https://github.com/i-am-logger/mynixos/issues/69)) ([e80b5bb](https://github.com/i-am-logger/mynixos/commit/e80b5bb1b2b9072725875e15de3d139105753d57)), closes [#48](https://github.com/i-am-logger/mynixos/issues/48)
+* extract shared flake discovery script ([#59](https://github.com/i-am-logger/mynixos/issues/59)) ([59ef81b](https://github.com/i-am-logger/mynixos/commit/59ef81b40d3cf3613583f7319fda9b830b400ac1)), closes [#43](https://github.com/i-am-logger/mynixos/issues/43)
+* remove commented-out stylix configuration ([#56](https://github.com/i-am-logger/mynixos/issues/56)) ([fd38b30](https://github.com/i-am-logger/mynixos/commit/fd38b30058a8963694366b45f85a56465b792b7f)), closes [#42](https://github.com/i-am-logger/mynixos/issues/42)
+* remove dead appHelpers.shouldEnable API ([#55](https://github.com/i-am-logger/mynixos/issues/55)) ([3b8fe2c](https://github.com/i-am-logger/mynixos/commit/3b8fe2cec4e9130161408f6a4797272df749b60d)), closes [#41](https://github.com/i-am-logger/mynixos/issues/41)
+* standardize app module enable check pattern ([#63](https://github.com/i-am-logger/mynixos/issues/63)) ([9cd0df3](https://github.com/i-am-logger/mynixos/commit/9cd0df3ec7a535187bf058aa1e37d6e11a30967a)), closes [#46](https://github.com/i-am-logger/mynixos/issues/46)
+* standardize directory naming to kebab-case ([#72](https://github.com/i-am-logger/mynixos/issues/72)) ([11fceb8](https://github.com/i-am-logger/mynixos/commit/11fceb8d8813b2a2f36da1a477f7423e9e763dca)), closes [#51](https://github.com/i-am-logger/mynixos/issues/51)
+* standardize feature flag derivation pattern ([#68](https://github.com/i-am-logger/mynixos/issues/68)) ([ff90cd0](https://github.com/i-am-logger/mynixos/commit/ff90cd0f65aec0d7d7bc2047c5958e771a57ad7f)), closes [#50](https://github.com/i-am-logger/mynixos/issues/50)
+
+
+### Documentation
+
+* add product overview document ([#73](https://github.com/i-am-logger/mynixos/issues/73)) ([205a3a1](https://github.com/i-am-logger/mynixos/commit/205a3a1f99f242575f662d1b85796ef77734e271))
+* update README with version badge and current features ([#57](https://github.com/i-am-logger/mynixos/issues/57)) ([2e3eed4](https://github.com/i-am-logger/mynixos/commit/2e3eed4590c0e6bc07b0b517e1ca345d920bee57)), closes [#54](https://github.com/i-am-logger/mynixos/issues/54)
+
 ## [0.1.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.3...mynixos-v0.1.4) (2026-03-13)
 
 
