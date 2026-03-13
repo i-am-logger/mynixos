@@ -48,13 +48,7 @@ jobs:
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
-    # Run on push to master, regardless of whether CI was skipped (release merges) or passed (regular merges)
-    if: |
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/master' &&
-      (needs.nix-flake-check.result == 'success' || needs.nix-flake-check.result == 'skipped') &&
-      (needs.nix-lint.result == 'success' || needs.nix-lint.result == 'skipped')
-    needs: [nix-flake-check, nix-lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
