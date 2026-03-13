@@ -6,7 +6,11 @@
     default = { };
     type = lib.types.submodule {
       options = {
-        enable = lib.mkEnableOption "AI infrastructure with Ollama and ROCm support";
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Auto-set to true when any user has ai.enable = true (managed by mynixos)";
+        };
 
         rocmGfxVersion = lib.mkOption {
           type = lib.types.str;
