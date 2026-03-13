@@ -189,6 +189,7 @@
             ./my/system/core
             ./my/system/kernel
             ./my/system/scripts
+            ./my/system/unfree
 
             # Themes
             ./my/themes

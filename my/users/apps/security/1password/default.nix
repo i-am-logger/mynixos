@@ -15,12 +15,11 @@ in
       programs._1password.enable = true;
       programs._1password-gui.enable = true;
 
-      nixpkgs.config.allowUnfreePredicate = pkg:
-        builtins.elem (pkg.pname or pkg.name or (lib.getName pkg)) [
-          "1password-gui"
-          "1password"
-          "1password-cli"
-        ];
+      my.system.allowedUnfreePackages = [
+        "1password-gui"
+        "1password"
+        "1password-cli"
+      ];
     })
   ];
 }
