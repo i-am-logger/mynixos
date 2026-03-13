@@ -213,4 +213,70 @@ in
       # Hyprland should be enabled at system level
       && config.programs.hyprland.enable;
   };
+
+  # Test 5: Unfree packages are properly allowlisted
+  # Verify that enabling apps with unfree licenses correctly populates
+  # my.system.allowedUnfreePackages so nixpkgs.config.allowUnfreePredicate works
+  smoke-unfree-allowlist = mkSmokeTest {
+    name = "test-unfree-allowlist";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-unfree-allowlist";
+      users.testuser = {
+        fullName = "Test User";
+        description = "Test User";
+        email = "test@example.com";
+        graphical.enable = true;
+        dev.enable = true;
+        ai.enable = true;
+        terminal.enable = true;
+        # Explicitly enable unfree apps not in opinionated defaults
+        apps = {
+          dev.tools.vscode.enable = true;
+          security.passwords.onePassword.enable = true;
+          communication.messaging.slack.enable = true;
+        };
+      };
+    };
+    assertions = config:
+      let
+        allowed = config.my.system.allowedUnfreePackages;
+      in
+      # claude-code (unfree) - enabled by ai opinionated defaults
+      builtins.elem "claude-code" allowed
+      # github-copilot-cli (unfree) - enabled by helix (graphical default editor)
+      && builtins.elem "github-copilot-cli" allowed
+      # vscode (unfree) - explicitly enabled
+      && builtins.elem "vscode" allowed
+      # 1password (unfree) - explicitly enabled
+      && builtins.elem "1password" allowed
+      # slack (unfree) - explicitly enabled
+      && builtins.elem "slack" allowed;
+  };
+
+  # Test 6: Motherboard hostPlatform + graphical user (regression: pkgs recursion)
+  # Hardware modules that set nixpkgs.hostPlatform must not cause infinite recursion
+  # when user environment options resolve pkgs-based defaults.
+  smoke-motherboard-env = mkSmokeTest {
+    name = "test-motherboard-env";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-motherboard-env";
+      hardware.motherboards.gigabyte.x870e-aorus-elite-wifi7.enable = true;
+      users.testuser = {
+        fullName = "Test User";
+        description = "Test User";
+        email = "test@example.com";
+        graphical.enable = true;
+        terminal.enable = true;
+      };
+    };
+    assertions = config:
+      # Environment defaults should be populated for graphical user
+      config.my.users.testuser.environment.BROWSER != null
+      && config.my.users.testuser.environment.TERMINAL != null
+      && config.my.users.testuser.environment.EDITOR != null
+      # System graphical should be auto-derived
+      && config.my.graphical.enable;
+  };
 }

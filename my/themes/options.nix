@@ -1,6 +1,6 @@
 # Unified themes options
 # Defines my.themes.* with stylix and vogix as submodules
-{ lib, pkgs, ... }:
+{ lib, ... }:
 
 let
   inherit (import ../../lib/app-options.nix { inherit lib; }) floatBetween;
@@ -143,9 +143,9 @@ in
                             description = "Serif font name";
                           };
                           package = lib.mkOption {
-                            type = lib.types.package;
-                            default = pkgs.nerd-fonts.noto;
-                            description = "Serif font package";
+                            type = lib.types.nullOr lib.types.package;
+                            default = null;
+                            description = "Serif font package (default: nerd-fonts.noto)";
                           };
                         };
                       };
@@ -162,9 +162,9 @@ in
                             description = "Sans-serif font name";
                           };
                           package = lib.mkOption {
-                            type = lib.types.package;
-                            default = pkgs.nerd-fonts.fira-code;
-                            description = "Sans-serif font package";
+                            type = lib.types.nullOr lib.types.package;
+                            default = null;
+                            description = "Sans-serif font package (default: nerd-fonts.fira-code)";
                           };
                         };
                       };
@@ -181,9 +181,9 @@ in
                             description = "Monospace font name";
                           };
                           package = lib.mkOption {
-                            type = lib.types.package;
-                            default = pkgs.nerd-fonts.fira-code;
-                            description = "Monospace font package";
+                            type = lib.types.nullOr lib.types.package;
+                            default = null;
+                            description = "Monospace font package (default: nerd-fonts.fira-code)";
                           };
                         };
                       };
@@ -200,9 +200,9 @@ in
                             description = "Emoji font name";
                           };
                           package = lib.mkOption {
-                            type = lib.types.package;
-                            default = pkgs.noto-fonts-color-emoji;
-                            description = "Emoji font package";
+                            type = lib.types.nullOr lib.types.package;
+                            default = null;
+                            description = "Emoji font package (default: noto-fonts-color-emoji)";
                           };
                         };
                       };
@@ -224,9 +224,9 @@ in
                       description = "Cursor theme name";
                     };
                     package = lib.mkOption {
-                      type = lib.types.package;
-                      default = pkgs.bibata-cursors;
-                      description = "Cursor theme package";
+                      type = lib.types.nullOr lib.types.package;
+                      default = null;
+                      description = "Cursor theme package (default: bibata-cursors)";
                     };
                     size = lib.mkOption {
                       type = lib.types.int;

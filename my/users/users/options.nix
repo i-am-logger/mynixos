@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 
 {
   users = lib.mkOption {
@@ -20,9 +20,6 @@
             ../themes/options.nix
             ./apps-options.nix
           ];
-
-          # Pass pkgs to submodule so environment.nix can use it in defaults
-          _module.args.pkgs = lib.mkForce pkgs;
         }
       )
     );

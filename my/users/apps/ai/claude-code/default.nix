@@ -6,25 +6,34 @@
 
 with lib;
 
+let
+  anyUserClaudeCode = any
+    (userCfg: userCfg.apps.ai.tools.claude-code.enable or false)
+    (attrValues config.my.users);
+in
 {
-  config = {
-    home-manager.users = mapAttrs
-      (
-        _name: userCfg:
-          let
-            cfg = userCfg.apps.ai.tools.claude-code;
-          in
-          mkIf cfg.enable {
-            # Use home-manager module for claude-code
-            programs.claude-code = {
-              enable = true;
-              package = pkgs.claude-code;
-            };
+  config = mkMerge [
+    # Allow claude-code unfree package (when ANY user enables it)
+    (mkIf anyUserClaudeCode {
+      my.system.allowedUnfreePackages = [ "claude-code" ];
+    })
 
-            # Claude Code persists its data in ~/.claude
-            # This is handled by the app's persistedDirectories in options/users/apps.nix
-          }
-      )
-      config.my.users;
-  };
+    # Per-user claude-code installation via home-manager
+    {
+      home-manager.users = mapAttrs
+        (
+          _name: userCfg:
+            let
+              cfg = userCfg.apps.ai.tools.claude-code;
+            in
+            mkIf cfg.enable {
+              programs.claude-code = {
+                enable = true;
+                package = pkgs.claude-code;
+              };
+            }
+        )
+        config.my.users;
+    }
+  ];
 }

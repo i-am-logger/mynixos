@@ -145,13 +145,15 @@
       # Main NixOS module providing the `my.*` namespace
       nixosModules.default =
         { lib
-        , pkgs
         , ...
         }:
         let
-          # Use module's own pkgs when available, ensuring correct pkgs scope
-          mkOptionsModule = path: args: { pkgs ? args.pkgs or null, ... }:
-            { options.my = import path (args // lib.optionalAttrs (pkgs != null) { inherit pkgs; }); };
+          # Import options modules - args are passed through directly.
+          # Do NOT capture `pkgs` from module function args here, as that
+          # triggers _module.args.pkgs evaluation which depends on config.nixpkgs,
+          # causing infinite recursion when hardware modules set nixpkgs.hostPlatform.
+          mkOptionsModule = path: args: _:
+            { options.my = import path args; };
         in
         {
           config = {
@@ -365,16 +367,16 @@
           # Option definitions
           ++ [
             # Top-level options
-            (mkOptionsModule ./my/system/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/system/options.nix { inherit lib; })
             (mkOptionsModule ./my/security/options.nix { inherit lib; })
-            (mkOptionsModule ./my/environment/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/environment/options.nix { inherit lib; })
             (mkOptionsModule ./my/performance/options.nix { inherit lib; })
             (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
             (mkOptionsModule ./my/dev/development/options.nix { inherit lib; })
             (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
             (mkOptionsModule ./my/ai/options.nix { inherit lib; })
             (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
-            (mkOptionsModule ./my/themes/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/themes/options.nix { inherit lib; })
 
             # Category-level options
             (mkOptionsModule ./my/infra/options.nix { inherit lib; })
@@ -387,13 +389,14 @@
             (mkOptionsModule ./my/filesystem-options.nix { inherit lib; })
 
             # Users options
-            (mkOptionsModule ./my/users/users/options.nix { inherit lib pkgs; })
+            (mkOptionsModule ./my/users/users/options.nix { inherit lib; })
 
             # Users opinionated defaults (mynixos.nix files)
             ./my/users/terminal/mynixos.nix
             ./my/users/graphical/mynixos.nix
             ./my/users/dev/mynixos.nix
             ./my/users/ai/mynixos.nix
+            ./my/users/environment/mynixos.nix
             ./my/users/themes/vogix/mynixos.nix
 
             # Secrets (special - uses different pattern)

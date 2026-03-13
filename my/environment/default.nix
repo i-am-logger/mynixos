@@ -1,10 +1,12 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
 let
   cfg = config.my.environment;
   motdCfg = cfg.motd;
+  editor = if cfg.editor != null then cfg.editor else pkgs.helix;
+  browser = if cfg.browser != null then cfg.browser else pkgs.brave;
 in
 {
   config = mkMerge [
@@ -34,24 +36,27 @@ in
         # Note: BROWSER needs full path to binary for XDG to work correctly
         environment = {
           variables = {
-            EDITOR = "${cfg.editor}/bin/hx";
-            VIEWER = "${cfg.editor}/bin/hx";
-            BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
-            DEFAULT_BROWSER = "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+            EDITOR = "${editor}/bin/${editor.meta.mainProgram or editor.pname or "hx"}";
+            VIEWER = "${editor}/bin/${editor.meta.mainProgram or editor.pname or "hx"}";
+            BROWSER = "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
+            DEFAULT_BROWSER = "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
           };
 
           pathsToLink = [ "libexec" ];
-          sessionVariables.DEFAULT_BROWSER = mkDefault "${cfg.browser}/bin/${cfg.browser.pname or "brave"}";
+          sessionVariables.DEFAULT_BROWSER = mkDefault "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
         };
 
         # XDG MIME defaults - using .desktop file pattern
-        xdg.mime.defaultApplications = mkDefault {
-          "text/html" = "${cfg.browser.pname or "brave"}-browser.desktop";
-          "x-scheme-handler/http" = "${cfg.browser.pname or "brave"}-browser.desktop";
-          "x-scheme-handler/https" = "${cfg.browser.pname or "brave"}-browser.desktop";
-          "x-scheme-handler/about" = "${cfg.browser.pname or "brave"}-browser.desktop";
-          "x-scheme-handler/unknown" = "${cfg.browser.pname or "brave"}-browser.desktop";
-        };
+        xdg.mime.defaultApplications =
+          let browserDesktop = "${browser.pname or "brave"}-browser.desktop";
+          in
+          mkDefault {
+            "text/html" = browserDesktop;
+            "x-scheme-handler/http" = browserDesktop;
+            "x-scheme-handler/https" = browserDesktop;
+            "x-scheme-handler/about" = browserDesktop;
+            "x-scheme-handler/unknown" = browserDesktop;
+          };
       }
 
       # Common environment configuration (always enabled with environment feature)
