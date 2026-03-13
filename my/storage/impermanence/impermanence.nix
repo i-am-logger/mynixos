@@ -23,6 +23,13 @@ let
 in
 {
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = hasPrefix "/" persistPath;
+        message = "my.storage.impermanence.persistPath must be an absolute path, got: ${persistPath}";
+      }
+    ];
+
     # Note: Impermanence module is imported separately by the system
 
     # Setup persist filesystem

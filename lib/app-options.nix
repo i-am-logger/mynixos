@@ -33,12 +33,12 @@
             description = "Persist app data directories and files";
           };
           persistedDirectories = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
+            type = lib.types.listOf lib.types.nonEmptyStr;
             default = persistedDirectories;
             description = "Directories to persist for this app (relative to user home)";
           };
           persistedFiles = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
+            type = lib.types.listOf lib.types.nonEmptyStr;
             default = persistedFiles;
             description = "Files to persist for this app (relative to user home)";
           };
