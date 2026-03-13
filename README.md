@@ -1,6 +1,7 @@
 [![CI and Release](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml/badge.svg)](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![NixOS](https://img.shields.io/badge/NixOS-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
+[![Release](https://img.shields.io/github/v/release/i-am-logger/mynixos)](https://github.com/i-am-logger/mynixos/releases)
 
 # mynixos
 
@@ -76,14 +77,25 @@ users.alice = {
 
 ## Features
 
-- **Hardware**: Profiles for Gigabyte X870E, Lenovo Legion 16IRX8H
-- **Desktop**: Hyprland + greetd
-- **Security**: Secure boot (lanzaboote), YubiKey, audit rules
+- **System**: Core config (hostname, kernel, scripts, environment)
+- **Users**: 50+ apps across 28 categories, per-user config with feature bundles (graphical, dev, terminal, ai)
+- **Hardware**: CPU (AMD/Intel), GPU (AMD/NVIDIA), motherboards (Gigabyte), laptops (Lenovo), cooling (NZXT), memory optimization, storage (NVMe/SATA/SSD/USB), bluetooth (Realtek), USB (HID/Thunderbolt/XHCI), peripherals (Elgato), boot (UEFI/dual-boot)
+- **Desktop**: Hyprland with Waybar, Walker launcher
+- **Security**: Secure boot (lanzaboote), YubiKey/SoloKey/NitroKey support, 1Password, audit rules
 - **Secrets**: sops-nix integration
-- **Storage**: disko, impermanence
-- **Theming**: stylix
-- **Dev**: Docker (rootless), direnv, binfmt
-- **AI**: Ollama with ROCm
+- **Storage**: disko partitioning, impermanence (tmpfs root + persistent storage)
+- **Theming**: vogix runtime theme management
+- **Dev**: Docker (rootless), direnv, devenv, binfmt, VSCode, Helix, GitHub Desktop
+- **AI**: Ollama with ROCm, Claude Code, OpenCode
+- **Terminals**: Ghostty, Kitty, Alacritty, WezTerm, Warp
+- **Shells**: Fish, Bash with Starship prompt
+- **Browsers**: Firefox, Brave, Chromium + web apps (PWAs)
+- **Communication**: Signal, Slack, Element
+- **Media**: Audacious, musikcube, pipewire-tools, cava visualizer
+- **Infrastructure**: GitHub Actions runner, k3s
+- **Performance**: zram, memory optimization, sysctl tuning
+- **Streaming**: OBS-related setup
+- **File Management**: Yazi, Midnight Commander, lsd, rclone sync
 
 ## Structure
 ```
@@ -110,4 +122,4 @@ CC BY-NC-SA 4.0 - See [LICENSE](LICENSE)
 
 ## Built On
 
-NixOS, home-manager, disko, impermanence, stylix, lanzaboote, sops-nix
+NixOS, home-manager, disko, impermanence, vogix, lanzaboote, sops-nix, nixos-hardware
