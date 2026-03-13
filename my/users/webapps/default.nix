@@ -68,9 +68,12 @@ in
 {
   config = mkIf anyUserWebapps (mkMerge [
     # Allow unfree packages for webapps (chromium, widevine, etc.)
-    # Use allowUnfree = true instead of predicate to ensure it works at all evaluation levels
     {
-      nixpkgs.config.allowUnfree = true;
+      my.system.allowedUnfreePackages = [
+        "chromium"
+        "chromium-unwrapped"
+        "widevine-cdm"
+      ];
     }
 
     # Electron apps
@@ -95,13 +98,6 @@ in
             userWebapps = userCfg.graphical.webapps or { };
           in
           mkIf (userCfg.graphical.webapps.enable or false) {
-            # Allow chromium unfree in home-manager context
-            nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-              "chromium"
-              "chromium-unwrapped"
-              "widevine-cdm"
-            ];
-
             # Icon theme packages
             home.packages = with pkgs; [
               papirus-icon-theme

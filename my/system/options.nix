@@ -26,6 +26,12 @@
 
         enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
 
+        allowedUnfreePackages = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "List of unfree package names to allow. Modules append to this list and a single predicate is built centrally.";
+        };
+
         persistence = lib.mkOption {
           description = "System persistence configuration";
           default = { };

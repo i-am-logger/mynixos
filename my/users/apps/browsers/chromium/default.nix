@@ -23,13 +23,12 @@ in
         config.my.users;
     }
 
-    # System-level unfree allowance (when ANY user enables it)
+    # Allow chromium unfree packages (when ANY user enables it)
     (mkIf anyUserChromium {
-      nixpkgs.config.allowUnfreePredicate = pkg:
-        builtins.elem (pkg.pname or pkg.name or (lib.getName pkg)) [
-          "chromium"
-          "chromium-unwrapped"
-        ];
+      my.system.allowedUnfreePackages = [
+        "chromium"
+        "chromium-unwrapped"
+      ];
     })
   ];
 }

@@ -21,12 +21,8 @@ in
     # Add vogix overlay to make pkgs.vogix available
     nixpkgs.overlays = [ vogix.overlays.default ];
 
-    # Allow vogix unfree license at NixOS level
-    nixpkgs.config.allowUnfreePredicate =
-      pkg:
-      builtins.elem (lib.getName pkg) [
-        "vogix"
-      ];
+    # Allow vogix unfree license
+    my.system.allowedUnfreePackages = [ "vogix" ];
 
     # Enable vogix at the NixOS level (console colors, etc.)
     vogix.enable = true;
@@ -41,13 +37,6 @@ in
           in
           mkIf userEnabled {
             imports = [ vogix.homeManagerModules.default ];
-
-            # Allow vogix unfree license in home-manager context
-            nixpkgs.config.allowUnfreePredicate =
-              pkg:
-              builtins.elem (lib.getName pkg) [
-                "vogix"
-              ];
 
             programs.vogix = {
               enable = true;

@@ -11,11 +11,10 @@ with lib;
     ];
 
     # Allow VSCode (unfree)
-    nixpkgs.config.allowUnfreePredicate = pkg:
-      builtins.elem (pkg.pname or pkg.name or (lib.getName pkg)) [
-        "vscode"
-        "vscode-with-extensions"
-      ];
+    my.system.allowedUnfreePackages = [
+      "vscode"
+      "vscode-with-extensions"
+    ];
 
     # Per-user VSCode installation via home-manager
     home-manager.users = mapAttrs
