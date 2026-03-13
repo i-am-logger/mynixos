@@ -1,4 +1,5 @@
-{ config
+{ activeUsers
+, config
 , lib
 , pkgs
 , ...
@@ -137,7 +138,7 @@ in
               "render"
             ];
           })
-          (filterAttrs (_name: userCfg: userCfg.fullName or null != null) config.my.users);
+          (activeUsers config.my.users);
       }
 
       # Audio tools are now in my.hardware.audio, not in graphical
