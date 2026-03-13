@@ -7,6 +7,22 @@ let
 in
 {
   config = mkIf cfg.enable {
+    assertions =
+      (optional (cfg.ageKeyFile != null) {
+        assertion = hasPrefix "/" cfg.ageKeyFile;
+        message = "my.secrets.ageKeyFile must be an absolute path, got: ${cfg.ageKeyFile}";
+      })
+      ++ (optional (cfg.gnupgHome != null) {
+        assertion = hasPrefix "/" cfg.gnupgHome;
+        message = "my.secrets.gnupgHome must be an absolute path, got: ${cfg.gnupgHome}";
+      })
+      ++ (map
+        (path: {
+          assertion = hasPrefix "/" path;
+          message = "my.secrets.sshKeyPaths entries must be absolute paths, got: ${path}";
+        })
+        cfg.sshKeyPaths);
+
     # Persistence configuration
     my.system.persistence.features = {
       userDirectories = [

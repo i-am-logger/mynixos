@@ -14,9 +14,9 @@
               enable = lib.mkEnableOption "impermanence with opinionated defaults";
 
               persistPath = lib.mkOption {
-                type = lib.types.str;
+                type = lib.types.nonEmptyStr;
                 default = "/persist";
-                description = "Path to persistent storage directory";
+                description = "Path to persistent storage directory (must be an absolute path)";
               };
 
               useDedicatedPartition = lib.mkOption {
@@ -32,7 +32,7 @@
               };
 
               cloneFlakeRepo = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr lib.types.nonEmptyStr;
                 default = null;
                 description = "Git URL to clone into /etc/nixos on first boot";
               };
@@ -44,19 +44,19 @@
               };
 
               extraSystemDirectories = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
+                type = lib.types.listOf lib.types.nonEmptyStr;
                 default = [ ];
                 description = "Additional system directories to persist";
               };
 
               extraUserDirectories = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
+                type = lib.types.listOf lib.types.nonEmptyStr;
                 default = [ ];
                 description = "Additional user directories to persist (applied to all users)";
               };
 
               extraUserFiles = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
+                type = lib.types.listOf lib.types.nonEmptyStr;
                 default = [ ];
                 description = "Additional user files to persist (applied to all users)";
               };

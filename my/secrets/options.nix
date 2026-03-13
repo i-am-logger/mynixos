@@ -11,19 +11,19 @@
     };
 
     sshKeyPaths = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      type = lib.types.listOf lib.types.nonEmptyStr;
       default = [ ];
       description = "SSH key paths for sops decryption (age keys derived from SSH)";
     };
 
     gnupgHome = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
+      type = lib.types.nullOr lib.types.nonEmptyStr;
       default = null;
       description = "GnuPG home directory for sops (for GPG/YubiKey decryption)";
     };
 
     ageKeyFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
+      type = lib.types.nullOr lib.types.nonEmptyStr;
       default = null;
       description = "Path to age key file for sops decryption";
     };

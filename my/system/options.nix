@@ -41,17 +41,17 @@
                 type = lib.types.attrsOf (lib.types.submodule {
                   options = {
                     directories = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       description = "Aggregated directories to persist for this user";
                       readOnly = true;
                     };
                     files = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       description = "Aggregated files to persist for this user";
                       readOnly = true;
                     };
                     apps = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       description = "List of enabled and persisted apps for this user";
                       readOnly = true;
                     };
@@ -65,17 +65,17 @@
                 type = lib.types.submodule {
                   options = {
                     systemDirectories = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       default = [ ];
                       description = "Aggregated system directories from features";
                     };
                     userDirectories = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       default = [ ];
                       description = "Aggregated user directories from features (per-user)";
                     };
                     userFiles = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
+                      type = lib.types.listOf lib.types.nonEmptyStr;
                       default = [ ];
                       description = "Aggregated user files from features (per-user)";
                     };
