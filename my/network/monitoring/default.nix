@@ -34,7 +34,7 @@ in
       environment.systemPackages = [ pkgs.iproute2 ];
 
       systemd.services.network-link-monitor = {
-        description = "L2 link state monitor (TSCM)";
+        description = "L2 link state monitor (network defense)";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
@@ -62,7 +62,7 @@ in
       environment.systemPackages = [ pkgs.arpwatch ];
 
       systemd.services.network-arpwatch = {
-        description = "ARP/MAC anomaly detector (TSCM)";
+        description = "ARP/MAC anomaly detector (network defense)";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
@@ -92,7 +92,7 @@ in
       environment.systemPackages = [ pkgs.tcpdump ];
 
       systemd.services.network-pcap = {
-        description = "Rotating L2 packet capture (TSCM)";
+        description = "Rotating L2 packet capture (network defense)";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
@@ -169,7 +169,7 @@ in
       environment.systemPackages = [ pkgs.zeek ];
 
       systemd.services.network-zeek = {
-        description = "Zeek passive network analysis (TSCM)";
+        description = "Zeek passive network analysis (network defense)";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];
@@ -203,7 +203,7 @@ in
       environment.systemPackages = [ pkgs.p0f ];
 
       systemd.services.network-p0f = {
-        description = "Passive OS fingerprinting (TSCM)";
+        description = "Passive OS fingerprinting (network defense)";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" ];
         wants = [ "network-online.target" ];

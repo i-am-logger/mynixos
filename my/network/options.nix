@@ -2,7 +2,7 @@
 
 {
   network = lib.mkOption {
-    description = "Network monitoring configuration (TSCM/defensive security)";
+    description = "Network defense configuration (passive monitoring and threat detection)";
     default = { };
     type = lib.types.submodule {
       options = {

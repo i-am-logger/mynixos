@@ -243,7 +243,7 @@
             ./my/hardware/usb/thunderbolt
             ./my/hardware/usb/xhci
 
-            # Network monitoring (TSCM)
+            # Network defense
             ./my/network/monitoring
 
             # Infrastructure
