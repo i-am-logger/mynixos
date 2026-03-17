@@ -32,6 +32,47 @@ in
           };
         };
 
+        # Hypr-vogix monochromatic screen overlay
+        hypr-vogix = lib.mkOption {
+          description = "Hypr-vogix monochromatic screen overlay for Hyprland";
+          default = { };
+          type = lib.types.submodule {
+            options = {
+              enable = lib.mkEnableOption "hypr-vogix monochromatic screen overlay";
+
+              defaultTheme = lib.mkOption {
+                type = lib.types.str;
+                default = "military";
+                description = "Default theme to apply (e.g., military, amber, cyber, arctic)";
+              };
+
+              defaultOpacity = lib.mkOption {
+                type = floatBetween 0.0 1.0;
+                default = 0.7;
+                description = "Default overlay intensity (0.0 = no effect, 1.0 = full monochrome)";
+              };
+
+              defaultBrightness = lib.mkOption {
+                type = floatBetween 0.1 2.0;
+                default = 1.0;
+                description = "Default brightness (0.1 = very dark, 1.0 = normal, 2.0 = max bright)";
+              };
+
+              defaultSaturation = lib.mkOption {
+                type = floatBetween 0.0 2.0;
+                default = 1.0;
+                description = "Default color saturation (0.0 = gray, 1.0 = normal, 2.0 = vivid)";
+              };
+
+              defaultInvert = lib.mkOption {
+                type = lib.types.nullOr (lib.types.enum [ "oklab" "okhsl" "hsv" ]);
+                default = null;
+                description = "Default lightness inversion algorithm (null = no inversion)";
+              };
+            };
+          };
+        };
+
         # Stylix static theming (legacy, disabled by default)
         stylix = lib.mkOption {
           description = "Stylix static theming configuration (legacy)";

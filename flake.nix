@@ -33,6 +33,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Monochromatic screen overlay for Hyprland
+    hypr-vogix = {
+      url = "github:i-am-logger/hypr-vogix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Secure boot
     lanzaboote = {
       url = "github:nix-community/lanzaboote";
@@ -404,6 +410,7 @@
             ./my/users/ai/mynixos.nix
             ./my/users/environment/mynixos.nix
             ./my/users/themes/vogix/mynixos.nix
+            ./my/themes/hypr-vogix/mynixos.nix
 
             # Secrets (special - uses different pattern)
             (import ./my/secrets/options.nix)

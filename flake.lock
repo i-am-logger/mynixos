@@ -1049,6 +1049,26 @@
         "type": "github"
       }
     },
+    "hypr-vogix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1773724822,
+        "narHash": "sha256-BKNHMXfL6KOY80esgUNGpUm0yWWXoU3ZjoqgRjgYgIk=",
+        "owner": "i-am-logger",
+        "repo": "hypr-vogix",
+        "rev": "6e82a88d7e558522469492d381e92fb564649559",
+        "type": "github"
+      },
+      "original": {
+        "owner": "i-am-logger",
+        "repo": "hypr-vogix",
+        "type": "github"
+      }
+    },
     "impermanence": {
       "inputs": {
         "home-manager": "home-manager_2",
@@ -1513,6 +1533,7 @@
         "disko": "disko",
         "git-hooks": "git-hooks",
         "home-manager": "home-manager",
+        "hypr-vogix": "hypr-vogix",
         "impermanence": "impermanence",
         "lanzaboote": "lanzaboote",
         "nixos-hardware": "nixos-hardware",

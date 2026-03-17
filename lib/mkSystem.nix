@@ -74,6 +74,7 @@
             impermanence
             stylix
             vogix
+            hypr-vogix
             lanzaboote
             self
             ;

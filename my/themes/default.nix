@@ -6,5 +6,6 @@
   imports = [
     ./stylix
     ./vogix
+    ./hypr-vogix
   ];
 }
