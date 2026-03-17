@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.2.0...mynixos-v0.3.0) (2026-03-17)
+
+
+### Features
+
+* add hypr-vogix demo video and recording script ([3078ebb](https://github.com/i-am-logger/mynixos/commit/3078ebb6beaa4ef193ab2cc6c55fa01e65afdb64))
+
 ## [0.2.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.6...mynixos-v0.2.0) (2026-03-17)
 
 
