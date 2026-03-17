@@ -476,5 +476,27 @@
           };
         }
       );
+
+      # Runnable demos and utilities
+      apps = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ inputs.hypr-vogix.overlays.default ];
+            config.allowUnfreePredicate = pkg: lib.getName pkg == "hypr-vogix";
+          };
+          demo = pkgs.writeShellApplication {
+            name = "demo-hypr-vogix";
+            runtimeInputs = [ pkgs.wf-recorder pkgs.hypr-vogix pkgs.ffmpeg ];
+            text = builtins.readFile ./scripts/demo-hypr-vogix.sh;
+          };
+        in
+        {
+          demo-hypr-vogix = {
+            type = "app";
+            program = "${demo}/bin/demo-hypr-vogix";
+          };
+        }
+      );
     };
 }
