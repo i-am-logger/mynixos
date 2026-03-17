@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.3.0...mynixos-v0.4.0) (2026-03-17)
+
+
+### Features
+
+* add network defense docs and rename TSCM to network defense ([2e71ee5](https://github.com/i-am-logger/mynixos/commit/2e71ee59a1714716e1efbe6992c86e16c6cde312))
+
 ## [0.3.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.2.0...mynixos-v0.3.0) (2026-03-17)
 
 
