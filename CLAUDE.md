@@ -41,6 +41,7 @@ Options are imported in flake.nix's options section. Implementations are importe
 - **`my.dev`** - Development tools
 - **`my.ai`** - AI tools (Ollama with ROCm)
 - **`my.themes`** - Theming (vogix by default, stylix legacy/disabled)
+- **`my.network`** - Network monitoring (TSCM: link monitor, arpwatch, pcap, suricata, zeek, p0f)
 - **`my.infra`** - Infrastructure services (github-runner, k3s)
 - **`my.storage`** - Impermanence (tmpfs root + persistent storage)
 - **`my.environment`** - Environment variables and paths

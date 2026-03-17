@@ -237,6 +237,9 @@
             ./my/hardware/usb/thunderbolt
             ./my/hardware/usb/xhci
 
+            # Network monitoring (TSCM)
+            ./my/network/monitoring
+
             # Infrastructure
             ./my/infra/github-runner
             ./my/infra/k3s
@@ -377,6 +380,9 @@
             (mkOptionsModule ./my/ai/options.nix { inherit lib; })
             (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
             (mkOptionsModule ./my/themes/options.nix { inherit lib; })
+
+            # Network options
+            (mkOptionsModule ./my/network/options.nix { inherit lib; })
 
             # Category-level options
             (mkOptionsModule ./my/infra/options.nix { inherit lib; })
