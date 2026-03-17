@@ -5,6 +5,19 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.6...mynixos-v0.2.0) (2026-03-17)
+
+
+### Features
+
+* add network monitoring module (TSCM) ([1906c76](https://github.com/i-am-logger/mynixos/commit/1906c76086099aac998a601916b72df9b78679b1))
+* integrate hypr-vogix as my.themes.hypr-vogix ([acb461e](https://github.com/i-am-logger/mynixos/commit/acb461ebcacd2c92e581dc429dffaacd3247c370))
+
+
+### Bug Fixes
+
+* updates ([efd91ed](https://github.com/i-am-logger/mynixos/commit/efd91ed90f440f8327bbb5efc3713f29579117a1))
+
 ## [0.1.6](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.1.5...mynixos-v0.1.6) (2026-03-13)
 
 
