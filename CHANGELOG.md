@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.4.0...mynixos-v0.5.0) (2026-03-18)
+
+
+### Features
+
+* architecture review fixes, network defense expansion, and input deduplication ([83d7cfe](https://github.com/i-am-logger/mynixos/commit/83d7cfecc894c4c1739ee13893fb489af6a64cec))
+
 ## [0.4.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.3.0...mynixos-v0.4.0) (2026-03-17)
 
 
