@@ -787,6 +787,13 @@ in
                         description = "Claude Code AI coding assistant";
                         persistedDirectories = [ ".claude" ];
                         persistedFiles = [ ".claude.json" ];
+                        extraOptions = {
+                          cloneConfigRepo = lib.mkOption {
+                            type = lib.types.nullOr lib.types.nonEmptyStr;
+                            default = null;
+                            description = "Git URL to clone into ~/.claude on first boot (syncs settings, memory, todos across machines)";
+                          };
+                        };
                       };
                     };
                   };
