@@ -1,4 +1,5 @@
-{ config
+{ activeUsers
+, config
 , lib
 , pkgs
 , ...
@@ -33,7 +34,7 @@ in
               };
             }
         )
-        config.my.users;
+        (activeUsers config.my.users);
     }
   ];
 }

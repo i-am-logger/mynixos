@@ -42,13 +42,13 @@ in
 
               defaultTheme = lib.mkOption {
                 type = lib.types.str;
-                default = "military";
-                description = "Default theme to apply (e.g., military, amber, cyber, arctic)";
+                default = "walnut";
+                description = "Default theme to apply (e.g., walnut, military, amber, cyber, arctic)";
               };
 
               defaultOpacity = lib.mkOption {
                 type = floatBetween 0.0 1.0;
-                default = 0.7;
+                default = 0.5;
                 description = "Default overlay intensity (0.0 = no effect, 1.0 = full monochrome)";
               };
 

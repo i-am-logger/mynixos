@@ -6,33 +6,15 @@
 }:
 
 let
-  pkgs = nixpkgs.legacyPackages.${system};
+  testLib = import ./lib.nix { inherit lib nixpkgs system self inputs; };
+  inherit (testLib) pkgs specialArgs baseModules baseConfig;
 
   # Evaluate a NixOS system with the mynixos module and given config.
   # Returns the raw evaluation result (not a derivation).
   evalWithConfig = testConfig:
     lib.nixosSystem {
-      specialArgs = {
-        inherit inputs self pkgs;
-        inherit (inputs) disko impermanence stylix vogix lanzaboote sops-nix;
-      };
-
-      modules = [
-        self.nixosModules.default
-        inputs.home-manager.nixosModules.home-manager
-        inputs.sops-nix.nixosModules.sops
-        {
-          # Minimal base config required for NixOS evaluation
-          boot.loader.grub.devices = [ "nodev" ];
-          fileSystems."/" = {
-            device = "tmpfs";
-            fsType = "tmpfs";
-          };
-          system.stateVersion = "24.11";
-          nixpkgs.hostPlatform = system;
-        }
-        testConfig
-      ];
+      inherit specialArgs;
+      modules = baseModules ++ [ baseConfig testConfig ];
     };
 
   # Build a check derivation that verifies evaluation with bad config fails.
@@ -259,4 +241,34 @@ in
   bluetooth-accepts-bool = mustAccept "bluetooth-accepts-bool"
     (c: c.my.hardware.bluetooth.enable)
     { networking.hostName = "test"; my.hardware.bluetooth.enable = false; };
+
+  # --- Enum: my.environment.displayManager.type ---
+
+  display-manager-rejects-invalid = mustReject "display-manager-rejects-invalid"
+    (c: c.my.environment.displayManager.type)
+    { networking.hostName = "test"; my.environment.displayManager.type = "startx"; };
+
+  display-manager-accepts-greetd = mustAccept "display-manager-accepts-greetd"
+    (c: c.my.environment.displayManager.type)
+    { networking.hostName = "test"; my.environment.displayManager.type = "greetd"; };
+
+  display-manager-accepts-sddm = mustAccept "display-manager-accepts-sddm"
+    (c: c.my.environment.displayManager.type)
+    { networking.hostName = "test"; my.environment.displayManager.type = "sddm"; };
+
+  # --- Persistence path validation (relativePath type) ---
+
+  persistence-rejects-absolute-path = mustReject "persistence-rejects-absolute-path"
+    (c: c.my.users.test.apps.terminal.shells.bash.persistedFiles)
+    {
+      networking.hostName = "test";
+      my.users.test.apps.terminal.shells.bash.persistedFiles = [ "/etc/passwd" ];
+    };
+
+  persistence-rejects-dotdot = mustReject "persistence-rejects-dotdot"
+    (c: c.my.users.test.apps.terminal.shells.bash.persistedDirectories)
+    {
+      networking.hostName = "test";
+      my.users.test.apps.terminal.shells.bash.persistedDirectories = [ "../../etc" ];
+    };
 }

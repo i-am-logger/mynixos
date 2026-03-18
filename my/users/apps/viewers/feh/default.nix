@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -13,6 +13,6 @@ with lib;
 
           programs.feh.enable = mkDefault true;
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

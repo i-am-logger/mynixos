@@ -25,8 +25,8 @@
             enable = lib.mkEnableOption "link state monitoring (detects cable pulls, new interfaces, MAC changes)";
           };
 
-          arpwatch = {
-            enable = lib.mkEnableOption "ARP/MAC anomaly detection (detects rogue devices, spoofing)";
+          addrwatch = {
+            enable = lib.mkEnableOption "addrwatch IPv4/IPv6 address monitoring (ARP + NDP, detects rogue devices)";
           };
 
           pcap = {
@@ -57,6 +57,10 @@
             };
           };
 
+          tshark = {
+            enable = lib.mkEnableOption "tshark protocol-aware capture (Wireshark CLI)";
+          };
+
           suricata = {
             enable = lib.mkEnableOption "Suricata IDS (signature-based intrusion detection)";
           };
@@ -67,6 +71,22 @@
 
           p0f = {
             enable = lib.mkEnableOption "passive OS fingerprinting (detects device identity changes)";
+          };
+
+          aide = {
+            enable = lib.mkEnableOption "AIDE file integrity monitoring (host-based intrusion detection)";
+          };
+
+          netflow = {
+            enable = lib.mkEnableOption "NetFlow traffic analysis (softflowd + ntopng)";
+
+            ntopng = {
+              enable = lib.mkEnableOption "ntopng web-based traffic analysis dashboard";
+            };
+          };
+
+          dns = {
+            enable = lib.mkEnableOption "Blocky DNS sinkhole (block malicious/ad domains)";
           };
         };
       };

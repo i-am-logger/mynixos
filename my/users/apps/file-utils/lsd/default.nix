@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -31,6 +31,6 @@ with lib;
             };
           };
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

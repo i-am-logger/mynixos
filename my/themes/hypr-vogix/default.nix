@@ -1,6 +1,7 @@
 # Hypr-vogix implementation module
 # Installs hypr-vogix and configures auto-restore on Hyprland startup
-{ config
+{ activeUsers
+, config
 , lib
 , pkgs
 , hypr-vogix
@@ -30,15 +31,15 @@ let
   ]);
 in
 {
-  config = mkMerge [
-    # Overlay and unfree allowlist always set (predicate must exist before package evaluation)
+  config = mkIf (config.my.themes.enable && cfg.enable) (mkMerge [
+    # Overlay and unfree allowlist
     {
       nixpkgs.overlays = [ hypr-vogix.overlays.default ];
       my.system.allowedUnfreePackages = [ "hypr-vogix" ];
     }
 
-    # Per-user config only when enabled
-    (mkIf (config.my.themes.enable && cfg.enable) {
+    # Per-user config
+    {
       home-manager.users = mapAttrs
         (_name: userCfg:
           mkIf (userCfg.graphical.enable or false) {
@@ -47,7 +48,7 @@ in
             # Auto-restore overlay on Hyprland startup
             wayland.windowManager.hyprland.settings.exec-once = [ restoreCmd ];
           })
-        config.my.users;
+        (activeUsers config.my.users);
 
       # Persist state directory for impermanence systems
       environment.persistence = mkIf config.my.storage.impermanence.enable {
@@ -56,8 +57,8 @@ in
             mkIf (userCfg.graphical.enable or false) {
               directories = [ ".local/state/hypr-vogix" ];
             })
-          config.my.users;
+          (activeUsers config.my.users);
       };
-    })
-  ];
+    }
+  ]);
 }

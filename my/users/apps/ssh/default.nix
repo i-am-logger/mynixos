@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -58,6 +58,6 @@ in
         # Configure gpg-agent SSH support
         services.gpg-agent.enableSshSupport = true;
       })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

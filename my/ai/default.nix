@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -114,7 +114,7 @@ in
             mkIf (userAI.mcpServers or defaults.mcpServers) {
               home.packages = lib.attrValues mcp-packages;
             })
-          config.my.users;
+          (activeUsers config.my.users);
       }
 
       # Persistence configuration

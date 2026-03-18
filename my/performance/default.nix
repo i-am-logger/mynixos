@@ -47,8 +47,10 @@ in
             fi
           done
 
-          # Cache frequently used applications
-          ${pkgs.vmtouch}/bin/vmtouch -dl /nix/store/*-firefox-* 2>/dev/null || true
+          # Cache Firefox if installed (match exact package name pattern)
+          for f in /nix/store/*-firefox-unwrapped-*/; do
+            [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -dl "$f" 2>/dev/null
+          done
 
           # Report status
           echo "Current system closure size:"
@@ -61,7 +63,9 @@ in
               ${pkgs.vmtouch}/bin/vmtouch -e /nix/var/nix/profiles/per-user/$user/profile
             fi
           done
-          ${pkgs.vmtouch}/bin/vmtouch -e /nix/store/*-firefox-* 2>/dev/null || true
+          for f in /nix/store/*-firefox-unwrapped-*/; do
+            [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -e "$f" 2>/dev/null
+          done
         '';
 
         MemoryMax = "16G";

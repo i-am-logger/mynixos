@@ -97,7 +97,7 @@ users.alice = {
 - **Browsers**: Firefox, Brave, Chromium + web apps (PWAs)
 - **Communication**: Signal, Slack, Element
 - **Media**: Audacious, musikcube, pipewire-tools, cava visualizer
-- **Network Defense**: Link state monitoring, ARP anomaly detection, packet capture, Suricata IDS, Zeek protocol analysis, P0F passive OS fingerprinting ([docs](docs/network-defense.md))
+- **Network Defense**: addrwatch, pcap, tshark, Suricata IDS, Zeek, P0F, AIDE file integrity, NetFlow/ntopng, Blocky DNS sinkhole ([docs](docs/network-defense.md))
 - **Infrastructure**: GitHub Actions runner, k3s
 - **Performance**: zram, memory optimization, sysctl tuning
 - **Streaming**: OBS-related setup

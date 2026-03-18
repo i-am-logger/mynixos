@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -98,7 +98,7 @@ in
           (_name: _userCfg: {
             home.stateVersion = lib.mkDefault "25.05";
           })
-          config.my.users;
+          (activeUsers config.my.users);
       }
     ]))
   ];

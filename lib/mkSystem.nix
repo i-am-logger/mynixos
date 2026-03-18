@@ -61,6 +61,8 @@
           [
             themeConfig
           ]
+        else if themeConfig != null && themeType == null then
+          lib.warn "mkSystem: my.themes.config is set but my.themes.type is null — theme config will be ignored" [ ]
         else
           [ ];
     in
@@ -69,7 +71,6 @@
         specialArgs = {
           inherit inputs;
           inherit (inputs)
-            secrets
             disko
             impermanence
             stylix
@@ -78,6 +79,7 @@
             lanzaboote
             self
             ;
+          secrets = inputs.secrets or null;
         };
 
         modules =
@@ -118,10 +120,17 @@
                   throw "Either hostname parameter, my.system.hostname, or my.hostname must be set";
             }
 
-            # NixOS users
-            {
-              imports = map (user: user.nixosUser) users;
-            }
+            # NixOS users (validate user structure)
+            (
+              let
+                invalidUsers = lib.filter (u: !(u ? name && u ? nixosUser && u ? homeManager)) users;
+              in
+              assert lib.assertMsg (invalidUsers == [ ])
+                "mkSystem: each user must have 'name', 'nixosUser', and 'homeManager' attributes";
+              {
+                imports = map (user: user.nixosUser) users;
+              }
+            )
 
             # Home Manager for users
             inputs.home-manager.nixosModules.home-manager
@@ -136,6 +145,8 @@
                   let
                     user = lib.findFirst (u: u.name == name) null users;
                   in
+                  assert lib.assertMsg (user != null) "mkSystem: user '${name}' not found in users list";
+                  assert lib.assertMsg (user ? homeManager) "mkSystem: user '${name}' is missing required 'homeManager' attribute";
                   {
                     imports = [ user.homeManager ];
                   }

@@ -1,6 +1,6 @@
 # Waybar - Wayland status bar
 # Enabled automatically when user has graphical.enable = true
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -279,6 +279,6 @@ in
           ];
         }
       )
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

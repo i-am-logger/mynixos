@@ -41,7 +41,7 @@ Options are imported in flake.nix's options section. Implementations are importe
 - **`my.dev`** - Development tools
 - **`my.ai`** - AI tools (Ollama with ROCm)
 - **`my.themes`** - Theming (vogix by default, hypr-vogix screen overlay, stylix legacy/disabled)
-- **`my.network`** - Network defense (link monitor, arpwatch, pcap, suricata, zeek, p0f)
+- **`my.network`** - Network defense (addrwatch, pcap, tshark, suricata, zeek, p0f, AIDE, netflow/ntopng, blocky DNS)
 - **`my.infra`** - Infrastructure services (github-runner, k3s)
 - **`my.storage`** - Impermanence (tmpfs root + persistent storage)
 - **`my.environment`** - Environment variables and paths
@@ -63,8 +63,9 @@ Options are imported in flake.nix's options section. Implementations are importe
 ### Key Library Functions (`lib/`)
 
 - **`mkSystem`** - Main system builder (see above)
-- **`appHelpers.shouldEnable(userCfg, category, app)`** - Dynamically searches all feature namespaces to check if an app is enabled
-- **`mkAppOption`** - Creates structured app options with enable, persisted, persistedDirectories, persistedFiles
+- **`activeUsers`** - Filters users to only those with `fullName` defined (fully configured users)
+- **`mkAppOption`** (`lib/app-options.nix`) - Creates structured app options with enable, persisted, persistedDirectories, persistedFiles
+- **`floatBetween`** (`lib/app-options.nix`) - Float type constrained to a range [min, max]
 
 ### Key Design Patterns
 

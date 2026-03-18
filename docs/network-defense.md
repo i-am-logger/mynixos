@@ -1,6 +1,6 @@
 # Network Defense
 
-Network monitoring stack for passive threat detection and forensic analysis. All tools run as hardened systemd services, produce logs to a unified directory, and integrate with impermanence for persistent storage on tmpfs-root systems.
+Comprehensive network monitoring and host-based intrusion detection stack. All tools run as hardened systemd services, produce logs to a unified directory, and integrate with impermanence for persistent storage on tmpfs-root systems.
 
 ## Quick Start
 
@@ -9,12 +9,26 @@ my.network.monitoring = {
   enable = true;
   interface = "eth0";  # or "" for all interfaces
 
+  # Network monitoring
   linkMonitor.enable = true;
-  arpwatch.enable = true;
+  addrwatch.enable = true;
   pcap.enable = true;
+  tshark.enable = true;
+
+  # Intrusion detection
   suricata.enable = true;
   zeek.enable = true;
   p0f.enable = true;
+  aide.enable = true;
+
+  # Traffic analysis
+  netflow = {
+    enable = true;
+    ntopng.enable = true;
+  };
+
+  # DNS sinkhole
+  dns.enable = true;
 };
 ```
 
@@ -22,7 +36,7 @@ my.network.monitoring = {
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `enable` | bool | `false` | Master enable for the entire Network Defense stack |
+| `enable` | bool | `false` | Master enable for the entire stack |
 | `interface` | string | `""` | Network interface to monitor. Empty = all interfaces |
 | `logPath` | string | `/var/log/network-monitor` | Unified log directory for all modules |
 
@@ -38,25 +52,21 @@ Monitors L2 link state changes using `ip monitor link neigh`. Detects cable pull
 
 **Output:** `${logPath}/link-events.log` - timestamped link/neighbor events
 
-**How it works:** Runs `ip monitor link neigh` in a loop, prepending ISO-8601 timestamps to each event. Requires `CAP_NET_ADMIN` capability.
-
 **Use case:** Detect physical layer tampering - unauthorized cable insertions, interface additions, or MAC address spoofing at the link layer.
 
 ---
 
-### ARP Watch
+### addrwatch
 
-Detects ARP and MAC anomalies using `arpwatch`. Maintains a persistent database of known MAC/IP pairings and alerts on changes.
+Modern replacement for arpwatch. Monitors both IPv4 (ARP) and IPv6 (NDP) address pairings on the network. Detects new devices, MAC/IP changes, and rogue devices with dual-stack support.
 
-**Enable:** `arpwatch.enable = true`
+**Enable:** `addrwatch.enable = true`
 
-**Service:** `network-arpwatch`
+**Service:** `network-addrwatch`
 
-**Output:** `${logPath}/arp.dat` (persistent database) + syslog alerts
+**Output:** syslog (structured address pairing events)
 
-**How it works:** Runs `arpwatch -d` in foreground mode with a persistent ARP database. Detects new stations, flip-flops (MAC/IP reassignments), and changed Ethernet addresses.
-
-**Use case:** Detect rogue devices joining the network, ARP spoofing/poisoning attacks, and unauthorized device substitution.
+**Use case:** Detect rogue devices, ARP spoofing, NDP spoofing, and unauthorized device substitution on IPv4 and IPv6 networks.
 
 ---
 
@@ -79,9 +89,19 @@ Full packet capture with L2 Ethernet headers, automatic file rotation, and bound
 | `pcap.snaplen` | int | `0` | Bytes per packet to capture. 0 = full packet |
 | `pcap.filter` | string | `""` | BPF filter expression for selective capture |
 
-**How it works:** Runs `tcpdump -e -n -U` with time-based rotation (`-G`) and file count limits (`-W`). Captures include Ethernet headers (`-e`) with no DNS resolution (`-n`).
-
 **Use case:** Forensic packet analysis, incident reconstruction, and evidence preservation.
+
+---
+
+### tshark (Wireshark CLI)
+
+Protocol-aware packet capture and dissection. Provides deeper protocol analysis than tcpdump with Wireshark's full dissector library.
+
+**Enable:** `tshark.enable = true`
+
+**Installs:** `wireshark-cli` package (includes tshark, editcap, mergecap, etc.)
+
+**Use case:** Deep protocol inspection, pcap post-processing, and protocol-specific filtering during incident analysis.
 
 ---
 
@@ -105,8 +125,6 @@ Signature-based intrusion detection system. Detects known attack patterns, C2 be
 - **files** - file extraction metadata
 - **flow** - connection flow records
 
-**How it works:** Uses `af-packet` mode for high-performance kernel-level packet access with `cluster_flow` threading. Passively inspects traffic against signature rules and behavioral models.
-
 **Use case:** Detect known exploits, malware C2 communications, implant signatures, and protocol-level anomalies.
 
 ---
@@ -120,8 +138,6 @@ Passive network analysis framework. Generates structured protocol logs for conne
 **Service:** `network-zeek`
 
 **Output:** `${logPath}/zeek/` - directory of JSON-formatted protocol logs (conn.log, dns.log, tls.log, etc.)
-
-**How it works:** Runs `zeek -C LogAscii::use_json=T` which passively analyzes traffic, ignoring checksum errors (`-C`), and outputs structured JSON logs. Each protocol gets its own log file.
 
 **Use case:** Protocol-level visibility, connection metadata analysis, encrypted traffic profiling (via TLS certificate logging), and behavioral baselining.
 
@@ -137,13 +153,69 @@ Passive OS fingerprinting. Identifies operating systems and TCP/IP stack behavio
 
 **Output:** `${logPath}/p0f.log` - timestamped fingerprint matches
 
-**How it works:** Analyzes TCP/IP stack characteristics (window size, TTL, options, etc.) to identify operating systems. Runs completely passively - no packets sent.
+**Use case:** Detect unauthorized device substitution, identify unknown devices on the network, and monitor for OS-level anomalies.
 
-**Use case:** Detect unauthorized device substitution (fingerprint changes may indicate an implant swap or compromised host), identify unknown devices on the network, and monitor for OS-level anomalies.
+---
+
+### AIDE (File Integrity)
+
+Advanced Intrusion Detection Environment. Monitors critical system files for unauthorized modifications — detects rootkits, backdoors, and tampering.
+
+**Enable:** `aide.enable = true`
+
+**Service:** `aide-check` (runs daily via systemd timer)
+
+**Output:** `${logPath}/aide-check.log` - integrity check results
+
+**Monitored paths:**
+- `/bin`, `/sbin`, `/usr/bin`, `/usr/sbin` — binary integrity (permissions, inode, SHA-256)
+- `/etc` — configuration file integrity
+
+**Excluded paths:** `/var`, `/tmp`, `/run`, `/proc`, `/sys`, `/dev` (volatile)
+
+**Persisted state:** `/var/lib/aide` (AIDE database)
+
+**Use case:** Detect unauthorized file modifications to system binaries and configuration. First line of defense against rootkits and supply chain attacks.
+
+---
+
+### NetFlow (softflowd + ntopng)
+
+Network traffic flow analysis. softflowd exports NetFlow v9 data, ntopng provides a real-time web dashboard for traffic visualization.
+
+**Enable:** `netflow.enable = true` (softflowd) + `netflow.ntopng.enable = true` (web dashboard)
+
+**Services:** `network-softflowd` + NixOS native `services.ntopng`
+
+**ntopng dashboard:** `http://localhost:3000` (login disabled by default)
+
+**Persisted state:** `/var/lib/ntopng`
+
+**Use case:** Traffic flow analysis, bandwidth anomaly detection, top talkers identification, and network capacity planning.
+
+---
+
+### Blocky DNS Sinkhole
+
+DNS-level blocking of malicious domains, ads, and C2 infrastructure. Uses DNS-over-HTTPS upstream for encrypted resolution.
+
+**Enable:** `dns.enable = true`
+
+**Service:** NixOS native `services.blocky`
+
+**Ports:** DNS on `5353`, Web UI on `4000`
+
+**Block lists:**
+- **ads** — StevenBlack unified hosts (ads + malware + fakenews)
+- **malware** — URLhaus malicious URL blocklist
+
+**Upstream DNS:** Cloudflare DoH + Google DoH
+
+**Use case:** Block known malicious domains, C2 callbacks, ad networks, and tracking domains at the DNS layer before connections are established.
 
 ## Service Hardening
 
-All custom systemd services (link-monitor, arpwatch, pcap, zeek, p0f) run with:
+All custom systemd services run with:
 
 - `ProtectSystem = "strict"` - read-only filesystem root
 - `ReadWritePaths` limited to `logPath` only
@@ -151,14 +223,13 @@ All custom systemd services (link-monitor, arpwatch, pcap, zeek, p0f) run with:
 - Automatic restart on failure (5s delay, 10s for Zeek)
 - `network-online.target` dependency
 
-Suricata uses the NixOS-native service module with its own hardening.
+Suricata, ntopng, and Blocky use NixOS-native service modules with their own hardening.
 
 ## Log Directory Structure
 
 ```
 /var/log/network-monitor/
 ├── link-events.log             # Link state changes
-├── arp.dat                     # ARP watch database
 ├── capture-YYYYMMDD-*.pcap     # Rotating packet captures
 ├── suricata-eve.json           # Suricata IDS detections
 ├── zeek/                       # Zeek protocol logs
@@ -166,22 +237,24 @@ Suricata uses the NixOS-native service module with its own hardening.
 │   ├── dns.log
 │   ├── tls.log
 │   └── ...
-└── p0f.log                     # OS fingerprint data
+├── p0f.log                     # OS fingerprint data
+└── aide-check.log              # AIDE integrity check results
 ```
 
 ## Impermanence Integration
 
-On systems with `my.storage.impermanence.enable = true`, the Network Defense stack automatically persists:
+On systems with `my.storage.impermanence.enable = true`, the stack automatically persists:
 
 - `${logPath}` (mode `0750`) - all monitoring logs
 - `/var/lib/suricata` - Suricata rule database and state
-
-No additional configuration needed - persistence is handled by the module.
+- `/var/lib/aide` - AIDE integrity database
+- `/var/lib/ntopng` - ntopng traffic data
 
 ## Design Principles
 
-- **Passive only** - no packets transmitted, no network modification
+- **Passive only** - no packets transmitted, no network modification (except DNS sinkhole)
 - **Composable** - enable only the modules you need
 - **Bounded storage** - pcap rotation prevents unbounded disk growth
 - **Unified logging** - all output in one configurable directory
-- **Defense in depth** - each module targets a different threat layer (L2, L3, L4-L7, signatures, behavior)
+- **Defense in depth** - each module targets a different threat layer (L2, L3, L4-L7, signatures, behavior, file integrity, DNS)
+- **Dual-stack** - addrwatch monitors both IPv4 and IPv6

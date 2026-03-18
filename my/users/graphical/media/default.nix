@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -45,6 +45,6 @@ in
               pamixer # PulseAudio/PipeWire CLI mixer
             ]);
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

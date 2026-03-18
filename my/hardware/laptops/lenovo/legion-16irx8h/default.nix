@@ -1,5 +1,7 @@
 { config, lib, pkgs, modulesPath, ... }:
 
+with lib;
+
 let
   cfg = config.my.hardware.laptops.lenovo.legion-16irx8h;
 in
@@ -8,35 +10,35 @@ in
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  config = lib.mkMerge [
+  config = mkMerge [
     # Auto-enable hardware modules based on laptop options (unconditional to avoid recursion)
     {
       # Set hardware types (triggers Intel CPU/NVIDIA GPU modules when laptop is enabled)
       my.hardware = {
-        cpu = lib.mkIf cfg.enable "intel";
-        gpu = lib.mkIf cfg.enable "nvidia";
+        cpu = mkIf cfg.enable "intel";
+        gpu = mkIf cfg.enable "nvidia";
 
         # Bluetooth configuration
-        bluetooth.enable = lib.mkIf cfg.enable cfg.bluetooth.enable;
+        bluetooth.enable = mkIf cfg.enable cfg.bluetooth.enable;
 
         # Storage options
         storage = {
-          nvme.enable = lib.mkIf cfg.enable cfg.storage.nvme.enable;
-          usb.enable = lib.mkIf cfg.enable cfg.storage.usb.enable;
+          nvme.enable = mkIf cfg.enable cfg.storage.nvme.enable;
+          usb.enable = mkIf cfg.enable cfg.storage.usb.enable;
           # Auto-enable SSD optimizations when NVMe storage is enabled
-          ssd.enable = lib.mkIf cfg.enable (lib.mkDefault cfg.storage.nvme.enable);
+          ssd.enable = mkIf cfg.enable (mkDefault cfg.storage.nvme.enable);
         };
 
         # USB options
         usb = {
-          xhci.enable = lib.mkIf cfg.enable cfg.usb.xhci.enable;
-          thunderbolt.enable = lib.mkIf cfg.enable cfg.usb.thunderbolt.enable;
-          hid.enable = lib.mkIf cfg.enable cfg.usb.hid.enable;
+          xhci.enable = mkIf cfg.enable cfg.usb.xhci.enable;
+          thunderbolt.enable = mkIf cfg.enable cfg.usb.thunderbolt.enable;
+          hid.enable = mkIf cfg.enable cfg.usb.hid.enable;
         };
       };
     }
 
-    (lib.mkIf cfg.enable (lib.mkMerge [
+    (mkIf cfg.enable (mkMerge [
       # Import laptop-specific boot configuration
       (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
 
@@ -63,20 +65,20 @@ in
           nvidia.prime = {
             intelBusId = "PCI:0:2:0";
             nvidiaBusId = "PCI:1:0:0";
-            offload.enable = lib.mkForce false;
-            offload.enableOffloadCmd = lib.mkForce false;
+            offload.enable = mkForce false;
+            offload.enableOffloadCmd = mkForce false;
             sync.enable = true; # Use PRIME sync mode for better performance
           };
 
           # Intel microcode updates
-          cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+          cpu.intel.updateMicrocode = mkDefault config.hardware.enableRedistributableFirmware;
         };
 
         # Networking - enable DHCP by default
-        networking.useDHCP = lib.mkDefault true;
+        networking.useDHCP = mkDefault true;
 
         # Platform architecture
-        nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+        nixpkgs.hostPlatform = mkDefault "x86_64-linux";
       }
     ]))
   ];

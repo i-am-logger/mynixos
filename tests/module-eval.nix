@@ -6,38 +6,15 @@
 }:
 
 let
-  pkgs = nixpkgs.legacyPackages.${system};
+  testLib = import ./lib.nix { inherit lib nixpkgs system self inputs; };
+  inherit (testLib) pkgs specialArgs baseModules baseConfig;
 
   # Helper: evaluate a NixOS system with the mynixos module and given config
-  #
-  # We pass pkgs via specialArgs to break the infinite recursion that occurs
-  # when hardware/theme modules set nixpkgs.* options inside mkIf conditions.
-  # Without this, evaluating pkgs requires config, which requires evaluating
-  # the mkIf conditions, which requires pkgs again.
   evalTest = name: testConfig:
     let
       eval = lib.nixosSystem {
-        specialArgs = {
-          inherit inputs self pkgs;
-          inherit (inputs) disko impermanence stylix vogix lanzaboote sops-nix;
-        };
-
-        modules = [
-          self.nixosModules.default
-          inputs.home-manager.nixosModules.home-manager
-          inputs.sops-nix.nixosModules.sops
-          {
-            # Minimal base config required for NixOS evaluation
-            boot.loader.grub.devices = [ "nodev" ];
-            fileSystems."/" = {
-              device = "tmpfs";
-              fsType = "tmpfs";
-            };
-            system.stateVersion = "24.11";
-            nixpkgs.hostPlatform = system;
-          }
-          testConfig
-        ];
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig testConfig ];
       };
 
       # Force evaluation by referencing config values

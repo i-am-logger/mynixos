@@ -70,7 +70,7 @@ in
                 ];
               };
             })
-          config.my.users;
+          (activeUsers config.my.users);
       }
 
       # StreamDeck support moved to my.hardware.peripherals.elgato.streamdeck

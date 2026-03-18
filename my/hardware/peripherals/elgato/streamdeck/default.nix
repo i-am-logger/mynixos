@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -359,7 +359,7 @@ in
           };
         }
       )
-      config.my.users;
+      (activeUsers config.my.users);
 
     # Fix Qt platform plugin issues for streamdeck-ui
     environment.sessionVariables = {

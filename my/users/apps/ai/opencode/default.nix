@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -19,6 +19,6 @@ with lib;
           # OpenCode persists its data in ~/.claude and ~/.config/opencode
           # These are handled by the app's persistedDirectories in options/users/apps.nix
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

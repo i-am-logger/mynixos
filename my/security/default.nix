@@ -54,7 +54,8 @@ in
           pkgs.libu2f-host
         ];
 
-        # Disable GNOME keyring - using pass with GPG/YubiKey
+        # Disable GNOME keyring entirely — using pass with GPG/YubiKey instead.
+        # All three settings are required: NixOS service, PAM integration, and env vars.
         gnome = {
           gnome-keyring.enable = false;
           glib-networking.enable = true;
@@ -251,7 +252,7 @@ in
       };
 
       # Disable filter plugin to avoid "line too long" error
-      environment.etc."audit/plugins.d/filter.conf".text = mkForce ''
+      environment.etc."audit/plugins.d/filter.conf".text = mkDefault ''
         active = no
       '';
     })

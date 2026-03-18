@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -21,6 +21,6 @@ in
           home.packages = with pkgs;
             (optional ((termCfg.multiplexer or "zellij") == "screen") screen);
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

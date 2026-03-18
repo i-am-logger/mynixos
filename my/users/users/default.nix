@@ -91,20 +91,22 @@ in
               name = "userAvatar-${name}";
               value = {
                 text = ''
-                  # Create directory for user icons if it doesn't exist
+                  set -e
                   mkdir -p /var/lib/AccountsService/icons
                   mkdir -p /var/lib/AccountsService/users
 
-                  # Copy the user avatar to the standard location
-                  cp ${userCfg.avatar} /var/lib/AccountsService/icons/${name}
-                  chmod 644 /var/lib/AccountsService/icons/${name}
+                  # Atomic copy: write to temp then move
+                  cp ${userCfg.avatar} /var/lib/AccountsService/icons/${name}.tmp
+                  chmod 644 /var/lib/AccountsService/icons/${name}.tmp
+                  mv /var/lib/AccountsService/icons/${name}.tmp /var/lib/AccountsService/icons/${name}
 
-                  # Create AccountsService user configuration
-                  cat > /var/lib/AccountsService/users/${name} << EOF
+                  # Atomic config write
+                  cat > /var/lib/AccountsService/users/${name}.tmp << EOF
                   [User]
                   Icon=/var/lib/AccountsService/icons/${name}
                   EOF
-                  chmod 644 /var/lib/AccountsService/users/${name}
+                  chmod 644 /var/lib/AccountsService/users/${name}.tmp
+                  mv /var/lib/AccountsService/users/${name}.tmp /var/lib/AccountsService/users/${name}
                 '';
                 deps = [ "users" ];
               };
@@ -116,6 +118,13 @@ in
 
     # Create filesystem mounts for all users (regardless of how they're defined)
     (mkIf (allMounts != [ ]) {
+      assertions = map
+        (mount: {
+          assertion = hasPrefix "/" mount.mountPoint;
+          message = "Mount point must be an absolute path, got: '${mount.mountPoint}' (user: ${mount.user})";
+        })
+        allMounts;
+
       fileSystems = listToAttrs (map
         (mount: {
           name = mount.mountPoint;
@@ -132,7 +141,5 @@ in
         allMounts);
     })
 
-    # TODO: Generate Home Manager configs
-    # This will be added in Phase 2.2
   ];
 }

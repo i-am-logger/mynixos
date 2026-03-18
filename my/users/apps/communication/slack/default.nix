@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -22,7 +22,7 @@ in
               slack
             ];
           })
-        config.my.users;
+        (activeUsers config.my.users);
     }
   ];
 }

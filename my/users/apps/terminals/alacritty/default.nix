@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -11,6 +11,6 @@ with lib;
             enable = true;
           };
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

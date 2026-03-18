@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -18,6 +18,6 @@ in
         nixpkgs.config.allowUnfreePredicate = pkg:
           builtins.elem (lib.getName pkg) allowedPackages;
       })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

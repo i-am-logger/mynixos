@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -13,6 +13,6 @@ with lib;
             settings = builtins.fromTOML (builtins.readFile ./config/starship.toml);
           };
         })
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
@@ -20,7 +20,7 @@ in
             };
           }
         )
-        config.my.users;
+        (activeUsers config.my.users);
     }
 
     # Allow chromium unfree packages (when ANY user enables it)

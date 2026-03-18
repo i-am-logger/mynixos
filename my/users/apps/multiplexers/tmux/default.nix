@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -60,6 +60,6 @@ with lib;
             '';
           };
         })
-      (config.my.users or { });
+      (activeUsers config.my.users);
   };
 }

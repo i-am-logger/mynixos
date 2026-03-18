@@ -1,6 +1,7 @@
 # Vogix implementation module
 # Wires vogix NixOS and Home Manager modules based on my.themes.vogix configuration
-{ config
+{ activeUsers
+, config
 , lib
 , vogix
 , ...
@@ -46,6 +47,6 @@ in
             };
           }
       )
-      config.my.users;
+      (activeUsers config.my.users);
   };
 }

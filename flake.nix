@@ -13,6 +13,10 @@
     # Tmpfs persistence
     impermanence = {
       url = "github:nix-community/impermanence";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
     };
 
     # User configuration and dotfiles
@@ -25,12 +29,19 @@
     stylix = {
       url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nur.inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Runtime theme management
     vogix = {
       url = "github:i-am-logger/vogix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+        tinted-schemes.follows = "stylix/tinted-schemes";
+        rust-overlay.follows = "lanzaboote/rust-overlay";
+        devenv.inputs.git-hooks.follows = "git-hooks";
+      };
     };
 
     # Monochromatic screen overlay for Hyprland
@@ -42,7 +53,14 @@
     # Secure boot
     lanzaboote = {
       url = "github:nix-community/lanzaboote";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        pre-commit.inputs = {
+          nixpkgs.follows = "nixpkgs";
+          flake-compat.follows = "vogix/crate2nix/flake-compat";
+          gitignore.follows = "vogix/crate2nix/pre-commit-hooks/gitignore";
+        };
+      };
     };
 
     # Hardware configurations
@@ -169,252 +187,261 @@
             };
           };
 
-          imports = [
-            # External modules
-            impermanence.nixosModules.impermanence
-            lanzaboote.nixosModules.lanzaboote
+          imports =
+            # Option definitions (loaded first)
+            [
+              # Top-level options
+              (mkOptionsModule ./my/system/options.nix { inherit lib; })
+              (mkOptionsModule ./my/security/options.nix { inherit lib; })
+              (mkOptionsModule ./my/environment/options.nix { inherit lib; })
+              (mkOptionsModule ./my/performance/options.nix { inherit lib; })
+              (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
+              (mkOptionsModule ./my/dev/development/options.nix { inherit lib; })
+              (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
+              (mkOptionsModule ./my/ai/options.nix { inherit lib; })
+              (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
+              (mkOptionsModule ./my/themes/options.nix { inherit lib; })
 
-            # Implementation modules (my/)
-            # Top-level features
-            ./my/ai
-            ./my/audio
-            ./my/dev/development
-            ./my/environment
-            ./my/performance
-            ./my/secrets
-            ./my/streaming
-            ./my/video/virtual
+              # Network options
+              (mkOptionsModule ./my/network/options.nix { inherit lib; })
 
-            # Graphical
-            ./my/graphical
-            ./my/graphical/hyprland
+              # Category-level options
+              (mkOptionsModule ./my/infra/options.nix { inherit lib; })
+              (mkOptionsModule ./my/hardware/options.nix { inherit lib; })
+              (mkOptionsModule ./my/hardware/boot/options.nix { inherit lib; })
+              (mkOptionsModule ./my/storage/options.nix { inherit lib; })
 
-            # Security
-            ./my/security
-            ./my/security/yubikey
+              # Cross-cutting options
+              (mkOptionsModule ./my/presets-options.nix { inherit lib; })
+              (mkOptionsModule ./my/filesystem-options.nix { inherit lib; })
 
-            # System
-            ./my/system/core
-            ./my/system/kernel
-            ./my/system/scripts
-            ./my/system/unfree
+              # Users options
+              (mkOptionsModule ./my/users/users/options.nix { inherit lib; })
 
-            # Themes
-            ./my/themes
-
-            # Hardware - Bluetooth
-            ./my/hardware/bluetooth/realtek
-
-            # Hardware - Boot
-            ./my/hardware/boot/dual-boot
-            ./my/hardware/boot/uefi
-
-            # Hardware - Cooling
-            ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb
-
-            # Hardware - CPU
-            ./my/hardware/cpu/amd
-            ./my/hardware/cpu/intel
-
-            # Hardware - GPU
-            ./my/hardware/gpu/amd
-            ./my/hardware/gpu/nvidia
-
-            # Hardware - Laptops
-            ./my/hardware/laptops/lenovo/legion-16irx8h
-
-            # Hardware - Memory
-            ./my/hardware/memory/optimization
-
-            # Hardware - Motherboards
-            ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
-
-            # Hardware - Peripherals
-            ./my/hardware/peripherals/elgato
-
-            # Hardware - Storage
-            ./my/hardware/storage/nvme
-            ./my/hardware/storage/sata
-            ./my/hardware/storage/ssd
-            ./my/hardware/storage/usb
-
-            # Hardware - USB
-            ./my/hardware/usb/hid
-            ./my/hardware/usb/thunderbolt
-            ./my/hardware/usb/xhci
-
-            # Network defense
-            ./my/network/monitoring
-
-            # Infrastructure
-            ./my/infra/github-runner
-            ./my/infra/k3s
-
-            # Storage
-            ./my/storage/impermanence/aggregation.nix
-            ./my/storage/impermanence/feature-aggregation.nix
-            ./my/storage/impermanence/impermanence.nix
-
-            # Users - Core
-            ./my/users/defaults
-            ./my/users/environment-defaults
-            ./my/users/environment-validation
-            ./my/users/users
-
-            # Users - Features
-            ./my/users/graphical/media
-            ./my/users/terminal
-            ./my/users/webapps
-
-            # Users - Apps: AI
-            ./my/users/apps/ai/opencode
-            ./my/users/apps/ai/claude-code
-
-            # Users - Apps: Art
-            ./my/users/apps/art/mypaint
-
-            # Users - Apps: Browsers
-            ./my/users/apps/browsers/brave
-            ./my/users/apps/browsers/chromium
-            ./my/users/apps/browsers/firefox
-
-            # Users - Apps: Communication
-            ./my/users/apps/communication/element
-            ./my/users/apps/communication/signal
-            ./my/users/apps/communication/slack
-
-            # Users - Apps: Development
-            ./my/users/apps/dev/devenv
-            ./my/users/apps/dev/direnv
-            ./my/users/apps/dev/github-desktop
-            ./my/users/apps/dev/jq
-            ./my/users/apps/dev/kdiff3
-            ./my/users/apps/dev/vscode
-
-            # Users - Apps: Editors
-            ./my/users/apps/editors/helix
-            ./my/users/apps/editors/marktext
-
-            # Users - Apps: File Managers
-            ./my/users/apps/file-managers/mc
-            ./my/users/apps/file-managers/yazi
-
-            # Users - Apps: File Utils
-            ./my/users/apps/file-utils/lsd
-
-            # Users - Apps: Finance
-            ./my/users/apps/finance/cointop
-
-            # Users - Apps: Fun
-            ./my/users/apps/fun/pipes
-
-            # Users - Apps: Git/VCS
-            ./my/users/apps/git
-            ./my/users/apps/jujutsu
-
-            # Users - Apps: Launchers
-            ./my/users/apps/launchers/walker
-
-            # Users - Apps: Media
-            ./my/users/apps/media/audacious
-            ./my/users/apps/media/audio-utils
-            ./my/users/apps/media/musikcube
-            ./my/users/apps/media/pipewire-tools
-
-            # Users - Apps: Multiplexers
-            ./my/users/apps/multiplexers/tmux
-            ./my/users/apps/multiplexers/zellij
-
-            # Users - Apps: Network
-            ./my/users/apps/network/termscp
-
-            # Users - Apps: Prompts
-            ./my/users/apps/prompts/starship
-
-            # Users - Apps: Security
-            ./my/users/apps/security/1password
-
-            # Users - Apps: Shells
-            ./my/users/apps/shells/bash
-            ./my/users/apps/shells/fish
-
-            # Users - Apps: SSH
-            ./my/users/apps/ssh
-
-            # Users - Apps: Status bars
-            ./my/users/apps/status-bars/waybar
-
-            # Users - Apps: Sync
-            ./my/users/apps/sync/rclone
-
-            # Users - Apps: System Info
-            ./my/users/apps/system-info/btop
-            ./my/users/apps/system-info/fastfetch
-            ./my/users/apps/system-info/neofetch
-
-            # Users - Apps: Terminals
-            ./my/users/apps/terminals/alacritty
-            ./my/users/apps/terminals/ghostty
-            ./my/users/apps/terminals/kitty
-            ./my/users/apps/terminals/warp
-            ./my/users/apps/terminals/wezterm
-
-            # Users - Apps: Utilities
-            ./my/users/apps/utils/calculator
-            ./my/users/apps/utils/imagemagick
-
-            # Users - Apps: Viewers
-            ./my/users/apps/viewers/bat
-            ./my/users/apps/viewers/feh
-
-            # Users - Apps: Visualizers
-            ./my/users/apps/visualizers/cava
-
-            # Users - Apps: XDG
-            ./my/users/apps/xdg
-          ]
-          # Option definitions
-          ++ [
-            # Top-level options
-            (mkOptionsModule ./my/system/options.nix { inherit lib; })
-            (mkOptionsModule ./my/security/options.nix { inherit lib; })
-            (mkOptionsModule ./my/environment/options.nix { inherit lib; })
-            (mkOptionsModule ./my/performance/options.nix { inherit lib; })
-            (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
-            (mkOptionsModule ./my/dev/development/options.nix { inherit lib; })
-            (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
-            (mkOptionsModule ./my/ai/options.nix { inherit lib; })
-            (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
-            (mkOptionsModule ./my/themes/options.nix { inherit lib; })
-
-            # Network options
-            (mkOptionsModule ./my/network/options.nix { inherit lib; })
-
-            # Category-level options
-            (mkOptionsModule ./my/infra/options.nix { inherit lib; })
-            (mkOptionsModule ./my/hardware/options.nix { inherit lib; })
-            (mkOptionsModule ./my/hardware/boot/options.nix { inherit lib; })
-            (mkOptionsModule ./my/storage/options.nix { inherit lib; })
-
-            # Cross-cutting options
-            (mkOptionsModule ./my/presets-options.nix { inherit lib; })
-            (mkOptionsModule ./my/filesystem-options.nix { inherit lib; })
-
-            # Users options
-            (mkOptionsModule ./my/users/users/options.nix { inherit lib; })
+              # Secrets (special - uses different pattern)
+              (import ./my/secrets/options.nix)
+            ]
 
             # Users opinionated defaults (mynixos.nix files)
-            ./my/users/terminal/mynixos.nix
-            ./my/users/graphical/mynixos.nix
-            ./my/users/dev/mynixos.nix
-            ./my/users/ai/mynixos.nix
-            ./my/users/environment/mynixos.nix
-            ./my/users/themes/vogix/mynixos.nix
-            ./my/themes/hypr-vogix/mynixos.nix
+            ++ [
+              ./my/users/terminal/mynixos.nix
+              ./my/users/graphical/mynixos.nix
+              ./my/users/dev/mynixos.nix
+              ./my/users/ai/mynixos.nix
+              ./my/users/environment/mynixos.nix
+              ./my/users/themes/vogix/mynixos.nix
+              ./my/themes/hypr-vogix/mynixos.nix
+            ]
 
-            # Secrets (special - uses different pattern)
-            (import ./my/secrets/options.nix)
-          ];
+            # External modules
+            ++ [
+              impermanence.nixosModules.impermanence
+              lanzaboote.nixosModules.lanzaboote
+            ]
+
+            # Implementation modules (my/)
+            ++ [
+              # Top-level features
+              ./my/ai
+              ./my/audio
+              ./my/dev/development
+              ./my/environment
+              ./my/performance
+              ./my/secrets
+              ./my/streaming
+              ./my/video/virtual
+
+              # Graphical
+              ./my/graphical
+              ./my/graphical/hyprland
+
+              # Security
+              ./my/security
+              ./my/security/yubikey
+
+              # System
+              ./my/system/core
+              ./my/system/kernel
+              ./my/system/scripts
+              ./my/system/unfree
+
+              # Themes
+              ./my/themes
+
+              # Hardware - Bluetooth
+              ./my/hardware/bluetooth/realtek
+
+              # Hardware - Boot
+              ./my/hardware/boot/dual-boot
+              ./my/hardware/boot/uefi
+
+              # Hardware - Cooling
+              ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb
+
+              # Hardware - CPU
+              ./my/hardware/cpu/amd
+              ./my/hardware/cpu/intel
+
+              # Hardware - GPU
+              ./my/hardware/gpu/amd
+              ./my/hardware/gpu/nvidia
+
+              # Hardware - Laptops
+              ./my/hardware/laptops/lenovo/legion-16irx8h
+
+              # Hardware - Memory
+              ./my/hardware/memory/optimization
+
+              # Hardware - Motherboards
+              ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
+
+              # Hardware - Peripherals
+              ./my/hardware/peripherals/elgato
+
+              # Hardware - Storage
+              ./my/hardware/storage/nvme
+              ./my/hardware/storage/sata
+              ./my/hardware/storage/ssd
+              ./my/hardware/storage/usb
+
+              # Hardware - USB
+              ./my/hardware/usb/hid
+              ./my/hardware/usb/thunderbolt
+              ./my/hardware/usb/xhci
+
+              # Presets
+              ./my/presets
+
+              # Network defense
+              ./my/network/monitoring
+
+              # Infrastructure
+              ./my/infra/github-runner
+              ./my/infra/k3s
+
+              # Storage
+              ./my/storage/impermanence/aggregation.nix
+              ./my/storage/impermanence/feature-aggregation.nix
+              ./my/storage/impermanence/impermanence.nix
+
+              # Users - Core
+              ./my/users/defaults
+              ./my/users/environment-defaults
+              ./my/users/environment-validation
+              ./my/users/users
+
+              # Users - Features
+              ./my/users/graphical/media
+              ./my/users/terminal
+              ./my/users/webapps
+
+              # Users - Apps: AI
+              ./my/users/apps/ai/opencode
+              ./my/users/apps/ai/claude-code
+
+              # Users - Apps: Art
+              ./my/users/apps/art/mypaint
+
+              # Users - Apps: Browsers
+              ./my/users/apps/browsers/brave
+              ./my/users/apps/browsers/chromium
+              ./my/users/apps/browsers/firefox
+
+              # Users - Apps: Communication
+              ./my/users/apps/communication/element
+              ./my/users/apps/communication/signal
+              ./my/users/apps/communication/slack
+
+              # Users - Apps: Development
+              ./my/users/apps/dev/devenv
+              ./my/users/apps/dev/direnv
+              ./my/users/apps/dev/github-desktop
+              ./my/users/apps/dev/jq
+              ./my/users/apps/dev/kdiff3
+              ./my/users/apps/dev/vscode
+
+              # Users - Apps: Editors
+              ./my/users/apps/editors/helix
+              ./my/users/apps/editors/marktext
+
+              # Users - Apps: File Managers
+              ./my/users/apps/file-managers/mc
+              ./my/users/apps/file-managers/yazi
+
+              # Users - Apps: File Utils
+              ./my/users/apps/file-utils/lsd
+
+              # Users - Apps: Finance
+              ./my/users/apps/finance/cointop
+
+              # Users - Apps: Fun
+              ./my/users/apps/fun/pipes
+
+              # Users - Apps: Git/VCS
+              ./my/users/apps/git
+              ./my/users/apps/jujutsu
+
+              # Users - Apps: Launchers
+              ./my/users/apps/launchers/walker
+
+              # Users - Apps: Media
+              ./my/users/apps/media/audacious
+              ./my/users/apps/media/audio-utils
+              ./my/users/apps/media/musikcube
+              ./my/users/apps/media/pipewire-tools
+
+              # Users - Apps: Multiplexers
+              ./my/users/apps/multiplexers/tmux
+              ./my/users/apps/multiplexers/zellij
+
+              # Users - Apps: Network
+              ./my/users/apps/network/termscp
+
+              # Users - Apps: Prompts
+              ./my/users/apps/prompts/starship
+
+              # Users - Apps: Security
+              ./my/users/apps/security/1password
+
+              # Users - Apps: Shells
+              ./my/users/apps/shells/bash
+              ./my/users/apps/shells/fish
+
+              # Users - Apps: SSH
+              ./my/users/apps/ssh
+
+              # Users - Apps: Status bars
+              ./my/users/apps/status-bars/waybar
+
+              # Users - Apps: Sync
+              ./my/users/apps/sync/rclone
+
+              # Users - Apps: System Info
+              ./my/users/apps/system-info/btop
+              ./my/users/apps/system-info/fastfetch
+              ./my/users/apps/system-info/neofetch
+
+              # Users - Apps: Terminals
+              ./my/users/apps/terminals/alacritty
+              ./my/users/apps/terminals/ghostty
+              ./my/users/apps/terminals/kitty
+              ./my/users/apps/terminals/warp
+              ./my/users/apps/terminals/wezterm
+
+              # Users - Apps: Utilities
+              ./my/users/apps/utils/calculator
+              ./my/users/apps/utils/imagemagick
+
+              # Users - Apps: Viewers
+              ./my/users/apps/viewers/bat
+              ./my/users/apps/viewers/feh
+
+              # Users - Apps: Visualizers
+              ./my/users/apps/visualizers/cava
+
+              # Users - Apps: XDG
+              ./my/users/apps/xdg
+            ];
         };
 
       # Export library functions
@@ -437,6 +464,9 @@
           smokeTests = import ./tests/integration-smoke.nix {
             inherit self inputs system;
           };
+          edgeCaseTests = import ./tests/persistence-and-edge-cases.nix {
+            inherit self inputs system;
+          };
         in
         {
           formatting = treefmtEval.${system}.config.build.check self;
@@ -455,6 +485,7 @@
         } // lib.mapAttrs' (name: value: lib.nameValuePair "module-eval-${name}" value) moduleEvalTests
         // lib.mapAttrs' (name: value: lib.nameValuePair name value) typeValidationTests
         // smokeTests
+        // edgeCaseTests
       );
 
       # Dev shell with pre-commit hooks installed

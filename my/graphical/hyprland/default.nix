@@ -1,4 +1,5 @@
-{ config
+{ activeUsers
+, config
 , lib
 , pkgs
 , ...
@@ -68,7 +69,7 @@ let
         "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
         "$mainMod SHIFT, Space, exec, walker --modules ssh -w 1000 -h 700"
         "$mainMod, E, exec, ${browserCmd}"
-        "$mainMod SHIFT, E, exec, google-chrome-stable"
+        "$mainMod SHIFT, E, exec, chromium"
         "SHIFT, Print, exec, grimblast save area - | swappy -f -"
         ", Print, exec, grimblast --notify copy area"
 
@@ -580,6 +581,6 @@ in
               };
             }
         ) # End mkIf userHyprland.enable
-        config.my.users;
+        (activeUsers config.my.users);
   };
 }
