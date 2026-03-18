@@ -243,6 +243,7 @@
             ++ [
               # Top-level features
               ./my/ai
+              ./my/ai/openclaw
               ./my/audio
               ./my/dev/development
               ./my/environment

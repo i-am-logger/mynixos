@@ -4,16 +4,25 @@ with lib;
 
 let
   cfg = config.my.ai;
+  gpu = config.my.hardware.gpu; # "amd" | "nvidia" | "intel" | null
+  # Acceleration: explicit override > auto-detect from hardware GPU
+  acceleration =
+    if cfg.ollama.acceleration != "auto" then cfg.ollama.acceleration
+    else if gpu == "amd" then "rocm"
+    else if gpu == "nvidia" then "cuda"
+    else "cpu";
+  isRocm = acceleration == "rocm";
+  isCuda = acceleration == "cuda";
 
   # Auto-enable AI when any user has ai.enable = true
   anyUserAI = any (userCfg: userCfg.ai.enable or false) (attrValues config.my.users);
 
   # mynixos opinionated defaults for AI features
   defaults = {
-    mcpServers = false; # MCP servers disabled by default
+    mcpServers = false;
   };
 
-  # GitHub MCP Server package (from github.com/mcp/github/github-mcp-server)
+  # GitHub MCP Server package
   mcp-github = pkgs.writeShellScriptBin "mcp-github" ''
     set -e
     export NODE_OPTIONS="--no-warnings"
@@ -21,7 +30,6 @@ let
     export MCP_LOG_LEVEL="info"
     export PATH="${pkgs.github-mcp-server}/bin:${pkgs.git}/bin:${pkgs.gh}/bin:$PATH"
 
-    # Use GitHub personal access token from gh auth
     export GITHUB_PERSONAL_ACCESS_TOKEN=$(${pkgs.gh}/bin/gh auth token 2>/dev/null || echo "")
 
     if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
@@ -29,7 +37,6 @@ let
       echo "Some functionality may be limited without authentication." >&2
     fi
 
-    # Run the Nix-installed github-mcp-server
     ${pkgs.github-mcp-server}/bin/github-mcp-server "$@" || {
       echo "Error: Failed to run github-mcp-server" >&2
       echo "Please check your GitHub authentication and network connection" >&2
@@ -37,21 +44,8 @@ let
     }
   '';
 
-  # MCP Server packages
   mcp-packages = {
-    # rs-mcp-filesystem = pkgs.callPackage ./servers/filesystem.nix { };
-    # rs-mcp-git = pkgs.callPackage ./servers/git.nix { };
-    # rs-mcp-gitingest = pkgs.callPackage ./servers/gitingest.nix { };
-    # rs-mcp-github = pkgs.callPackage ./servers/github.nix { };
     inherit mcp-github;
-    # rs-mcp-chat = pkgs.callPackage ./servers/chat.nix { };
-    # rs-mcp-pulumi = pkgs.callPackage ./servers/pulumi.nix { };
-    # rs-mcp-fetch = pkgs.callPackage ./servers/fetch.nix { };
-    # rs-mcp-playwright = pkgs.callPackage ./servers/playwright.nix { };
-    # rs-mcp-time = pkgs.callPackage ./servers/time.nix { };
-    # rs-mcp-sequentialthinking = pkgs.callPackage ./servers/sequentialthinking.nix { };
-    # rs-mcp-context7 = pkgs.callPackage ./servers/context7.nix { };
-    # rs-mcp-youtube-transcript = pkgs.callPackage ./servers/youtube-transcript.nix { };
   };
 in
 {
@@ -60,9 +54,30 @@ in
     { my.ai.enable = mkDefault anyUserAI; }
 
     (mkIf cfg.enable (mkMerge [
-      # Base AI configuration - Ollama with ROCm support (opinionated)
+      # Ollama service — GPU-agnostic (auto-detects from my.hardware.gpu)
       {
-        # ROCm packages for AMD GPU acceleration
+        services.ollama = {
+          enable = true;
+          package =
+            if isCuda then pkgs.ollama-cuda
+            else if isRocm then pkgs.ollama-rocm
+            else pkgs.ollama;
+          home = "/var/lib/ollama";
+          models = "/var/lib/ollama/models";
+          loadModels = cfg.ollama.models;
+        };
+
+        # Ollama environment variables
+        environment.variables = {
+          OLLAMA_HOST = "127.0.0.1:11434";
+          OLLAMA_NUM_PARALLEL = "1";
+          OLLAMA_MAX_LOADED_MODELS = "1";
+          OLLAMA_FLASH_ATTENTION = "true";
+        };
+      }
+
+      # ROCm-specific configuration (AMD GPU)
+      (mkIf isRocm {
         environment.systemPackages = with pkgs; [
           rocmPackages.rocm-runtime
           rocmPackages.rocm-device-libs
@@ -70,45 +85,27 @@ in
           rocmPackages.hipify
         ];
 
-        # Environment variables for ROCm and Ollama
         environment.variables = {
-          HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion; # AMD GPU override for ROCm compatibility
-          ROC_ENABLE_PRE_VEGA = "1"; # Enable older AMD GPU support
-          OLLAMA_HOST = "127.0.0.1:11434";
-          OLLAMA_NUM_PARALLEL = "1";
-          OLLAMA_MAX_LOADED_MODELS = "1";
-          OLLAMA_FLASH_ATTENTION = "true";
-        };
-
-        # Ollama service with ROCm acceleration
-        # Uses DynamicUser (nixpkgs default) - do NOT set user/group manually
-        services.ollama = {
-          enable = true;
-          package = pkgs.ollama-rocm; # ROCm acceleration via package selection
-          # user/group intentionally omitted - nixpkgs uses DynamicUser by default
-          home = "/var/lib/ollama";
-          models = "/var/lib/ollama/models";
-          loadModels = [
-            "qwen2.5-coder:32b"
-            "llama3.3:70b"
-          ];
-        };
-
-        # DynamicUser handles user/group automatically - no manual creation needed
-
-        # Override systemd service to add ROCm environment variables
-        systemd.services.ollama.environment = {
-          HSA_OVERRIDE_GFX_VERSION = cfg.rocmGfxVersion;
+          HSA_OVERRIDE_GFX_VERSION = cfg.ollama.rocmGfxVersion;
           ROC_ENABLE_PRE_VEGA = "1";
         };
-      }
 
-      # MCP Servers (Model Context Protocol) - per-user configuration
+        systemd.services.ollama.environment = {
+          HSA_OVERRIDE_GFX_VERSION = cfg.ollama.rocmGfxVersion;
+          ROC_ENABLE_PRE_VEGA = "1";
+        };
+      })
+
+      # Optional web UI
+      (mkIf cfg.ollama.webUI {
+        services.nextjs-ollama-llm-ui.enable = true;
+      })
+
+      # MCP Servers — per-user configuration
       {
         home-manager.users = mapAttrs
           (_name: userCfg:
             let
-              # Get user-level AI config (with mynixos opinionated defaults)
               userAI = userCfg.ai or { };
             in
             mkIf (userAI.mcpServers or defaults.mcpServers) {
@@ -117,12 +114,10 @@ in
           (activeUsers config.my.users);
       }
 
-      # Persistence configuration
+      # Persistence
       {
         my.system.persistence.features = {
           systemDirectories = [
-            # DynamicUser manages /var/lib/private/ollama internally
-            # We persist the parent directory with root ownership
             "/var/lib/private"
           ];
         };
