@@ -35,6 +35,10 @@ in
                   enable = true;
                   package = pkgs.claude-code;
                 };
+
+                home.sessionVariables = {
+                  CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
+                };
               }
 
               # Clone claude-config repo on first activation (runs as user, has SSH agent access)
