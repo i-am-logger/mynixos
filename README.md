@@ -1,8 +1,9 @@
-[![CI and Release](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml/badge.svg)](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml)
-[![Module Coverage](https://codecov.io/gh/i-am-logger/mynixos/graph/badge.svg)](https://codecov.io/gh/i-am-logger/mynixos)
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![NixOS](https://img.shields.io/badge/NixOS-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
 [![Release](https://img.shields.io/github/v/release/i-am-logger/mynixos)](https://github.com/i-am-logger/mynixos/releases)
+[![CI and Release](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml/badge.svg)](https://github.com/i-am-logger/mynixos/actions/workflows/ci-and-release.yml)
+[![Module Coverage](https://codecov.io/gh/i-am-logger/mynixos/graph/badge.svg)](https://codecov.io/gh/i-am-logger/mynixos)
+
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 # mynixos
 
