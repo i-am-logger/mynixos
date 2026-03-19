@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.6](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.5...mynixos-v0.9.6) (2026-03-19)
+
+
+### Bug Fixes
+
+* **streaming:** add cudatoolkit to advanced-scene-switcher on NVIDIA systems ([867df22](https://github.com/i-am-logger/mynixos/commit/867df22a4d4952f9f49523f1b5b40156d0e4dc22))
+
 ## [0.9.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.4...mynixos-v0.9.5) (2026-03-19)
 
 
