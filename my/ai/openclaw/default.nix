@@ -126,7 +126,7 @@ in
       # CLI available system-wide
       systemPackages = [ openclaw ];
 
-      # Shared client config for CLI users
+      # Shared client config for CLI users (restricted — contains gateway token)
       etc."openclaw-client.json" = {
         text = builtins.toJSON {
           gateway = {
@@ -155,7 +155,8 @@ in
             };
           };
         };
-        mode = "0644";
+        mode = "0640";
+        group = "users";
       };
 
       variables = {
@@ -173,6 +174,8 @@ in
         "network-online.target"
       ] ++ lib.optional (!useClaudeProxy) "ollama.service";
       wantedBy = [ "multi-user.target" ];
+
+      path = [ pkgs.lsof pkgs.psmisc ];
 
       environment = {
         NODE_ENV = "production";
@@ -197,8 +200,6 @@ in
             --allow-unconfigured
         '';
 
-        path = [ pkgs.lsof pkgs.psmisc ];
-
         Restart = "always";
         RestartSec = 5;
         TimeoutStopSec = 30;
@@ -212,6 +213,14 @@ in
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
+        PrivateDevices = true;
+        ProtectKernelTunables = true;
+        ProtectKernelModules = true;
+        ProtectControlGroups = true;
+        RestrictNamespaces = true;
+        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        SystemCallArchitectures = "native";
+        CapabilityBoundingSet = "";
       };
     };
 
