@@ -45,8 +45,8 @@ in
           mkIf (userCfg.graphical.enable or false) {
             home.packages = [ pkgs.hypr-vogix ];
 
-            # Auto-restore overlay on Hyprland startup
-            wayland.windowManager.hyprland.settings.exec-once = [ restoreCmd ];
+            # Auto-restore overlay on Hyprland startup and after config reload
+            wayland.windowManager.hyprland.settings.exec = [ restoreCmd ];
           })
         (activeUsers config.my.users);
 
