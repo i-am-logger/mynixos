@@ -219,7 +219,7 @@ in
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
-        PrivateDevices = true;
+        PrivateDevices = false; # openclaw needs os.networkInterfaces()
         ProtectKernelTunables = true;
         ProtectKernelModules = true;
         ProtectControlGroups = true;
