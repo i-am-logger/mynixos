@@ -314,7 +314,10 @@
               # Presets
               ./my/presets
 
-              # Network defense
+              # Network
+              ./my/network/headscale
+              ./my/network/tailscale
+              ./my/network/tor
               ./my/network/monitoring
 
               # Infrastructure

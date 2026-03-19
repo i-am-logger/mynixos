@@ -6,6 +6,126 @@
     default = { };
     type = lib.types.submodule {
       options = {
+        headscale = {
+          enable = lib.mkEnableOption "Headscale coordination server (self-hosted Tailscale control plane)";
+
+          serverUrl = lib.mkOption {
+            type = lib.types.str;
+            default = "";
+            description = "Public URL for the Headscale server (e.g. http://<onion>.onion:8080). Set after first boot.";
+          };
+
+          port = lib.mkOption {
+            type = lib.types.port;
+            default = 8080;
+            description = "Port for the Headscale gRPC/HTTP listener";
+          };
+
+          address = lib.mkOption {
+            type = lib.types.str;
+            default = "127.0.0.1";
+            description = "Listen address for Headscale";
+          };
+
+          baseDomain = lib.mkOption {
+            type = lib.types.str;
+            default = "tailnet";
+            description = "Base domain for MagicDNS";
+          };
+
+          nameservers = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ "1.1.1.1" "9.9.9.9" ];
+            description = "DNS nameservers for the tailnet";
+          };
+
+          users = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Headscale users to create on startup";
+          };
+
+          acl = {
+            groups = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+              default = { };
+              description = "ACL groups mapping group names to user lists";
+            };
+
+            tagOwners = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+              default = { };
+              description = "Tag owners mapping tag names to groups/users who can assign them";
+            };
+
+            rules = lib.mkOption {
+              type = lib.types.listOf lib.types.attrs;
+              default = [ ];
+              description = "ACL rules (each with action, src, dst)";
+            };
+          };
+        };
+
+        tailscale = {
+          enable = lib.mkEnableOption "Tailscale VPN client (connects to Headscale)";
+
+          loginServer = lib.mkOption {
+            type = lib.types.str;
+            default = "";
+            description = "Headscale server URL for login (e.g. http://<onion>.onion:8080). Set after yoga bootstrap.";
+          };
+
+          authKeyFile = lib.mkOption {
+            type = lib.types.nullOr lib.types.path;
+            default = null;
+            description = "Path to file containing pre-auth key for automatic registration";
+          };
+
+          exitNode = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Advertise this node as an exit node";
+          };
+
+          advertiseRoutes = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Subnet routes to advertise";
+          };
+
+          useRoutingFeatures = lib.mkOption {
+            type = lib.types.enum [ "none" "client" "server" "both" ];
+            default = "none";
+            description = "Enable routing features (client, server, both, or none)";
+          };
+        };
+
+        tor = {
+          enable = lib.mkEnableOption "Tor hidden service and/or client";
+
+          onionServices = {
+            headscale = {
+              enable = lib.mkEnableOption "Tor onion service forwarding to Headscale";
+
+              port = lib.mkOption {
+                type = lib.types.port;
+                default = 8080;
+                description = "Virtual port exposed on the .onion address";
+              };
+            };
+          };
+
+          client = {
+            enable = lib.mkEnableOption "Tor SOCKS proxy client (for reaching .onion addresses)";
+
+            socksPort = lib.mkOption {
+              type = lib.types.port;
+              default = 9050;
+              description = "Local SOCKS5 proxy port for Tor";
+            };
+          };
+        };
+
         monitoring = {
           enable = lib.mkEnableOption "network monitoring stack";
 
