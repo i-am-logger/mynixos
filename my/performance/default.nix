@@ -13,9 +13,7 @@ in
       "net.core.default_qdisc" = mkDefault "fq";
       "net.ipv4.tcp_congestion_control" = mkDefault "bbr";
 
-      # Inotify limits (needed for IDEs and file watchers)
-      "fs.inotify.max_user_watches" = mkDefault 524288;
-      "fs.inotify.max_queued_events" = mkDefault 524288;
+      # Note: fs.inotify.max_user_watches is set to 524288 by nixpkgs default
 
       # I/O and memory optimizations
       "vm.swappiness" = mkDefault 1;
