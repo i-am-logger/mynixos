@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.2...mynixos-v0.9.3) (2026-03-19)
+
+
+### Bug Fixes
+
+* **hyprland:** use layoutmsg for togglesplit (removed in newer Hyprland) ([4e9e76c](https://github.com/i-am-logger/mynixos/commit/4e9e76cf8f99ae06b1ccc92fd12eff40d61a460b))
+
 ## [0.9.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.1...mynixos-v0.9.2) (2026-03-19)
 
 
