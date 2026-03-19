@@ -92,8 +92,8 @@ let
         "$mainMod, Y, togglefloating,"
         "$mainMod, F, fullscreen"
         "$mainMod, I, pin"
-        "$mainMod, P, pseudo," # dwindle
-        "$mainMod, O, togglesplit," # dwindle
+        "$mainMod, p, pseudo," # dwindle
+        "$mainMod, o, layoutmsg, togglesplit" # dwindle
 
         # Toggle grouped layout
         "$mainMod, U, togglegroup,"
