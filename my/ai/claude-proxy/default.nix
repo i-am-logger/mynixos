@@ -7,11 +7,15 @@ let
 
   claude-proxy = pkgs.rustPlatform.buildRustPackage {
     pname = "claude-code-proxy";
-    version = "0.2.0-dev";
+    version = "0.3.0";
 
-    src = /home/logger/Code/github/logger/claude-code-proxy;
+    src = pkgs.fetchCrate {
+      pname = "claude-code-proxy";
+      version = "0.3.0";
+      hash = "sha256-+hq5y38cOKffmhQQOArKrVJdCsUj1Mf0Me3ZYLPlrLI=";
+    };
 
-    cargoLock.lockFile = /home/logger/Code/github/logger/claude-code-proxy/Cargo.lock;
+    cargoHash = "sha256-YkvuZXj7nLhKd2kEScw6lCLmP4dttgtj+fY4ieUwSek=";
 
     meta = {
       description = "OpenAI-compatible API proxy for Claude Code CLI";
