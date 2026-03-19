@@ -263,7 +263,7 @@ in
         '';
       };
 
-      # Mask audit-rules services since immutable mode (-e 2 via enable = "lock")
+      # Disable audit-rules services since immutable mode (-e 2 via enable = "lock")
       # prevents reloading rules during nixos-rebuild switch
       systemd.services.audit-rules.enable = false;
       systemd.services.audit-rules-nixos.enable = false;

@@ -39,8 +39,13 @@ in
     }
 
     (mkIf cfg.enable (mkMerge [
-      # Import laptop-specific boot configuration
+      # Import laptop-specific driver configurations
       (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
+      (import ./drivers/realtek-audio.nix { inherit pkgs; })
+      (import ./drivers/network.nix { inherit lib; })
+      (import ./drivers/nvidia-rtx4080.nix { inherit lib; })
+      (import ./drivers/intel-13900hx-cpu.nix { inherit config lib; })
+      (import ./drivers/windows-dual-boot.nix { })
 
       # Additional laptop configuration
       {
