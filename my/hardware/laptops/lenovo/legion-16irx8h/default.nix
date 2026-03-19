@@ -45,7 +45,7 @@ in
       (import ./drivers/network.nix { inherit lib; })
       (import ./drivers/nvidia-rtx4080.nix { inherit lib; })
       (import ./drivers/intel-13900hx-cpu.nix { inherit config lib; })
-      (import ./drivers/windows-dual-boot.nix { inherit config lib; })
+      # Windows dual-boot is handled by my.system.dualBoot.windows
 
       # Additional laptop configuration
       {

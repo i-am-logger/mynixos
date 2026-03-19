@@ -26,6 +26,10 @@
 
         enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
 
+        dualBoot = {
+          windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
+        };
+
         allowedUnfreePackages = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
