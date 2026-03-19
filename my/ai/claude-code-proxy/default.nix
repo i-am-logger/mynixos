@@ -3,9 +3,9 @@
 with lib;
 
 let
-  cfg = config.my.ai.claudeProxy;
+  cfg = config.my.ai.claudeCodeProxy;
 
-  claude-proxy = pkgs.rustPlatform.buildRustPackage {
+  claude-code-proxy = pkgs.rustPlatform.buildRustPackage {
     pname = "claude-code-proxy";
     version = "0.4.0";
 
@@ -29,9 +29,9 @@ in
     home-manager.users = mapAttrs
       (_name: userCfg:
         mkIf (userCfg.ai.enable or false) {
-          home.packages = [ claude-proxy ];
+          home.packages = [ claude-code-proxy ];
 
-          systemd.user.services.claude-proxy = {
+          systemd.user.services.claude-code-proxy = {
             Unit = {
               Description = "Claude Code OpenAI-compatible proxy";
               After = [ "network-online.target" ];
@@ -42,7 +42,7 @@ in
               Environment = [
                 "PROXY_API_KEY=${cfg.apiKey}"
               ];
-              ExecStart = "${claude-proxy}/bin/claude-code-proxy --host 127.0.0.1 --port ${toString cfg.port} --model ${cfg.model}";
+              ExecStart = "${claude-code-proxy}/bin/claude-code-proxy --host 127.0.0.1 --port ${toString cfg.port} --model ${cfg.model}";
               Restart = "on-failure";
               RestartSec = 5;
             };

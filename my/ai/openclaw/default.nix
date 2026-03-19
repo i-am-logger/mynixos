@@ -4,13 +4,13 @@ with lib;
 
 let
   cfg = config.my.ai.openclaw;
-  proxyCfg = config.my.ai.claudeProxy;
+  proxyCfg = config.my.ai.claudeCodeProxy;
   useClaudeProxy = proxyCfg.enable;
 
   # Auto-detect provider: claude-proxy if enabled, otherwise ollama
   modelProvider =
     if useClaudeProxy then {
-      name = "claude-proxy";
+      name = "claude-code-proxy";
       baseUrl = "http://127.0.0.1:${toString proxyCfg.port}/v1";
       api = "openai-completions";
       inherit (proxyCfg) apiKey;

@@ -16,7 +16,7 @@
           enable = lib.mkOption {
             type = lib.types.bool;
             default = true;
-            description = "Enable Ollama local LLM service (disable if using claude-proxy only)";
+            description = "Enable Ollama local LLM service (disable if using claude-code-proxy only)";
           };
 
           acceleration = lib.mkOption {
@@ -44,7 +44,7 @@
           };
         };
 
-        claudeProxy = {
+        claudeCodeProxy = {
           enable = lib.mkOption {
             type = lib.types.bool;
             default = false;
@@ -65,7 +65,7 @@
 
           apiKey = lib.mkOption {
             type = lib.types.str;
-            default = "claude-proxy-local";
+            default = "claude-code-proxy-local";
             description = "Bearer token for proxy authentication";
           };
         };

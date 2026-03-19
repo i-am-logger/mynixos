@@ -11,8 +11,8 @@ let
 in
 {
   config = mkIf cfg.enable (mkMerge [
-    # Tor onion service for Headscale
-    (mkIf cfg.onionServices.headscale.enable {
+    # Tor onion service for Headscale (auto-enabled when both tor and headscale are enabled)
+    (mkIf (cfg.onionServices.headscale.enable || config.services.headscale.enable) {
       services.tor = {
         enable = true;
         relay.onionServices.headscale = {
