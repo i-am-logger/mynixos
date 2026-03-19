@@ -5,6 +5,14 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.4...mynixos-v0.9.5) (2026-03-19)
+
+
+### Bug Fixes
+
+* **performance:** remove inotify sysctls (now nixpkgs defaults) ([39d9945](https://github.com/i-am-logger/mynixos/commit/39d99457fbff1e2dbee8bfa8b4a6ea92258fe1f1))
+* **performance:** remove vm.max_map_count (nixpkgs default is 1048576) ([f7e935a](https://github.com/i-am-logger/mynixos/commit/f7e935a381284d018e991f336d1d3100ded614a8))
+
 ## [0.9.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.3...mynixos-v0.9.4) (2026-03-19)
 
 
