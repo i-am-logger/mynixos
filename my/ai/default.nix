@@ -4,7 +4,7 @@ with lib;
 
 let
   cfg = config.my.ai;
-  inherit (config.my.hardware) gpu; # "amd" | "nvidia" | "intel" | null
+  inherit (config.my.hardware) gpu;# "amd" | "nvidia" | "intel" | null
   # Acceleration: explicit override > auto-detect from hardware GPU
   acceleration =
     if cfg.ollama.acceleration != "auto" then cfg.ollama.acceleration

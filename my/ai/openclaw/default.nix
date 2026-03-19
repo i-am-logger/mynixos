@@ -184,7 +184,7 @@ in
 
       serviceConfig = {
         ExecStartPre = pkgs.writeShellScript "openclaw-config" ''
-          cat > /var/lib/openclaw/openclaw.json <<'CONFIGEOF'
+          cat > ${stateDir}/openclaw.json <<'CONFIGEOF'
           ${openclawConfig}
           CONFIGEOF
         '';
