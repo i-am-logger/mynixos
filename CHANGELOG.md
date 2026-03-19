@@ -5,6 +5,19 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.7.0...mynixos-v0.8.0) (2026-03-19)
+
+
+### Features
+
+* **claude-proxy:** upgrade to 0.4.0, bind to 127.0.0.1, pass API key via env ([2afec7b](https://github.com/i-am-logger/mynixos/commit/2afec7b226a9b806d2b56a02f3270155b09b5ce1))
+
+
+### Bug Fixes
+
+* **openclaw:** dedicated openclaw group for client config access ([2e5390a](https://github.com/i-am-logger/mynixos/commit/2e5390a33a83a248b38298f063fbfbd9f1784f02))
+* **openclaw:** security hardening and review fixes ([5b99273](https://github.com/i-am-logger/mynixos/commit/5b99273597cd7dfe203a6d5ebe17bde133780a8e))
+
 ## [0.7.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.6.0...mynixos-v0.7.0) (2026-03-19)
 
 
