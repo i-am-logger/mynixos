@@ -151,6 +151,10 @@
                 };
               };
 
+              dualBoot = {
+                windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
+              };
+
               storage = {
                 nvme = {
                   enable = lib.mkOption {

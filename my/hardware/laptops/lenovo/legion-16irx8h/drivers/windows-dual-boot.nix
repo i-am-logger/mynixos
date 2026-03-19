@@ -1,8 +1,10 @@
-_:
+{ config, lib }:
 
-{
+let
+  cfg = config.my.hardware.laptops.lenovo.legion-16irx8h;
+in
+lib.mkIf cfg.dualBoot.windows {
   # Windows dual-boot hardware configuration
-  # Hardware-level settings needed for dual-boot with Windows
 
   # Keep hardware clock in local time (Windows expects this)
   time.hardwareClockInLocalTime = true;
