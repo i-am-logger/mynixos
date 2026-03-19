@@ -60,11 +60,13 @@ in
             [ -f ${onionHostnameFile} ] && break
             sleep 1
           done
-          if [ -f ${onionHostnameFile} ]; then
-            ONION=$(cat ${onionHostnameFile} | tr -d '[:space:]')
-            echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
-            chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
+          if [ ! -f ${onionHostnameFile} ]; then
+            echo "ERROR: Tor hostname file not found after 60s: ${onionHostnameFile}" >&2
+            exit 1
           fi
+          ONION=$(tr -d '[:space:]' < ${onionHostnameFile})
+          echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
+          chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
         ''}"
       ];
       serviceConfig.EnvironmentFile = [ "-/run/headscale/env" ];
@@ -73,7 +75,7 @@ in
     # Create headscale users after the service starts
     systemd.services.headscale-create-users = mkIf (cfg.users != [ ]) {
       description = "Create Headscale users";
-      wantedBy = [ "headscale.service" ];
+      wantedBy = [ "multi-user.target" ];
       after = [ "headscale.service" ];
       wants = [ "headscale.service" ];
 
@@ -100,14 +102,15 @@ in
         + concatStringsSep "\n" (
           map
             (user: ''
-              ${headscale} users list 2>/dev/null | grep -q '${user}' || ${headscale} users create ${user}
+              ${headscale} users list -o json 2>/dev/null | ${pkgs.jq}/bin/jq -e '.[] | select(.name == "${user}")' >/dev/null 2>&1 || \
+                ${headscale} users create ${escapeShellArg user}
             '')
             cfg.users
         );
     };
 
-    # Open firewall for headscale
-    networking.firewall.allowedTCPPorts = [ cfg.port ];
+    # Only open firewall if headscale is not localhost-only
+    networking.firewall.allowedTCPPorts = mkIf (cfg.address != "127.0.0.1") [ cfg.port ];
 
     # Persist headscale state
     my.system.persistence.features.systemDirectories = [

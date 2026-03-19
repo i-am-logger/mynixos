@@ -2,7 +2,7 @@
 
 {
   network = lib.mkOption {
-    description = "Network defense configuration (passive monitoring and threat detection)";
+    description = "Network configuration (mesh VPN, Tor, monitoring)";
     default = { };
     type = lib.types.submodule {
       options = {

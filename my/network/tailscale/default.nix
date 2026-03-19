@@ -63,6 +63,17 @@ in
 
     # Auto-join when headscale is on the same machine
     (mkIf localHeadscale {
+      assertions = [
+        {
+          assertion = hsCfg.users != [ ];
+          message = "my.network.headscale.users must have at least one user for tailscale auto-join";
+        }
+        {
+          assertion = cfg.loginServer == "";
+          message = "my.network.tailscale.loginServer conflicts with local headscale auto-join (remove loginServer)";
+        }
+      ];
+
       systemd.services.tailscale-autojoin = {
         description = "Auto-join local Headscale mesh";
         wantedBy = [ "multi-user.target" ];
@@ -72,6 +83,8 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          RuntimeDirectory = "tailscale-autojoin";
+          RuntimeDirectoryMode = "0700";
         };
 
         path = [ config.services.tailscale.package ];
@@ -80,11 +93,13 @@ in
           let
             headscale = "${config.services.headscale.package}/bin/headscale";
             tailscale = "${config.services.tailscale.package}/bin/tailscale";
+            jq = "${pkgs.jq}/bin/jq";
             user = builtins.head hsCfg.users;
+            keyFile = "/run/tailscale-autojoin/authkey";
           in
           ''
             # Skip if already connected
-            if ${tailscale} status >/dev/null 2>&1; then
+            if ${tailscale} status --json 2>/dev/null | ${jq} -e '.Self.Online' >/dev/null 2>&1; then
               echo "Already connected to tailnet, skipping"
               exit 0
             fi
@@ -98,19 +113,24 @@ in
             done
 
             # Look up user ID by name (headscale v0.28+ uses numeric IDs)
-            USER_ID=$(${headscale} users list -o json | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "${user}") | .id')
+            USER_ID=$(${headscale} users list -o json | ${jq} -r '.[] | select(.name == "${user}") | .id')
             if [ -z "$USER_ID" ]; then
               echo "User '${user}' not found in headscale"
               exit 1
             fi
 
-            # Generate a pre-auth key and join
-            KEY=$(${headscale} preauthkeys create --user "$USER_ID" --expiration 5m)
+            # Generate a pre-auth key and write to file (avoid leaking via cmdline)
+            ${headscale} preauthkeys create --user "$USER_ID" --expiration 5m > ${keyFile}
+            chmod 600 ${keyFile}
+
             ${tailscale} up \
               --login-server=${localLoginServer} \
-              --authkey="$KEY" \
+              --authkey=file:${keyFile} \
               ${optionalString cfg.exitNode "--advertise-exit-node"} \
               ${optionalString (cfg.advertiseRoutes != []) "--advertise-routes=${concatStringsSep "," cfg.advertiseRoutes}"}
+
+            # Clean up key file
+            rm -f ${keyFile}
           '';
       };
     })
