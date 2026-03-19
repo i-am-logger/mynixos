@@ -13,12 +13,17 @@ in
       "net.core.default_qdisc" = mkDefault "fq";
       "net.ipv4.tcp_congestion_control" = mkDefault "bbr";
 
+      # Inotify limits (needed for IDEs and file watchers)
+      "fs.inotify.max_user_watches" = mkDefault 524288;
+      "fs.inotify.max_queued_events" = mkDefault 524288;
+
       # I/O and memory optimizations
       "vm.swappiness" = mkDefault 1;
       "vm.vfs_cache_pressure" = mkDefault 50;
       "vm.dirty_background_ratio" = mkDefault 3;
       "vm.dirty_ratio" = mkDefault 8;
       "vm.transparent_hugepage" = mkDefault "madvise";
+      "vm.max_map_count" = mkDefault 262144;
     };
 
     # zram compressed swap (15% of RAM by default)

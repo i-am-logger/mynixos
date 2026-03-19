@@ -179,6 +179,18 @@ in
       };
     })
 
+    # NOPASSWD sudo for nixos-rebuild (avoids YubiKey touch on every rebuild)
+    (mkIf (cfg.enable && cfg.nopasswdRebuild) {
+      security.sudo.extraRules = map
+        (username: {
+          users = [ username ];
+          commands = [
+            { command = "/run/current-system/sw/bin/nixos-rebuild"; options = [ "NOPASSWD" ]; }
+          ];
+        })
+        (attrNames (activeUsers config.my.users));
+    })
+
     # Audit rules configuration
     (mkIf (cfg.enable && cfg.auditRules.enable) {
       # Enable kernel-level audit system
@@ -250,6 +262,11 @@ in
           Defaults logfile=/var/log/sudo.log
         '';
       };
+
+      # Disable audit-rules services since immutable mode (-e 2 via enable = "lock")
+      # prevents reloading rules during nixos-rebuild switch
+      systemd.services.audit-rules.enable = false;
+      systemd.services.audit-rules-nixos.enable = false;
 
       # Disable filter plugin to avoid "line too long" error
       environment.etc."audit/plugins.d/filter.conf".text = mkDefault ''

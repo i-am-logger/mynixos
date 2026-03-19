@@ -5,7 +5,7 @@
   # Intel WiFi 6E + Ethernet
 
   networking.useDHCP = lib.mkDefault true;
-  networking.wireless.enable = false; # Using NetworkManager
+  networking.wireless.enable = lib.mkDefault false;
 
   # Thunderbolt 4 support
   services.hardware.bolt.enable = true;

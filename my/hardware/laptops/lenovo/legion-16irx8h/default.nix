@@ -39,18 +39,18 @@ in
     }
 
     (mkIf cfg.enable (mkMerge [
-      # Import laptop-specific boot configuration
+      # Import laptop-specific driver configurations
       (import ./drivers/uefi-boot.nix { inherit config lib pkgs; })
+      (import ./drivers/realtek-audio.nix { inherit pkgs; })
+      (import ./drivers/network.nix { inherit lib; })
+      (import ./drivers/nvidia-rtx4080.nix { inherit lib; })
+      (import ./drivers/intel-13900hx-cpu.nix { inherit config lib; })
+      # Windows dual-boot is handled by my.system.dualBoot.windows
 
       # Additional laptop configuration
       {
-        # Kernel modules for this laptop hardware
-        # Note: Storage and USB modules are now handled via my.hardware.* options above
-        boot = {
-          initrd.kernelModules = [ ];
-          kernelModules = [ "kvm-intel" "i915" ]; # i915 for Intel iGPU in hybrid mode
-          extraModulePackages = [ ];
-        };
+        # i915 for Intel iGPU in hybrid mode (kvm-intel handled by intel-13900hx-cpu driver)
+        boot.kernelModules = [ "i915" ];
 
         # Hybrid graphics: Intel iGPU + NVIDIA dGPU
         services.xserver.videoDrivers = [ "intel" "nvidia" ];
@@ -70,12 +70,8 @@ in
             sync.enable = true; # Use PRIME sync mode for better performance
           };
 
-          # Intel microcode updates
-          cpu.intel.updateMicrocode = mkDefault config.hardware.enableRedistributableFirmware;
+          # Intel microcode handled by intel-13900hx-cpu driver
         };
-
-        # Networking - enable DHCP by default
-        networking.useDHCP = mkDefault true;
 
         # Platform architecture
         nixpkgs.hostPlatform = mkDefault "x86_64-linux";

@@ -19,6 +19,8 @@
         auditRules = {
           enable = lib.mkEnableOption "audit rules";
         };
+
+        nopasswdRebuild = lib.mkEnableOption "NOPASSWD sudo for nixos-rebuild (skips YubiKey touch on rebuild)";
       };
     };
   };
