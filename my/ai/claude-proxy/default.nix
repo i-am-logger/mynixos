@@ -7,15 +7,15 @@ let
 
   claude-proxy = pkgs.rustPlatform.buildRustPackage {
     pname = "claude-code-proxy";
-    version = "0.3.0";
+    version = "0.4.0";
 
     src = pkgs.fetchCrate {
       pname = "claude-code-proxy";
-      version = "0.3.0";
-      hash = "sha256-+hq5y38cOKffmhQQOArKrVJdCsUj1Mf0Me3ZYLPlrLI=";
+      version = "0.4.0";
+      hash = "sha256-dUjBBakdUtCkS6ZOTted2PDvK1QnABfL2ddnWtLu/5Y=";
     };
 
-    cargoHash = "sha256-YkvuZXj7nLhKd2kEScw6lCLmP4dttgtj+fY4ieUwSek=";
+    cargoHash = "sha256-N9kHKV8bIcWw0gFocA+nfGJq/DYr9p66td7CoV6tZcw=";
 
     meta = {
       description = "OpenAI-compatible API proxy for Claude Code CLI";
@@ -39,7 +39,10 @@ in
             };
 
             Service = {
-              ExecStart = "${claude-proxy}/bin/claude-code-proxy --api-key ${cfg.apiKey} --port ${toString cfg.port} --model ${cfg.model}";
+              Environment = [
+                "PROXY_API_KEY=${cfg.apiKey}"
+              ];
+              ExecStart = "${claude-proxy}/bin/claude-code-proxy --host 127.0.0.1 --port ${toString cfg.port} --model ${cfg.model}";
               Restart = "on-failure";
               RestartSec = 5;
             };
