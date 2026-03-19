@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
@@ -122,6 +122,12 @@ in
 {
   config = mkIf cfg.enable {
 
+    # Create openclaw group and add all active users to it
+    users.groups.openclaw = { };
+    users.users = mapAttrs
+      (_: _: { extraGroups = [ "openclaw" ]; })
+      (activeUsers config.my.users);
+
     environment = {
       # CLI available system-wide
       systemPackages = [ openclaw ];
@@ -156,7 +162,7 @@ in
           };
         };
         mode = "0640";
-        group = "users";
+        group = "openclaw";
       };
 
       variables = {
