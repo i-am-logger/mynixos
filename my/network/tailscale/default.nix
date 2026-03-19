@@ -14,14 +14,13 @@ let
   localHeadscale = hsCfg.enable;
 
   localLoginServer = "http://${hsCfg.address}:${toString hsCfg.port}";
-  authKeyFile = "/run/tailscale/authkey";
 in
 {
   config = mkIf cfg.enable (mkMerge [
     {
       services.tailscale = {
         enable = true;
-        useRoutingFeatures = cfg.useRoutingFeatures;
+        inherit (cfg) useRoutingFeatures;
         extraUpFlags =
           optional (cfg.loginServer != "") "--login-server=${cfg.loginServer}"
           ++ optional cfg.exitNode "--advertise-exit-node"

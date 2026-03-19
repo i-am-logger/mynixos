@@ -1,5 +1,4 @@
-{ activeUsers
-, config
+{ config
 , lib
 , ...
 }:
@@ -33,7 +32,7 @@ in
 
     # Set authorized_keys from YubiKey SSH public keys
     users.users = mapAttrs
-      (name: userCfg: {
+      (_: userCfg: {
         openssh.authorizedKeys.keys =
           filter (k: k != "")
             (map (yk: yk.sshPublicKey) userCfg.yubikeys);

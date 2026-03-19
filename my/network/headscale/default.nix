@@ -32,10 +32,10 @@ let
   aclPolicy = pkgs.writeTextFile {
     name = "headscale-acl-policy.json";
     text = builtins.toJSON ({
-      groups = cfg.acl.groups;
+      inherit (cfg.acl) groups;
       acls = cfg.acl.rules;
     } // lib.optionalAttrs (cfg.acl.tagOwners != { }) {
-      tagOwners = cfg.acl.tagOwners;
+      inherit (cfg.acl) tagOwners;
     });
   };
 in
@@ -43,8 +43,7 @@ in
   config = mkIf cfg.enable {
     services.headscale = {
       enable = true;
-      address = cfg.address;
-      port = cfg.port;
+      inherit (cfg) address port;
       settings = {
         server_url =
           if cfg.serverUrl != "" then cfg.serverUrl else "http://${cfg.address}:${toString cfg.port}";
@@ -73,82 +72,83 @@ in
       };
     };
 
-    # Override server_url at runtime from tor .onion hostname
-    # Uses a separate oneshot to copy the hostname file without root in ExecStartPre
-    systemd.services.headscale-onion-env = mkIf torCfg.onionServices.headscale.enable {
-      description = "Generate Headscale env from Tor onion hostname";
-      wantedBy = [ "headscale.service" ];
-      before = [ "headscale.service" ];
-      after = [ "tor.service" ];
-      wants = [ "tor.service" ];
+    systemd.services = {
+      # Override server_url at runtime from tor .onion hostname
+      headscale-onion-env = mkIf torCfg.onionServices.headscale.enable {
+        description = "Generate Headscale env from Tor onion hostname";
+        wantedBy = [ "headscale.service" ];
+        before = [ "headscale.service" ];
+        after = [ "tor.service" ];
+        wants = [ "tor.service" ];
 
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        RuntimeDirectory = "headscale";
-        RuntimeDirectoryMode = "0750";
-        User = "root";
-        Group = config.services.headscale.group;
-      };
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          RuntimeDirectory = "headscale";
+          RuntimeDirectoryMode = "0750";
+          User = "root";
+          Group = config.services.headscale.group;
+        };
 
-      script = ''
-        # Wait for tor to generate the .onion hostname
-        for i in $(seq 1 60); do
-          [ -f ${onionHostnameFile} ] && break
-          sleep 1
-        done
-        if [ ! -f ${onionHostnameFile} ]; then
-          echo "ERROR: Tor hostname file not found after 60s: ${onionHostnameFile}" >&2
-          exit 1
-        fi
-        ONION=$(tr -d '[:space:]' < ${onionHostnameFile})
-        echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
-        chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
-        chmod 640 /run/headscale/env
-      '';
-    };
-
-    systemd.services.headscale = mkIf torCfg.onionServices.headscale.enable {
-      after = [ "headscale-onion-env.service" ];
-      wants = [ "headscale-onion-env.service" ];
-      serviceConfig.EnvironmentFile = [ "-/run/headscale/env" ];
-    };
-
-    # Create headscale users after the service starts
-    systemd.services.headscale-create-users = mkIf (cfg.users != [ ]) {
-      description = "Create Headscale users";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "headscale.service" ];
-      wants = [ "headscale.service" ];
-
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        User = config.services.headscale.user;
-        Group = config.services.headscale.group;
-      };
-
-      script =
-        let
-          headscale = "${config.services.headscale.package}/bin/headscale";
-        in
-        ''
-          # Wait for headscale socket
-          for i in $(seq 1 30); do
-            if ${headscale} users list >/dev/null 2>&1; then
-              break
-            fi
+        script = ''
+          # Wait for tor to generate the .onion hostname
+          for i in $(seq 1 60); do
+            [ -f ${onionHostnameFile} ] && break
             sleep 1
           done
-        ''
-        + concatStringsSep "\n" (
-          map
-            (user: ''
-              ${headscale} users list -o json 2>/dev/null | ${pkgs.jq}/bin/jq -e '.[] | select(.name == "${user}")' >/dev/null 2>&1 || \
-                ${headscale} users create ${escapeShellArg user}
-            '')
-            cfg.users
-        );
+          if [ ! -f ${onionHostnameFile} ]; then
+            echo "ERROR: Tor hostname file not found after 60s: ${onionHostnameFile}" >&2
+            exit 1
+          fi
+          ONION=$(tr -d '[:space:]' < ${onionHostnameFile})
+          echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
+          chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
+          chmod 640 /run/headscale/env
+        '';
+      };
+
+      headscale = mkIf torCfg.onionServices.headscale.enable {
+        after = [ "headscale-onion-env.service" ];
+        wants = [ "headscale-onion-env.service" ];
+        serviceConfig.EnvironmentFile = [ "-/run/headscale/env" ];
+      };
+
+      # Create headscale users after the service starts
+      headscale-create-users = mkIf (cfg.users != [ ]) {
+        description = "Create Headscale users";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "headscale.service" ];
+        wants = [ "headscale.service" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = config.services.headscale.user;
+          Group = config.services.headscale.group;
+        };
+
+        script =
+          let
+            headscale = "${config.services.headscale.package}/bin/headscale";
+          in
+          ''
+            # Wait for headscale socket
+            for i in $(seq 1 30); do
+              if ${headscale} users list >/dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+          ''
+          + concatStringsSep "\n" (
+            map
+              (user: ''
+                ${headscale} users list -o json 2>/dev/null | ${pkgs.jq}/bin/jq -e '.[] | select(.name == "${user}")' >/dev/null 2>&1 || \
+                  ${headscale} users create ${escapeShellArg user}
+              '')
+              cfg.users
+          );
+      };
     };
 
     # Only open firewall if headscale is not localhost-only

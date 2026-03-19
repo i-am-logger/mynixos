@@ -19,10 +19,10 @@ in
           version = 3;
           map = [
             {
-              port = cfg.onionServices.headscale.port;
+              inherit (cfg.onionServices.headscale) port;
               target = {
                 addr = hsCfg.address;
-                port = hsCfg.port;
+                inherit (hsCfg) port;
               };
             }
           ];
