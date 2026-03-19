@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.1...mynixos-v0.9.2) (2026-03-19)
+
+
+### Bug Fixes
+
+* **hypr-vogix:** use exec instead of exec-once for live reload on switch ([6ae5eb8](https://github.com/i-am-logger/mynixos/commit/6ae5eb8322e6d17cf1755b696d0ae35a0082cc91))
+
 ## [0.9.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.0...mynixos-v0.9.1) (2026-03-19)
 
 
