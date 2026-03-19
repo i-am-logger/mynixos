@@ -29,7 +29,5 @@
     kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
   };
 
-  # Mask audit-rules service (cosmetic fix for this hardware)
-  # Rules are loaded early via kernel cmdline
-  systemd.services.audit-rules.enable = lib.mkDefault false;
+  # Audit-rules masking is handled by my.security.auditRules
 }
