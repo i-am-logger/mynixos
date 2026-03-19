@@ -24,6 +24,12 @@
           description = "SSH authentication key keygrip";
         };
 
+        sshPublicKey = lib.mkOption {
+          type = lib.types.str;
+          default = "";
+          description = "SSH public key string (ssh-ed25519 AAAA... or ssh-rsa AAAA...) for authorized_keys";
+        };
+
         publicKeyPath = lib.mkOption {
           type = lib.types.path;
           description = "Path to GPG public key file (.asc)";

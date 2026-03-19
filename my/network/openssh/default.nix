@@ -1,4 +1,5 @@
-{ config
+{ activeUsers
+, config
 , lib
 , ...
 }:
@@ -7,6 +8,11 @@ with lib;
 
 let
   cfg = config.my.network.openssh;
+
+  # Collect SSH public keys from all users' YubiKeys
+  usersWithKeys = filterAttrs
+    (_: userCfg: (length userCfg.yubikeys) > 0)
+    config.my.users;
 in
 {
   # Auto-enable when tailscale is enabled
@@ -24,6 +30,15 @@ in
         AuthenticationMethods = "publickey";
       };
     };
+
+    # Set authorized_keys from YubiKey SSH public keys
+    users.users = mapAttrs
+      (name: userCfg: {
+        openssh.authorizedKeys.keys =
+          filter (k: k != "")
+            (map (yk: yk.sshPublicKey) userCfg.yubikeys);
+      })
+      usersWithKeys;
 
     # Persist host keys across reboots
     my.system.persistence.features.systemDirectories = [
