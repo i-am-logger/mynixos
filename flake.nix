@@ -315,6 +315,7 @@
               ./my/presets
 
               # Network
+              ./my/network/openssh
               ./my/network/headscale
               ./my/network/tailscale
               ./my/network/tor

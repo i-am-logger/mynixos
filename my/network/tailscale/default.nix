@@ -31,8 +31,12 @@ in
           ++ optional (cfg.authKeyFile != null) "--authkey=file:${cfg.authKeyFile}";
       };
 
-      # Trust the tailscale interface
-      networking.firewall.trustedInterfaces = [ "tailscale0" ];
+      # Allow WireGuard UDP port for tailscale
+      networking.firewall.allowedUDPPorts = [ config.services.tailscale.port ];
+
+      # Allow configured TCP ports on tailscale interface (defense in depth over ACLs)
+      networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ] ++ cfg.allowedTCPPorts;
+
 
       # Enable UDP GRO forwarding on all physical interfaces for tailscale throughput
       boot.kernel.sysctl."net.core.rmem_max" = lib.mkDefault 7500000;

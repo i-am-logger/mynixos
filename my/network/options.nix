@@ -6,6 +6,10 @@
     default = { };
     type = lib.types.submodule {
       options = {
+        openssh = {
+          enable = lib.mkEnableOption "OpenSSH server (pubkey-only, no root login)";
+        };
+
         headscale = {
           enable = lib.mkEnableOption "Headscale coordination server (self-hosted Tailscale control plane)";
 
@@ -97,6 +101,12 @@
             type = lib.types.enum [ "none" "client" "server" "both" ];
             default = "none";
             description = "Enable routing features (client, server, both, or none)";
+          };
+
+          allowedTCPPorts = lib.mkOption {
+            type = lib.types.listOf lib.types.port;
+            default = [ ];
+            description = "TCP ports to allow through firewall on the tailscale interface";
           };
         };
 

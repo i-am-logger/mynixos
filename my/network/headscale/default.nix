@@ -12,6 +12,23 @@ let
 
   onionHostnameFile = "/var/lib/tor/onion/headscale/hostname";
 
+  # Minimal local DERP map — satisfies headscale's requirement for at least one entry
+  # Nodes will use direct WireGuard connections; DERP relay is localhost-only (unreachable externally)
+  localDerpMap = pkgs.writeText "headscale-derp-map.yaml" ''
+    regions:
+      999:
+        regionid: 999
+        regioncode: local
+        regionname: Local
+        nodes:
+          - name: local
+            regionid: 999
+            hostname: 127.0.0.1
+            stunport: -1
+            derpport: 0
+            stunonly: false
+  '';
+
   aclPolicy = pkgs.writeTextFile {
     name = "headscale-acl-policy.json";
     text = builtins.toJSON ({
@@ -41,6 +58,13 @@ in
           type = "sqlite";
           sqlite.path = "/var/lib/headscale/db.sqlite";
         };
+        # Local-only DERP map — no public relays, no metadata leaks
+        # Direct WireGuard connections via NAT hole-punching; DERP is a dummy localhost entry
+        derp = {
+          urls = [ ];
+          paths = [ (toString localDerpMap) ];
+          auto_update_enabled = false;
+        };
         noise.private_key_path = "/var/lib/headscale/noise_private.key";
         prefixes = {
           v4 = "100.64.0.0/10";
@@ -50,25 +74,43 @@ in
     };
 
     # Override server_url at runtime from tor .onion hostname
-    systemd.services.headscale = mkIf torCfg.onionServices.headscale.enable {
+    # Uses a separate oneshot to copy the hostname file without root in ExecStartPre
+    systemd.services.headscale-onion-env = mkIf torCfg.onionServices.headscale.enable {
+      description = "Generate Headscale env from Tor onion hostname";
+      wantedBy = [ "headscale.service" ];
+      before = [ "headscale.service" ];
       after = [ "tor.service" ];
       wants = [ "tor.service" ];
-      serviceConfig.ExecStartPre = [
-        "+${pkgs.writeShellScript "headscale-set-onion-url" ''
-          # Wait for tor to generate the .onion hostname
-          for i in $(seq 1 60); do
-            [ -f ${onionHostnameFile} ] && break
-            sleep 1
-          done
-          if [ ! -f ${onionHostnameFile} ]; then
-            echo "ERROR: Tor hostname file not found after 60s: ${onionHostnameFile}" >&2
-            exit 1
-          fi
-          ONION=$(tr -d '[:space:]' < ${onionHostnameFile})
-          echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
-          chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
-        ''}"
-      ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        RuntimeDirectory = "headscale";
+        RuntimeDirectoryMode = "0750";
+        User = "root";
+        Group = config.services.headscale.group;
+      };
+
+      script = ''
+        # Wait for tor to generate the .onion hostname
+        for i in $(seq 1 60); do
+          [ -f ${onionHostnameFile} ] && break
+          sleep 1
+        done
+        if [ ! -f ${onionHostnameFile} ]; then
+          echo "ERROR: Tor hostname file not found after 60s: ${onionHostnameFile}" >&2
+          exit 1
+        fi
+        ONION=$(tr -d '[:space:]' < ${onionHostnameFile})
+        echo "HEADSCALE_SERVER_URL=http://$ONION:${toString cfg.port}" > /run/headscale/env
+        chown ${config.services.headscale.user}:${config.services.headscale.group} /run/headscale/env
+        chmod 640 /run/headscale/env
+      '';
+    };
+
+    systemd.services.headscale = mkIf torCfg.onionServices.headscale.enable {
+      after = [ "headscale-onion-env.service" ];
+      wants = [ "headscale-onion-env.service" ];
       serviceConfig.EnvironmentFile = [ "-/run/headscale/env" ];
     };
 
