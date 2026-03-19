@@ -13,7 +13,7 @@ let
       name = "claude-proxy";
       baseUrl = "http://127.0.0.1:${toString proxyCfg.port}/v1";
       api = "openai-completions";
-      apiKey = proxyCfg.apiKey;
+      inherit (proxyCfg) apiKey;
       modelId = proxyCfg.model;
       modelName = proxyCfg.model;
     } else {
@@ -73,90 +73,94 @@ let
   stateDir = "/var/lib/openclaw";
 
   openclawConfig = builtins.toJSON (
-    lib.recursiveUpdate (
-      {
-        gateway = {
-          port = cfg.port;
-          bind = cfg.bind;
-          mode = "local";
-          auth = {
-            mode = "token";
-            token = cfg.gatewayToken;
-          };
-        };
-        models = {
-          providers = {
-            ${modelProvider.name} = {
-              baseUrl = modelProvider.baseUrl;
-              models = [
-                {
-                  id = modelProvider.modelId;
-                  name = modelProvider.modelName;
-                }
-              ];
-            } // lib.optionalAttrs (modelProvider.apiKey != null) {
-              apiKey = modelProvider.apiKey;
-            } // lib.optionalAttrs (modelProvider.api != null) {
-              api = modelProvider.api;
+    lib.recursiveUpdate
+      (
+        {
+          gateway = {
+            inherit (cfg) port;
+            inherit (cfg) bind;
+            mode = "local";
+            auth = {
+              mode = "token";
+              token = cfg.gatewayToken;
             };
           };
-        };
-      }
-      // lib.optionalAttrs cfg.signal.enable {
-        channels = {
-          signal =
-            {
-              account = cfg.signal.account;
-              allowFrom = cfg.signal.allowFrom;
-            }
-            // lib.optionalAttrs (cfg.signal.allowFrom != [ ]) {
-              defaultTo = builtins.head cfg.signal.allowFrom;
+          models = {
+            providers = {
+              ${modelProvider.name} = {
+                inherit (modelProvider) baseUrl;
+                models = [
+                  {
+                    id = modelProvider.modelId;
+                    name = modelProvider.modelName;
+                  }
+                ];
+              } // lib.optionalAttrs (modelProvider.apiKey != null) {
+                inherit (modelProvider) apiKey;
+              } // lib.optionalAttrs (modelProvider.api != null) {
+                inherit (modelProvider) api;
+              };
             };
-        };
-      }
-    ) cfg.extraConfig
+          };
+        }
+        // lib.optionalAttrs cfg.signal.enable {
+          channels = {
+            signal =
+              {
+                inherit (cfg.signal) account;
+                inherit (cfg.signal) allowFrom;
+              }
+              // lib.optionalAttrs (cfg.signal.allowFrom != [ ]) {
+                defaultTo = builtins.head cfg.signal.allowFrom;
+              };
+          };
+        }
+      )
+      cfg.extraConfig
   );
 in
 {
   config = mkIf cfg.enable {
 
-    # CLI available system-wide
-    environment.systemPackages = [ openclaw ];
+    environment = {
+      # CLI available system-wide
+      systemPackages = [ openclaw ];
 
-    # Shared client config for CLI users
-    environment.etc."openclaw-client.json" = {
-      text = builtins.toJSON {
-        gateway = {
-          port = cfg.port;
-          bind = cfg.bind;
-          auth = {
-            mode = "token";
-            token = cfg.gatewayToken;
+      # Shared client config for CLI users
+      etc."openclaw-client.json" = {
+        text = builtins.toJSON {
+          gateway = {
+            inherit (cfg) port;
+            inherit (cfg) bind;
+            auth = {
+              mode = "token";
+              token = cfg.gatewayToken;
+            };
           };
-        };
-        models = {
-          providers = {
-            ${modelProvider.name} = {
-              baseUrl = modelProvider.baseUrl;
-              models = [
-                {
-                  id = modelProvider.modelId;
-                  name = modelProvider.modelName;
-                }
-              ];
-            } // lib.optionalAttrs (modelProvider.apiKey != null) {
-              apiKey = modelProvider.apiKey;
-            } // lib.optionalAttrs (modelProvider.api != null) {
-              api = modelProvider.api;
+          models = {
+            providers = {
+              ${modelProvider.name} = {
+                inherit (modelProvider) baseUrl;
+                models = [
+                  {
+                    id = modelProvider.modelId;
+                    name = modelProvider.modelName;
+                  }
+                ];
+              } // lib.optionalAttrs (modelProvider.apiKey != null) {
+                inherit (modelProvider) apiKey;
+              } // lib.optionalAttrs (modelProvider.api != null) {
+                inherit (modelProvider) api;
+              };
             };
           };
         };
+        mode = "0644";
       };
-      mode = "0644";
-    };
 
-    environment.variables = {
-      OPENCLAW_CONFIG_PATH = "/etc/openclaw-client.json";
+      variables = {
+        OPENCLAW_CONFIG_PATH = "/etc/openclaw-client.json";
+      };
     };
 
     # Gateway service
