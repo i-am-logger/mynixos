@@ -45,6 +45,20 @@ in
         my.video.virtual.enable = mkDefault true;
       }
 
+      # Fix advanced-scene-switcher build on NVIDIA systems
+      # OpenCV with CUDA requires cudatoolkit in build inputs
+      (mkIf (config.my.hardware.gpu == "nvidia") {
+        nixpkgs.overlays = [
+          (_final: prev: {
+            obs-studio-plugins = prev.obs-studio-plugins // {
+              advanced-scene-switcher = prev.obs-studio-plugins.advanced-scene-switcher.overrideAttrs (old: {
+                nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.cudatoolkit ];
+              });
+            };
+          })
+        ];
+      })
+
       # OBS Studio with plugins (per-user configuration)
       {
         home-manager.users = mapAttrs
