@@ -5,6 +5,22 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.6.0...mynixos-v0.7.0) (2026-03-19)
+
+
+### Features
+
+* **claude-code:** enable experimental agent teams env var ([1d6cfe2](https://github.com/i-am-logger/mynixos/commit/1d6cfe2ca20bc7260233c7f26e78bb8538b82380))
+* **network:** headscale + tailscale + tor mesh VPN modules ([93adb06](https://github.com/i-am-logger/mynixos/commit/93adb06878e180575969f815219b841c8d7597ec))
+* **openssh:** auto-populate authorized_keys from YubiKey SSH public keys ([858fd9d](https://github.com/i-am-logger/mynixos/commit/858fd9db7b6aa868103686e857241aca937e9a8a))
+
+
+### Bug Fixes
+
+* **network:** resolve CI lint warnings (statix, deadnix) ([63aba06](https://github.com/i-am-logger/mynixos/commit/63aba06239aadd5e76e1222bb26cbef2cff31fc7))
+* **network:** security and review hardening for mesh VPN modules ([e9eed02](https://github.com/i-am-logger/mynixos/commit/e9eed022bd826da00ec58a8529ad0d1c245c4234))
+* **network:** security hardening, openssh module, local DERP map ([30d1b6b](https://github.com/i-am-logger/mynixos/commit/30d1b6b4788fa183b6caea4ae06dceb676e8cdb4))
+
 ## [0.6.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.5.0...mynixos-v0.6.0) (2026-03-19)
 
 
