@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.3...mynixos-v0.9.4) (2026-03-19)
+
+
+### Bug Fixes
+
+* **legion,security,performance:** port skyspy-dev hardware fixes ([#112](https://github.com/i-am-logger/mynixos/issues/112)) ([cb03c72](https://github.com/i-am-logger/mynixos/commit/cb03c723b667aee52ac3360de7de816aab8ceaf4))
+
 ## [0.9.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.2...mynixos-v0.9.3) (2026-03-19)
 
 
