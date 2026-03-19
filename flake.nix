@@ -243,6 +243,7 @@
             ++ [
               # Top-level features
               ./my/ai
+              ./my/ai/claude-proxy
               ./my/ai/openclaw
               ./my/audio
               ./my/dev/development

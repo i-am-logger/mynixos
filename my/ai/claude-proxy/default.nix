@@ -6,20 +6,16 @@ let
   cfg = config.my.ai.claudeProxy;
 
   claude-proxy = pkgs.rustPlatform.buildRustPackage {
-    pname = "claude-proxy";
-    version = "0.2.0";
+    pname = "claude-code-proxy";
+    version = "0.2.0-dev";
 
-    src = pkgs.fetchCrate {
-      pname = "claude-proxy";
-      version = "0.2.0";
-      hash = "sha256-c+7zdnpitwCdCfB7WtpZDhiZPBAVJEjbTg/QEcs+1RM=";
-    };
+    src = /home/logger/Code/github/logger/claude-code-proxy;
 
-    cargoHash = "sha256-qen/pfjKbJrzRUJXKXi9iUkNrITdqo8Czz4SWrloe9Y=";
+    cargoLock.lockFile = /home/logger/Code/github/logger/claude-code-proxy/Cargo.lock;
 
     meta = {
       description = "OpenAI-compatible API proxy for Claude Code CLI";
-      mainProgram = "claude-proxy";
+      mainProgram = "claude-code-proxy";
     };
   };
 in
@@ -39,7 +35,7 @@ in
             };
 
             Service = {
-              ExecStart = "${claude-proxy}/bin/claude-proxy --api-key ${cfg.apiKey} --port ${toString cfg.port} --model ${cfg.model}";
+              ExecStart = "${claude-proxy}/bin/claude-code-proxy --api-key ${cfg.apiKey} --port ${toString cfg.port} --model ${cfg.model}";
               Restart = "on-failure";
               RestartSec = 5;
             };

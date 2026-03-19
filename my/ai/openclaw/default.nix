@@ -4,6 +4,26 @@ with lib;
 
 let
   cfg = config.my.ai.openclaw;
+  proxyCfg = config.my.ai.claudeProxy;
+  useClaudeProxy = proxyCfg.enable;
+
+  # Auto-detect provider: claude-proxy if enabled, otherwise ollama
+  modelProvider =
+    if useClaudeProxy then {
+      name = "claude-proxy";
+      baseUrl = "http://127.0.0.1:${toString proxyCfg.port}/v1";
+      api = "openai-completions";
+      apiKey = proxyCfg.apiKey;
+      modelId = proxyCfg.model;
+      modelName = proxyCfg.model;
+    } else {
+      name = "ollama";
+      baseUrl = "http://127.0.0.1:11434";
+      api = null;
+      apiKey = null;
+      modelId = cfg.ollamaModel;
+      modelName = cfg.ollamaModel;
+    };
 
   openclaw = pkgs.buildNpmPackage rec {
     pname = "openclaw";
@@ -66,14 +86,18 @@ let
         };
         models = {
           providers = {
-            ollama = {
-              baseUrl = "http://127.0.0.1:11434";
+            ${modelProvider.name} = {
+              baseUrl = modelProvider.baseUrl;
               models = [
                 {
-                  id = cfg.ollamaModel;
-                  name = cfg.ollamaModel;
+                  id = modelProvider.modelId;
+                  name = modelProvider.modelName;
                 }
               ];
+            } // lib.optionalAttrs (modelProvider.apiKey != null) {
+              apiKey = modelProvider.apiKey;
+            } // lib.optionalAttrs (modelProvider.api != null) {
+              api = modelProvider.api;
             };
           };
         };
@@ -112,14 +136,18 @@ in
         };
         models = {
           providers = {
-            ollama = {
-              baseUrl = "http://127.0.0.1:11434";
+            ${modelProvider.name} = {
+              baseUrl = modelProvider.baseUrl;
               models = [
                 {
-                  id = cfg.ollamaModel;
-                  name = cfg.ollamaModel;
+                  id = modelProvider.modelId;
+                  name = modelProvider.modelName;
                 }
               ];
+            } // lib.optionalAttrs (modelProvider.apiKey != null) {
+              apiKey = modelProvider.apiKey;
+            } // lib.optionalAttrs (modelProvider.api != null) {
+              api = modelProvider.api;
             };
           };
         };
@@ -136,12 +164,10 @@ in
       description = "OpenClaw Gateway";
       after = [
         "network-online.target"
-        "ollama.service"
-      ];
+      ] ++ lib.optional (!useClaudeProxy) "ollama.service";
       wants = [
         "network-online.target"
-        "ollama.service"
-      ];
+      ] ++ lib.optional (!useClaudeProxy) "ollama.service";
       wantedBy = [ "multi-user.target" ];
 
       environment = {

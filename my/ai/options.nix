@@ -13,6 +13,12 @@
         };
 
         ollama = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Enable Ollama local LLM service (disable if using claude-proxy only)";
+          };
+
           acceleration = lib.mkOption {
             type = lib.types.enum [ "rocm" "cuda" "cpu" "auto" ];
             default = "auto";
@@ -35,6 +41,32 @@
             type = lib.types.str;
             default = "11.0.2";
             description = "ROCm GFX version override for AMD GPU compatibility (RDNA3 default)";
+          };
+        };
+
+        claudeProxy = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "OpenAI-compatible proxy wrapping Claude Code CLI (spawns claude --print as subprocess, does not extract OAuth tokens)";
+          };
+
+          port = lib.mkOption {
+            type = lib.types.port;
+            default = 8080;
+            description = "Proxy listen port";
+          };
+
+          model = lib.mkOption {
+            type = lib.types.str;
+            default = "sonnet";
+            description = "Default Claude model (haiku/sonnet/opus)";
+          };
+
+          apiKey = lib.mkOption {
+            type = lib.types.str;
+            default = "claude-proxy-local";
+            description = "Bearer token for proxy authentication";
           };
         };
 

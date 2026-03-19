@@ -55,7 +55,7 @@ in
 
     (mkIf cfg.enable (mkMerge [
       # Ollama service — GPU-agnostic (auto-detects from my.hardware.gpu)
-      {
+      (mkIf cfg.ollama.enable {
         services.ollama = {
           enable = true;
           package =
@@ -67,17 +67,16 @@ in
           loadModels = cfg.ollama.models;
         };
 
-        # Ollama environment variables
         environment.variables = {
           OLLAMA_HOST = "127.0.0.1:11434";
           OLLAMA_NUM_PARALLEL = "1";
           OLLAMA_MAX_LOADED_MODELS = "1";
           OLLAMA_FLASH_ATTENTION = "true";
         };
-      }
+      })
 
       # ROCm-specific configuration (AMD GPU)
-      (mkIf isRocm {
+      (mkIf (cfg.ollama.enable && isRocm) {
         environment.systemPackages = with pkgs; [
           rocmPackages.rocm-runtime
           rocmPackages.rocm-device-libs
@@ -97,7 +96,7 @@ in
       })
 
       # Optional web UI
-      (mkIf cfg.ollama.webUI {
+      (mkIf (cfg.ollama.enable && cfg.ollama.webUI) {
         services.nextjs-ollama-llm-ui.enable = true;
       })
 
