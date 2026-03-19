@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.0...mynixos-v0.9.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* **openclaw:** disable PrivateDevices (needs os.networkInterfaces) ([70c8d9e](https://github.com/i-am-logger/mynixos/commit/70c8d9e616ef1b774d558cf9da54059121443406))
+
 ## [0.9.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.8.0...mynixos-v0.9.0) (2026-03-19)
 
 
