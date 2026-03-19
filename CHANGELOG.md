@@ -5,6 +5,23 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.5.0...mynixos-v0.6.0) (2026-03-19)
+
+
+### Features
+
+* **ai:** claude-code-proxy module, ollama enable option, openclaw provider auto-detect ([93e1f72](https://github.com/i-am-logger/mynixos/commit/93e1f7245f5860f8dd7126360b4d20569c3aa8db))
+* **ai:** GPU-agnostic ollama + openclaw gateway module ([680d33e](https://github.com/i-am-logger/mynixos/commit/680d33e20dbeacacdf3b7b5fbd19413416ef6c4d))
+* **claude-code:** add cloneConfigRepo option for syncing ~/.claude across machines ([2422934](https://github.com/i-am-logger/mynixos/commit/242293464aa87effeb7579d8d86d1f7ccc658824))
+* **claude-proxy:** use claude-code-proxy 0.3.0 from crates.io ([6cc4857](https://github.com/i-am-logger/mynixos/commit/6cc4857a3533373917b911052e18fc5cfd166108))
+* **claude-proxy:** use claude-proxy 0.2.0 from crates.io ([ff894e9](https://github.com/i-am-logger/mynixos/commit/ff894e90c2d4544b2ccefb536e9a2b6e8a4239db))
+
+
+### Bug Fixes
+
+* statix + treefmt lint warnings in AI modules ([8da40cd](https://github.com/i-am-logger/mynixos/commit/8da40cdf9cba8f780a42d2b309cf1f3c163947e4))
+* use stateDir variable, fix treefmt formatting in AI modules ([a6bd304](https://github.com/i-am-logger/mynixos/commit/a6bd3048d4f4c89484aca012c767ddfd29a4bf15))
+
 ## [0.5.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.4.0...mynixos-v0.5.0) (2026-03-18)
 
 
