@@ -13,6 +13,10 @@ A NixOS-based distribution. Defaults that work, `mkDefault` so you always win.
 
 ![Hypr Vogix Demo](docs/hypr-vogix-demo.gif)
 
+### vNext
+
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/d4571e0c-c788-4828-b69e-36feda69bc81" />
+
 ## Status
 
 This is my personal NixOS configuration that I use daily on:
