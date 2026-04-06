@@ -43,9 +43,11 @@ in
 
             programs.vogix = {
               enable = true;
-              scheme = userVogixCfg.scheme or "vogix16";
-              theme = userVogixCfg.theme or "aikido";
-              variant = userVogixCfg.variant or "night";
+              appearance = {
+                scheme = userVogixCfg.scheme or "vogix16";
+                theme = userVogixCfg.theme or "aikido";
+                variant = userVogixCfg.variant or "night";
+              };
             };
           }
       )
