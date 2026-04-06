@@ -520,7 +520,7 @@ in
                 let
                   # Use vogix defaults directly — user overrides via programs.vogix in home-manager
                   generatedBehavior = behaviorModule.mkHyprlandConfig { };
-                  modesEnabled = config.my.themes.vogix.enable or false;
+                  modesEnabled = config.my.theming.vogix.enable or false;
                 in
                 {
                 enable = true;

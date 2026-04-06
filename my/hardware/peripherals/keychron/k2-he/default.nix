@@ -25,6 +25,6 @@ in
     services.udev.packages = mkIf (cfg.enable && cfg.udev) [ udevRules ];
 
     # Register as QMK OpenRGB device
-    my.themes.openrgb.qmkDevices = mkIf cfg.enable [{ name = "Keychron K2 HE"; vid = "0x3434"; pid = "0x0E20"; }];
+    my.theming.openrgb.qmkDevices = mkIf cfg.enable [{ name = "Keychron K2 HE"; vid = "0x3434"; pid = "0x0E20"; }];
   };
 }

@@ -200,7 +200,7 @@
               (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
               (mkOptionsModule ./my/ai/options.nix { inherit lib; })
               (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
-              (mkOptionsModule ./my/themes/options.nix { inherit lib; })
+              (mkOptionsModule ./my/theming/options.nix { inherit lib; })
 
               # Network options
               (mkOptionsModule ./my/network/options.nix { inherit lib; })
@@ -229,8 +229,8 @@
               ./my/users/dev/mynixos.nix
               ./my/users/ai/mynixos.nix
               ./my/users/environment/mynixos.nix
-              ./my/users/themes/vogix/mynixos.nix
-              ./my/themes/hypr-vogix/mynixos.nix
+              ./my/users/theming/vogix/mynixos.nix
+              ./my/theming/hypr-vogix/mynixos.nix
             ]
 
             # External modules
@@ -269,8 +269,8 @@
               ./my/system/scripts
               ./my/system/unfree
 
-              # Themes
-              ./my/themes
+              # Theming
+              ./my/theming
 
               # Hardware - Bluetooth
               ./my/hardware/bluetooth/realtek

@@ -1,4 +1,4 @@
-# Themes aggregation module
+# Theming aggregation module
 # Imports all theme system implementations (stylix, vogix, etc.)
 { ... }:
 

@@ -1,12 +1,12 @@
-# Unified themes options
-# Defines my.themes.* with stylix and vogix as submodules
+# Unified theming options
+# Defines my.theming.* with stylix and vogix as submodules
 { lib, ... }:
 
 let
   inherit (import ../../lib/app-options.nix { inherit lib; }) floatBetween;
 in
 {
-  themes = lib.mkOption {
+  theming = lib.mkOption {
     description = "Theming configuration";
     default = { };
     type = lib.types.submodule {
@@ -26,7 +26,7 @@ in
               enable = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Enable vogix runtime theme management (default when themes.enable = true)";
+                description = "Enable vogix runtime theme management (default when theming.enable = true)";
               };
             };
           };

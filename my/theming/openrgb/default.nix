@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.my.themes.openrgb;
+  cfg = config.my.theming.openrgb;
   hwCpu = config.my.hardware.cpu;
 
   qmkDevicesJson = if cfg.qmkDevices != [ ] then {

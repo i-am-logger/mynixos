@@ -24,7 +24,7 @@
         else v;
       warnStylix = v:
         if stylix != null
-        then lib.warn "mkSystem: 'stylix' parameter is deprecated, use 'my.themes' instead" v
+        then lib.warn "mkSystem: 'stylix' parameter is deprecated, use 'my.theming' instead" v
         else v;
       warnMyHostname = v:
         if my.hostname or null != null
@@ -51,9 +51,9 @@
         else
           [ ];
 
-      # Extract theme configuration from my.themes
-      themeType = my.themes.type or null;
-      themeConfig = my.themes.config or null;
+      # Extract theme configuration from my.theming
+      themeType = my.theming.type or null;
+      themeConfig = my.theming.config or null;
 
       # Theme modules based on type
       themeModules =
@@ -62,7 +62,7 @@
             themeConfig
           ]
         else if themeConfig != null && themeType == null then
-          lib.warn "mkSystem: my.themes.config is set but my.themes.type is null — theme config will be ignored" [ ]
+          lib.warn "mkSystem: my.theming.config is set but my.theming.type is null — theme config will be ignored" [ ]
         else
           [ ];
     in

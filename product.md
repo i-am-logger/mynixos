@@ -37,7 +37,7 @@ The `my.*` namespace is organized into four tiers:
 
 ### Cross-Cutting Concerns
 
-- **`my.themes`** -- Theming system with vogix (runtime theme management, default) and stylix (static theming, legacy). Per-user theme scheme/variant selection.
+- **`my.theming`** -- Theming system with vogix (runtime theme management, default) and stylix (static theming, legacy). Per-user theme scheme/variant selection.
 - **`my.environment`** -- Environment variables, XDG portals, locale, timezone, display manager (greetd/GDM/SDDM/LightDM), MOTD, default editor and browser.
 - **`my.presets`** -- Preset configurations (workstation preset with opinionated app defaults).
 - **`my.filesystem`** -- Filesystem type (`"disko"` for declarative partitioning, `"nixos"` for standard) and config path.

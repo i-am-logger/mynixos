@@ -1,9 +1,9 @@
 # Per-user vogix options
-# Defines my.users.<name>.themes.vogix.* options
+# Defines my.users.<name>.theming.vogix.* options
 { lib, ... }:
 
 {
-  options.themes = lib.mkOption {
+  options.theming = lib.mkOption {
     description = "Theme configuration for this user";
     default = { };
     type = lib.types.submodule {

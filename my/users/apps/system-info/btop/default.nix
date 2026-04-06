@@ -8,7 +8,7 @@ with lib;
     home-manager.users = mapAttrs
       (_name: userCfg:
         let
-          vogixEnabled = userCfg.themes.vogix.enable or false;
+          vogixEnabled = userCfg.theming.vogix.enable or false;
         in
         mkIf userCfg.apps.terminal.sysinfo.btop.enable (mkMerge [
           {

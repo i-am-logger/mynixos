@@ -53,7 +53,7 @@ with lib;
             }
 
             # Enable stylix theming with gradient mode from user config (only if stylix is enabled)
-            (mkIf (config.my.themes.enable && config.my.themes.stylix.enable) {
+            (mkIf (config.my.theming.enable && config.my.theming.stylix.enable) {
               stylix.targets.cava = {
                 enable = true;
                 inherit (cfg) gradientMode;

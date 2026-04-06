@@ -2,7 +2,7 @@
 #
 # This file auto-enables vogix for all users by default
 # Vogix themes terminal apps (btop, bat, ripgrep, alacritty) regardless of graphical environment
-# Users can override by setting themes.vogix.enable = false
+# Users can override by setting theming.vogix.enable = false
 
 { lib, ... }:
 
@@ -15,7 +15,7 @@
         {
           config = {
             # Enable vogix for all users by default
-            themes.vogix.enable = lib.mkDefault true;
+            theming.vogix.enable = lib.mkDefault true;
           };
         }
       )

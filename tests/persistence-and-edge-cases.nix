@@ -46,7 +46,7 @@ let
           };
 
           my = myConfig // {
-            themes.enable = false;
+            theming.enable = false;
           };
         }
       ] ++ extraModules;

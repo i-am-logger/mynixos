@@ -11,7 +11,7 @@
 with lib;
 
 let
-  cfg = config.my.themes.hypr-vogix;
+  cfg = config.my.theming.hypr-vogix;
 
   # Build the exec-once command with configured defaults
   restoreCmd = concatStringsSep " " ([
@@ -31,7 +31,7 @@ let
   ]);
 in
 {
-  config = mkIf (config.my.themes.enable && cfg.enable) (mkMerge [
+  config = mkIf (config.my.theming.enable && cfg.enable) (mkMerge [
     # Overlay and unfree allowlist
     {
       nixpkgs.overlays = [ hypr-vogix.overlays.default ];

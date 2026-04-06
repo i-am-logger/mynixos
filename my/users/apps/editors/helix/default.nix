@@ -29,7 +29,7 @@ in
         (
           _name: userCfg:
             let
-              vogixEnabled = userCfg.themes.vogix.enable or false;
+              vogixEnabled = userCfg.theming.vogix.enable or false;
             in
             mkIf (userCfg.apps.graphical.editors.helix.enable or false) {
               home.packages = with pkgs; [

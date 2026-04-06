@@ -132,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 * add network monitoring module (TSCM) ([1906c76](https://github.com/i-am-logger/mynixos/commit/1906c76086099aac998a601916b72df9b78679b1))
-* integrate hypr-vogix as my.themes.hypr-vogix ([acb461e](https://github.com/i-am-logger/mynixos/commit/acb461ebcacd2c92e581dc429dffaacd3247c370))
+* integrate hypr-vogix as my.theming.hypr-vogix ([acb461e](https://github.com/i-am-logger/mynixos/commit/acb461ebcacd2c92e581dc429dffaacd3247c370))
 
 
 ### Bug Fixes

@@ -62,7 +62,7 @@ in
             cfg = userCfg.apps.terminal.visualizers.bespec;
           in
           let
-            vogixEnabled = userCfg.themes.vogix.enable or false;
+            vogixEnabled = userCfg.theming.vogix.enable or false;
           in
           mkIf cfg.enable {
             home.packages = [ bespec ];

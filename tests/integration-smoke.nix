@@ -57,10 +57,10 @@ let
           };
 
           my = myConfig // {
-            # Disable themes to avoid nixpkgs.overlays conflict with
+            # Disable theming to avoid nixpkgs.overlays conflict with
             # read-only pkgs. Vogix unconditionally imports its NixOS module
             # which sets nixpkgs.overlays.
-            themes.enable = false;
+            theming.enable = false;
           };
         }
       ] ++ extraModules;
