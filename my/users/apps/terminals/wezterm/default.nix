@@ -48,6 +48,11 @@ with lib;
                 config.term = 'wezterm'
                 config.check_for_updates = false
 
+                -- Vogix theme colors (live-reloaded on theme switch via SIGUSR1)
+                local colors_file = (os.getenv("XDG_STATE_HOME") or os.getenv("HOME") .. "/.local/state") .. "/vogix/current-theme/wezterm/colors.lua"
+                local ok, theme_colors = pcall(dofile, colors_file)
+                if ok and theme_colors then config.colors = theme_colors end
+
                 -- Selection behavior
                 config.selection_word_boundary = ' \t\n{}"\'`,;:'
 

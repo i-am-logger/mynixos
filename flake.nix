@@ -38,7 +38,7 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
-        tinted-schemes.follows = "stylix/tinted-schemes";
+        tinted-schemes.url = "github:i-am-logger/tinted-schemes";
         rust-overlay.follows = "lanzaboote/rust-overlay";
         devenv.inputs.git-hooks.follows = "git-hooks";
       };

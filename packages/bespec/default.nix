@@ -1,9 +1,10 @@
 { lib
-, stdenv
-, fetchurl
-, autoPatchelfHook
+, rustPlatform
+, fetchFromGitHub
+, pkg-config
 , alsa-lib
 , dbus
+, pipewire
 , makeWrapper
 , libGL
 , libxkbcommon
@@ -12,23 +13,25 @@
 , vulkan-loader
 }:
 
-stdenv.mkDerivation rec {
+rustPlatform.buildRustPackage rec {
   pname = "bespec";
-  version = "1.6.3";
+  version = "1.6.4-rc.3-hotreload";
 
-  src = fetchurl {
-    url = "https://github.com/BeSpec-Dev/BeSpec/releases/download/v${version}/bespec-v${version}-linux.tar.gz";
-    hash = "sha256-RR9hW4+QXaj+byUD3aR1z1N39uj3r99X+GadCtn9Qz0=";
+  src = fetchFromGitHub {
+    owner = "i-am-logger";
+    repo = "BeSpec";
+        rev = "c084952de2fba5a7596e03caede87cfed8d810fc";
+    hash = "sha256-bA/O2pBcAfYmKgvuCb5LzqHVoOfb9GUpNlKWoqQD5pA=";
   };
 
-  sourceRoot = "bespec-dist";
+  cargoHash = "sha256-IFmFNTtlDGP6LInzTPc12uTrhtXOajPxlO5mxbxs2wY=";
 
-  nativeBuildInputs = [ autoPatchelfHook makeWrapper ];
+  nativeBuildInputs = [ pkg-config makeWrapper ];
 
   buildInputs = [
     alsa-lib
     dbus
-    stdenv.cc.cc.lib
+    pipewire
   ];
 
   runtimeDependencies = [
@@ -42,21 +45,11 @@ stdenv.mkDerivation rec {
     xorg.libXrandr
   ];
 
-  installPhase = ''
-    runHook preInstall
-
-    install -Dm755 bespec $out/bin/bespec
-    install -Dm644 icon.png $out/share/icons/hicolor/256x256/apps/bespec.png
-    install -Dm644 bespec.desktop $out/share/applications/bespec.desktop
-
-    substituteInPlace $out/share/applications/bespec.desktop \
-      --replace-quiet "/usr/local/bin/bespec" "$out/bin/bespec" \
-      --replace-quiet "/usr/local/share/icons/bespec.png" "$out/share/icons/hicolor/256x256/apps/bespec.png"
+  postInstall = ''
+    install -Dm644 assets/icon.png $out/share/icons/hicolor/256x256/apps/bespec.png
 
     wrapProgram $out/bin/bespec \
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeDependencies}"
-
-    runHook postInstall
   '';
 
   meta = with lib; {

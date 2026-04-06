@@ -28,6 +28,9 @@ in
       home-manager.users = mapAttrs
         (
           _name: userCfg:
+            let
+              vogixEnabled = userCfg.themes.vogix.enable or false;
+            in
             mkIf (userCfg.apps.graphical.editors.helix.enable or false) {
               home.packages = with pkgs; [
                 helix
@@ -72,6 +75,7 @@ in
                 enable = true;
                 defaultEditor = true;
                 settings = {
+                  theme = if vogixEnabled then "base16_terminal" else "default";
                   editor = {
                     # line-number = "relative";
                     rulers = [ 120 ];
