@@ -1,5 +1,6 @@
 # Vogix implementation module
 # Wires vogix NixOS and Home Manager modules based on my.themes.vogix configuration
+# Also wires kanata service for behavior/modes (evdev key remapping)
 { activeUsers
 , config
 , lib
@@ -12,6 +13,7 @@ with lib;
 let
   cfg = config.my.themes;
   vogixCfg = cfg.vogix;
+
 in
 {
   imports = [

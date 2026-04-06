@@ -225,6 +225,14 @@ in
                           };
                         };
                       };
+                      bespec = appLib.mkAppOption {
+                        name = "bespec";
+                        default = true;
+                        description = "BeSpec real-time audio spectrum visualizer with peak hold";
+                        persistedDirectories = [
+                          ".config/BeSpec"
+                        ];
+                      };
                     };
                   };
                   default = { };

@@ -213,7 +213,6 @@ in
 
                   language-server =
                     with pkgs;
-                    with pkgs.nodePackages_latest;
                     {
                       typescript-language-server = {
                         command = "${typescript-language-server}/bin/typescript-language-server";

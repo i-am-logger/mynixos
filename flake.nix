@@ -257,6 +257,8 @@
               ./my/graphical
               ./my/graphical/hyprland
 
+              # Behavior (modes, kanata) handled by vogix.nixosModules.default
+
               # Security
               ./my/security
               ./my/security/yubikey
@@ -299,6 +301,7 @@
 
               # Hardware - Peripherals
               ./my/hardware/peripherals/elgato
+              ./my/hardware/peripherals/keychron
 
               # Hardware - Storage
               ./my/hardware/storage/nvme
@@ -443,6 +446,7 @@
               ./my/users/apps/viewers/feh
 
               # Users - Apps: Visualizers
+              ./my/users/apps/visualizers/bespec
               ./my/users/apps/visualizers/cava
 
               # Users - Apps: XDG

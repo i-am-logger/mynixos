@@ -44,6 +44,7 @@
           network.termscp.enable = lib.mkDefault false;
 
           # Visualizers
+          visualizers.bespec.enable = lib.mkDefault true;
           visualizers.cava.enable = lib.mkDefault true;
 
           # Fun/Eye candy

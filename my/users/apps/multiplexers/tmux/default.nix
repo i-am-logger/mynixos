@@ -21,12 +21,23 @@ with lib;
               tmuxPlugins.fzf-tmux-url
               tmuxPlugins.better-mouse-mode
               tmuxPlugins.sensible
+              tmuxPlugins.resurrect
+              {
+                plugin = tmuxPlugins.continuum;
+                extraConfig = ''
+                  set -g @continuum-restore 'on'
+                  set -g @continuum-save-interval '10'
+                '';
+              }
             ];
             customPaneNavigationAndResize = true;
             escapeTime = 0;
             historyLimit = 50000;
             extraConfig = ''
-              set-option -g default-command usr/bin/env bash
+              # True color support
+              set -g default-terminal "tmux-256color"
+              set -ag terminal-overrides ",xterm-256color:RGB"
+              set -ag terminal-overrides ",wezterm:RGB"
               set -g status-justify "left"
               set -g status "on"
               set -g status-left-style none

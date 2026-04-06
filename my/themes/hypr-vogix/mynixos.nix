@@ -4,6 +4,6 @@
 
 {
   config = {
-    my.themes.hypr-vogix.enable = lib.mkDefault true;
+    my.themes.hypr-vogix.enable = lib.mkDefault false; # TODO: move into vogix
   };
 }

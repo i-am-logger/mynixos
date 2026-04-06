@@ -2,6 +2,7 @@
 , config
 , lib
 , pkgs
+, vogix
 , ...
 }:
 
@@ -38,6 +39,7 @@ let
       "borderangle, 1, 2, default"
       "fade, 1, 2, default"
       "workspaces, 1, 2, default"
+      "specialWorkspace, 1, 3, myBezier, slidefadevert top"
     ];
   };
 
@@ -47,6 +49,9 @@ let
     "1password --silent &"
     "wl-paste --watch cliphist store"
   ];
+
+  # Vogix behavior module (pure functions, no module system needed)
+  behaviorModule = import "${vogix}/nix/modules/behavior" { inherit lib; };
 
   # mynixos opinionated defaults for Hyprland input settings
   # Note: browser/terminal come from environment API (userCfg.environment.BROWSER/TERMINAL)
@@ -353,6 +358,11 @@ let
     # Slack - Hide/suppress menu windows and popups (empty title)
     "match:class ^(Slack)$, match:title ^$, no_focus true, no_initial_focus true, float true, size 0 0, move -1000 -1000"
 
+    # System console — 75% height, 90% width, centered
+    "match:class ^(vogix-console)$, float true"
+    "match:class ^(vogix-console)$, size 90% 75%"
+    "match:class ^(vogix-console)$, center true"
+
     # Slack - Handle context menus and dropdowns
     "match:class ^(Slack)$, match:title ^(Context Menu)$, float true, no_focus true, size 0 0"
   ];
@@ -505,18 +515,33 @@ in
                 gtk3
               ];
 
-              # Hyprland configuration
-              wayland.windowManager.hyprland = {
+              # Vogix behavior — modes enabled via programs.vogix.behavior.modes.enable
+              wayland.windowManager.hyprland =
+                let
+                  # Use vogix defaults directly — user overrides via programs.vogix in home-manager
+                  generatedBehavior = behaviorModule.mkHyprlandConfig { };
+                  modesEnabled = config.my.themes.vogix.enable or false;
+                in
+                {
                 enable = true;
                 xwayland = {
                   enable = true;
                 };
+                extraConfig = if modesEnabled then generatedBehavior.extraConfig or "" else "";
                 settings =
                   let
                     generalCfg = mkGeneral userHyprland;
                     decorationsCfg = mkDecorations userHyprland;
                     blurCfg = mkDecorationBlur userHyprland;
                     animationsCfg = mkAnimations userHyprland;
+
+                    # Keybinding settings: vogix-generated or legacy hardcoded
+                    keybindingSettings =
+                      if modesEnabled then
+                        generatedBehavior.settings
+                      else
+                        mkBindings { inherit browserCmd terminalCmd; };
+
                     baseSettings = {
                       # General settings - nested under general block
                       general = {
@@ -565,20 +590,30 @@ in
                         # Shadow color managed by stylix theming
                       };
 
+                      # Special workspaces
+                      workspace = [
+                        "special:console, persistent:true, gapsout:0, gapsin:0, shadow:false, on-created-empty:wezterm start --class vogix-console -- tmux new-session -A -s console"
+                      ];
+
                       # Window and layer rules
                       inherit layerrule;
                       windowrule = windowRules;
 
                       # Environment
                       inherit (environment) monitor;
+                      env = [
+                        "TERMINAL,${terminalCmd}"
+                        "BROWSER,${browserCmd}"
+                        "COLORTERM,truecolor"
+                      ];
 
                       # Autostart
                       exec-once = autostart;
                     }
-                    // (mkBindings { inherit browserCmd terminalCmd; });
+                    // keybindingSettings;
                   in
                   lib.recursiveUpdate baseSettings (userHyprland.extraSettings or { });
-              };
+              }; # end let...in for keybinding vars
             }
         ) # End mkIf userHyprland.enable
         (activeUsers config.my.users);

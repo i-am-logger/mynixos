@@ -73,6 +73,42 @@ in
           };
         };
 
+        # OpenRGB hardware RGB lighting control
+        openrgb = lib.mkOption {
+          description = "OpenRGB hardware RGB lighting control";
+          default = { };
+          type = lib.types.submodule {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable OpenRGB for hardware RGB lighting control (keyboards, coolers, motherboards)";
+              };
+
+              qmkDevices = lib.mkOption {
+                type = lib.types.listOf (lib.types.submodule {
+                  options = {
+                    name = lib.mkOption {
+                      type = lib.types.str;
+                      description = "Device name for OpenRGB display";
+                    };
+                    vid = lib.mkOption {
+                      type = lib.types.str;
+                      description = "USB Vendor ID (e.g. \"0x3434\")";
+                    };
+                    pid = lib.mkOption {
+                      type = lib.types.str;
+                      description = "USB Product ID (e.g. \"0x0E20\")";
+                    };
+                  };
+                });
+                default = [ ];
+                description = "QMK keyboards with OpenRGB firmware support. Hardware modules append to this list.";
+              };
+            };
+          };
+        };
+
         # Stylix static theming (legacy, disabled by default)
         stylix = lib.mkOption {
           description = "Stylix static theming configuration (legacy)";

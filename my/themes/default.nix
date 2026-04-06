@@ -7,5 +7,6 @@
     ./stylix
     ./vogix
     ./hypr-vogix
+    ./openrgb
   ];
 }

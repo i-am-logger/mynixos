@@ -26,6 +26,14 @@
 
         enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
 
+        udev = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Master switch for custom device udev rules. When false, sets all device udev options to false via mkDefault. Individual devices can override with mkForce.";
+          };
+        };
+
         dualBoot = {
           windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
         };

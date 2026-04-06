@@ -45,11 +45,34 @@ with lib;
                 config.cursor_blink_rate = 200
                 config.cursor_thickness = 1
                 config.window_close_confirmation = 'NeverPrompt'
-                config.term = 'xterm-256color'
+                config.term = 'wezterm'
                 config.check_for_updates = false
 
                 -- Selection behavior
                 config.selection_word_boundary = ' \t\n{}"\'`,;:'
+
+                -- Smart Ctrl+C/V (macOS Command behavior)
+                -- Ctrl+C: copy if selected, SIGINT if not
+                -- Ctrl+V: paste always
+                config.keys = {
+                  {
+                    key = 'c',
+                    mods = 'CTRL',
+                    action = wezterm.action_callback(function(window, pane)
+                      local sel = window:get_selection_text_for_pane(pane)
+                      if sel and sel ~= "" then
+                        window:perform_action(wezterm.action.CopyTo('Clipboard'), pane)
+                      else
+                        window:perform_action(wezterm.action.SendKey{key='c', mods='CTRL'}, pane)
+                      end
+                    end),
+                  },
+                  {
+                    key = 'v',
+                    mods = 'CTRL',
+                    action = wezterm.action.PasteFrom('Clipboard'),
+                  },
+                }
 
                 return config
               '';

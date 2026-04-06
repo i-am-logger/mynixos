@@ -14,7 +14,7 @@
 
         multiplexer = lib.mkOption {
           type = lib.types.enum [ "zellij" "tmux" "screen" "none" ];
-          default = "zellij";
+          default = "tmux";
           description = "Terminal multiplexer";
         };
       };

@@ -414,4 +414,74 @@ in
       && config.my.environment.enable
       && config.my.performance.enable;
   };
+
+  # --- Udev Master Switch Tests ---
+
+  # Test: Keychron udev rules load when device enabled (master defaults true)
+  smoke-udev-keychron-default = mkSmokeTest {
+    name = "test-udev-keychron-default";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-udev-keychron-default";
+      hardware.peripherals.keychron.k2-he.enable = true;
+    };
+    assertions = config:
+      config.my.hardware.peripherals.keychron.k2-he.udev
+      && (builtins.length config.services.udev.packages) > 0;
+  };
+
+  # Test: Master udev off disables device udev via mkDefault
+  smoke-udev-master-off = mkSmokeTest {
+    name = "test-udev-master-off";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-udev-master-off";
+      system.udev.enable = false;
+      hardware.peripherals.keychron.k2-he.enable = true;
+    };
+    assertions = config:
+      !config.my.hardware.peripherals.keychron.k2-he.udev;
+  };
+
+  # Test: Device udev explicitly false overrides master on
+  smoke-udev-device-off = mkSmokeTest {
+    name = "test-udev-device-off";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-udev-device-off";
+      hardware.peripherals.keychron.k2-he = {
+        enable = true;
+        udev = false;
+      };
+    };
+    assertions = config:
+      !config.my.hardware.peripherals.keychron.k2-he.udev;
+  };
+
+  # Test: Device udev mkForce true overrides master off
+  smoke-udev-device-force = mkSmokeTest {
+    name = "test-udev-device-force";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-udev-device-force";
+      system.udev.enable = false;
+      hardware.peripherals.keychron.k2-he = {
+        enable = true;
+        udev = lib.mkForce true;
+      };
+    };
+    assertions = config:
+      config.my.hardware.peripherals.keychron.k2-he.udev;
+  };
+
+  # Test: Keychron disabled means no udev rules regardless
+  smoke-udev-device-disabled = mkSmokeTest {
+    name = "test-udev-device-disabled";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-udev-device-disabled";
+    };
+    assertions = config:
+      !config.my.hardware.peripherals.keychron.k2-he.enable;
+  };
 }

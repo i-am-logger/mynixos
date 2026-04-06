@@ -270,6 +270,26 @@
               };
             };
           };
+
+          keychron = {
+            k2-he = {
+              enable = lib.mkEnableOption ''
+                Keychron K2 HE Hall Effect keyboard.
+
+                Provides udev rules for hidraw access (OpenRGB) and DFU flashing (STM32).
+
+                Vendor: Keychron (3434)
+                Product: K2 HE (0e20)
+                Bootloader: STM32 DFU (0483:df11)
+              '';
+
+              udev = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable udev rules for this device. Gated by my.hardware.udev.enable unless set with mkForce.";
+              };
+            };
+          };
         };
       };
     };
