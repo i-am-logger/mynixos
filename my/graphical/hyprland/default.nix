@@ -358,10 +358,7 @@ let
     # Slack - Hide/suppress menu windows and popups (empty title)
     "match:class ^(Slack)$, match:title ^$, no_focus true, no_initial_focus true, float true, size 0 0, move -1000 -1000"
 
-    # System console — 75% height, 90% width, centered
-    "match:class ^(vogix-console)$, float true"
-    "match:class ^(vogix-console)$, size 90% 75%"
-    "match:class ^(vogix-console)$, center true"
+    # System console — window rules managed by vogix behavior module
 
     # Slack - Handle context menus and dropdowns
     "match:class ^(Slack)$, match:title ^(Context Menu)$, float true, no_focus true, size 0 0"
@@ -590,10 +587,7 @@ in
                         # Shadow color managed by stylix theming
                       };
 
-                      # Special workspaces
-                      workspace = [
-                        "special:console, persistent:true, gapsout:0, gapsin:0, shadow:false, on-created-empty:wezterm start --class vogix-console -- tmux new-session -A -s console"
-                      ];
+                      # Special workspaces managed by vogix behavior module
 
                       # Window and layer rules
                       inherit layerrule;
