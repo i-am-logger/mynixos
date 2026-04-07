@@ -512,102 +512,57 @@ in
                 gtk3
               ];
 
-              # Vogix behavior — modes enabled via programs.vogix.behavior.modes.enable
+              # Hyprland configuration
+              # Appearance + behavior handled by vogix hyprland module (via mkDefault)
+              # This module provides infrastructure: monitor, env, autostart, app window rules
               wayland.windowManager.hyprland =
                 let
-                  # Use vogix defaults directly — user overrides via programs.vogix in home-manager
-                  generatedBehavior = behaviorModule.mkHyprlandConfig { };
                   modesEnabled = config.my.theming.vogix.enable or false;
+
+                  # Infrastructure settings (always applied, overrides vogix defaults)
+                  infraSettings = {
+                    inherit (environment) monitor;
+                    env = [
+                      "TERMINAL,${terminalCmd}"
+                      "BROWSER,${browserCmd}"
+                      "COLORTERM,truecolor"
+                    ];
+                    exec-once = autostart;
+                    windowrule = windowRules;
+                    inherit layerrule;
+                  };
+
+                  # Fallback: when vogix is disabled, use legacy hardcoded config
+                  fallbackSettings = lib.optionalAttrs (!modesEnabled) (
+                    let
+                      generalCfg = mkGeneral userHyprland;
+                      decorationsCfg = mkDecorations userHyprland;
+                      blurCfg = mkDecorationBlur userHyprland;
+                      animationsCfg = mkAnimations userHyprland;
+                    in
+                    (mkBindings { inherit browserCmd terminalCmd; })
+                    // {
+                      general = {
+                        inherit (generalCfg) gaps_in gaps_out border_size layout;
+                      };
+                      input = mkInput userHyprland;
+                      inherit (layouts) dwindle master;
+                      inherit misc group gestures;
+                      animations = animationsCfg;
+                      decoration = {
+                        inherit (decorationsCfg) active_opacity inactive_opacity fullscreen_opacity rounding dim_inactive dim_strength;
+                        blur = { inherit (blurCfg) enabled brightness size; };
+                      };
+                    }
+                  );
                 in
                 {
-                enable = true;
-                xwayland = {
                   enable = true;
+                  xwayland.enable = true;
+                  settings = lib.recursiveUpdate
+                    (infraSettings // fallbackSettings)
+                    (userHyprland.extraSettings or { });
                 };
-                extraConfig = if modesEnabled then generatedBehavior.extraConfig or "" else "";
-                settings =
-                  let
-                    generalCfg = mkGeneral userHyprland;
-                    decorationsCfg = mkDecorations userHyprland;
-                    blurCfg = mkDecorationBlur userHyprland;
-                    animationsCfg = mkAnimations userHyprland;
-
-                    # Keybinding settings: vogix-generated or legacy hardcoded
-                    keybindingSettings =
-                      if modesEnabled then
-                        generatedBehavior.settings
-                      else
-                        mkBindings { inherit browserCmd terminalCmd; };
-
-                    baseSettings = {
-                      # General settings - nested under general block
-                      general = {
-                        inherit (generalCfg)
-                          gaps_in
-                          gaps_out
-                          border_size
-                          layout
-                          ;
-                      };
-
-                      # Input settings
-                      input = mkInput userHyprland;
-
-                      # Layouts
-                      inherit (layouts) dwindle master;
-
-                      # Misc
-                      inherit misc;
-
-                      # Groups
-                      inherit group;
-
-                      # Gestures
-                      inherit gestures;
-
-                      # Animations
-                      animations = animationsCfg;
-
-                      # Decoration - properly structured for Hyprland 0.51+
-                      # This merges with stylix's decoration settings
-                      decoration = {
-                        inherit (decorationsCfg)
-                          active_opacity
-                          inactive_opacity
-                          fullscreen_opacity
-                          rounding
-                          dim_inactive
-                          dim_strength
-                          ;
-
-                        blur = {
-                          inherit (blurCfg) enabled brightness size;
-                        };
-
-                        # Shadow color managed by stylix theming
-                      };
-
-                      # Special workspaces managed by vogix behavior module
-
-                      # Window and layer rules
-                      inherit layerrule;
-                      windowrule = windowRules;
-
-                      # Environment
-                      inherit (environment) monitor;
-                      env = [
-                        "TERMINAL,${terminalCmd}"
-                        "BROWSER,${browserCmd}"
-                        "COLORTERM,truecolor"
-                      ];
-
-                      # Autostart
-                      exec-once = autostart;
-                    }
-                    // keybindingSettings;
-                  in
-                  lib.recursiveUpdate baseSettings (userHyprland.extraSettings or { });
-              }; # end let...in for keybinding vars
             }
         ) # End mkIf userHyprland.enable
         (activeUsers config.my.users);
