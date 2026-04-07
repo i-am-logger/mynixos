@@ -29,7 +29,6 @@ with lib;
               package = weztermPackage;
               enableBashIntegration = true;
               extraConfig = ''
-                local wezterm = require 'wezterm'
                 local config = wezterm.config_builder()
 
                 -- Font settings
@@ -56,10 +55,7 @@ with lib;
                 -- Selection behavior
                 config.selection_word_boundary = ' \t\n{}"\'`,;:'
 
-                -- Keybindings are injected by vogix home-manager module
-                -- (smart Ctrl+C/V for Super→Ctrl remap)
-
-                return config
+                -- Keybindings injected by vogix before return
               '';
             }
             # Merge settings if provided
