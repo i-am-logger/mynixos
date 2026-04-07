@@ -56,28 +56,8 @@ with lib;
                 -- Selection behavior
                 config.selection_word_boundary = ' \t\n{}"\'`,;:'
 
-                -- Smart Ctrl+C/V (macOS Command behavior)
-                -- Ctrl+C: copy if selected, SIGINT if not
-                -- Ctrl+V: paste always
-                config.keys = {
-                  {
-                    key = 'c',
-                    mods = 'CTRL',
-                    action = wezterm.action_callback(function(window, pane)
-                      local sel = window:get_selection_text_for_pane(pane)
-                      if sel and sel ~= "" then
-                        window:perform_action(wezterm.action.CopyTo('Clipboard'), pane)
-                      else
-                        window:perform_action(wezterm.action.SendKey{key='c', mods='CTRL'}, pane)
-                      end
-                    end),
-                  },
-                  {
-                    key = 'v',
-                    mods = 'CTRL',
-                    action = wezterm.action.PasteFrom('Clipboard'),
-                  },
-                }
+                -- Keybindings are injected by vogix home-manager module
+                -- (smart Ctrl+C/V for Super→Ctrl remap)
 
                 return config
               '';
