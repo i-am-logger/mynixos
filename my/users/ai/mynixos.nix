@@ -15,7 +15,6 @@
           config = lib.mkIf (config.ai.enable or false) {
             apps.ai.tools = {
               # AI tools
-              opencode.enable = lib.mkDefault true;
               claude-code.enable = lib.mkDefault true;
             };
           };

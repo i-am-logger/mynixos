@@ -780,15 +780,6 @@ in
                 tools = lib.mkOption {
                   type = lib.types.submodule {
                     options = {
-                      opencode = appLib.mkAppOption {
-                        name = "OpenCode";
-                        default = false;
-                        description = "OpenCode AI coding assistant";
-                        persistedDirectories = [
-                          ".claude"
-                          ".config/opencode"
-                        ];
-                      };
                       claude-code = appLib.mkAppOption {
                         name = "Claude Code";
                         default = false;

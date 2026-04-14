@@ -345,7 +345,6 @@
               ./my/users/webapps
 
               # Users - Apps: AI
-              ./my/users/apps/ai/opencode
               ./my/users/apps/ai/claude-code
 
               # Users - Apps: Art
