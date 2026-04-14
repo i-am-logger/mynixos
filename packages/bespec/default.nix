@@ -9,24 +9,38 @@
 , libGL
 , libxkbcommon
 , wayland
-, xorg
+, libx11
+, libxcursor
+, libxi
+, libxrandr
 , vulkan-loader
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "bespec";
-  version = "1.6.4-rc.3-hotreload";
+  # Tracks i-am-logger/BeSpec feat/linux-pipewire-capture — bespec v1.7.0
+  # plus the native pipewire-rs audio capture backend that fixes Linux audio
+  # routing (cpal's WASAPI loopback pattern silently misroutes on Linux ALSA;
+  # pipewire-rs autoconnects to the default sink monitor like cava does).
+  # Will retire once the upstream PR merges.
+  version = "1.7.0-linux-pipewire";
 
   src = fetchFromGitHub {
     owner = "i-am-logger";
     repo = "BeSpec";
-        rev = "c084952de2fba5a7596e03caede87cfed8d810fc";
-    hash = "sha256-bA/O2pBcAfYmKgvuCb5LzqHVoOfb9GUpNlKWoqQD5pA=";
+    rev = "690f8fee8084ea9150c06f2e150bbb34f5ec2294";
+    hash = "sha256-8KEFJGr+ZjbhaK9jtpDNPSu05EeFeL3ZKeHJ7Q6msGo=";
   };
 
-  cargoHash = "sha256-IFmFNTtlDGP6LInzTPc12uTrhtXOajPxlO5mxbxs2wY=";
+  cargoHash = "sha256-qQtRWWaqWH8snxoalQEYgCFAxg3C9cqRUrf/X82IYDk=";
 
-  nativeBuildInputs = [ pkg-config makeWrapper ];
+  # bindgenHook sets up LIBCLANG_PATH etc. for libspa-sys / pipewire-sys
+  # which use bindgen to parse pipewire's C headers at build time.
+  nativeBuildInputs = [
+    pkg-config
+    makeWrapper
+    rustPlatform.bindgenHook
+  ];
 
   buildInputs = [
     alsa-lib
@@ -39,10 +53,10 @@ rustPlatform.buildRustPackage rec {
     libxkbcommon
     wayland
     vulkan-loader
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXrandr
+    libx11
+    libxcursor
+    libxi
+    libxrandr
   ];
 
   postInstall = ''
