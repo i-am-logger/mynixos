@@ -519,7 +519,24 @@ in
                 let
                   modesEnabled = config.my.theming.vogix.enable or false;
 
-                  # Infrastructure settings (always applied, overrides vogix defaults)
+                  # Call vogix's behavior generator directly so we can access its
+                  # generated windowrule list and concatenate it with our own app
+                  # rules below. Plain assignment of `infraSettings.windowrule` would
+                  # otherwise clobber vogix's rules entirely — module-system priority
+                  # markers (mkDefault / mkAfter) don't survive being nested inside a
+                  # parent attrset assignment here, so list concatenation has to be
+                  # explicit at this layer. `{}` as the behavior config = "use
+                  # defaults" (see vogix/nix/modules/behavior/default.nix mergeOr).
+                  vogixBehaviorOutput =
+                    if modesEnabled
+                    then behaviorModule.mkHyprlandConfig { }
+                    else { settings = { }; };
+                  vogixWindowrules = vogixBehaviorOutput.settings.windowrule or [ ];
+
+                  # Infrastructure settings (always applied, overrides vogix defaults
+                  # except for `windowrule`, where both lists are concatenated so
+                  # vogix-generated rules — e.g. the vogix-console floating overlay —
+                  # aren't silently dropped).
                   infraSettings = {
                     inherit (environment) monitor;
                     env = [
@@ -528,7 +545,7 @@ in
                       "COLORTERM,truecolor"
                     ];
                     exec-once = autostart;
-                    windowrule = windowRules;
+                    windowrule = vogixWindowrules ++ windowRules;
                     inherit layerrule;
                   };
 
