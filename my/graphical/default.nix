@@ -51,10 +51,7 @@ in
       })
 
       (mkIf (dmType == "gdm") {
-        services.displayManager.gdm = {
-          enable = true;
-          inherit (dmCfg.gdm) wayland;
-        };
+        services.displayManager.gdm.enable = true;
       })
 
       (mkIf (dmType == "sddm") {

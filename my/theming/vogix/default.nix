@@ -45,11 +45,21 @@ in
           mkIf userEnabled {
             imports = [ vogix.homeManagerModules.default ];
 
+            # Propagate the vogix overlay to home-manager's pkgs so
+            # `pkgs.vogix` resolves via the flake's devenv build instead
+            # of falling back to packages/vogix.nix (which would re-build
+            # vogix via rustPlatform and need outputHashes for git deps).
+            nixpkgs.overlays = [ vogix.overlays.default ];
+
             programs.vogix = {
               enable = true;
+              # Daemon does session auto-save and (since 0.6.4+) submap-mode telemetry
+              # to ~/.local/state/vogix/modes.log — required for keybinding ergonomics
+              # analysis. Cheap (one socket, no polling), so always on.
+              enableDaemon = true;
               appearance = {
                 scheme = userVogixCfg.scheme or "vogix16";
-                theme = userVogixCfg.theme or "aikido";
+                theme = userVogixCfg.theme or "yoga";
                 variant = userVogixCfg.variant or "night";
               };
               # Pass hardware theme apply commands from NixOS to home-manager

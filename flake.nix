@@ -323,6 +323,8 @@
               ./my/network/tailscale
               ./my/network/tor
               ./my/network/monitoring
+              ./my/network/ipv6
+              ./my/network/unifi
 
               # Infrastructure
               ./my/infra/github-runner

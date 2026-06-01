@@ -23,8 +23,8 @@
 
               theme = lib.mkOption {
                 type = lib.types.str;
-                default = "aikido";
-                description = "Theme to use (vogix default: aikido)";
+                default = "yoga";
+                description = "Theme to use (vogix default: yoga)";
               };
 
               variant = lib.mkOption {

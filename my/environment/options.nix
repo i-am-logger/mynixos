@@ -66,20 +66,6 @@
                 };
               };
 
-              gdm = lib.mkOption {
-                description = "GDM display manager configuration";
-                default = { };
-                type = lib.types.submodule {
-                  options = {
-                    wayland = lib.mkOption {
-                      type = lib.types.bool;
-                      default = true;
-                      description = "Enable Wayland support (mynixos default: true)";
-                    };
-                  };
-                };
-              };
-
               sddm = lib.mkOption {
                 description = "SDDM display manager configuration";
                 default = { };

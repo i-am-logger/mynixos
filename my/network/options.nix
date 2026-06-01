@@ -136,6 +136,114 @@
           };
         };
 
+        unifi = {
+          enable = lib.mkEnableOption "declarative UniFi controller config (REST API)";
+
+          controller = {
+            url = lib.mkOption {
+              type = lib.types.str;
+              default = "https://10.45.128.1";
+              description = "UniFi controller base URL (UniFi OS console). Self-signed certs are accepted by the reconciler.";
+            };
+
+            site = lib.mkOption {
+              type = lib.types.str;
+              default = "default";
+              description = "UniFi site name. Single-site UDM deployments use \"default\".";
+            };
+          };
+
+          apiKeySecret = lib.mkOption {
+            type = lib.types.str;
+            default = "unifi/api-key";
+            description = ''
+              Name of the sops secret (key in secrets.yaml) holding the
+              UniFi controller API key. The decrypted file should contain
+              the bare key string — no JSON, no quotes. Created in the UDM
+              UI under My Account → Control Plane API → Create API Key.
+            '';
+          };
+
+          desiredStateSecret = lib.mkOption {
+            type = lib.types.str;
+            default = "unifi/desired-state";
+            description = ''
+              Name of the sops secret (key in secrets.yaml) holding the
+              desired-state YAML. Network names, subnets, VLAN tags and any
+              other topology data are private and live only in this
+              encrypted blob — never in the public flake.
+            '';
+          };
+
+          owner = lib.mkOption {
+            type = lib.types.str;
+            default = "logger";
+            description = "User allowed to read the decrypted secrets and invoke unifi-reconciler.";
+          };
+        };
+
+        ipv6.privacy = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              IPv6 privacy extensions (RFC 8981 temporary addresses).
+              Generates rotating outbound addresses to limit passive tracking
+              by third parties. Defaults are the "Strong" tier (5 min preferred,
+              30 min valid, 60s desync). Tighter rotation increases churn and
+              risks breaking long-lived connections.
+            '';
+          };
+
+          preferredLifetime = lib.mkOption {
+            type = lib.types.ints.positive;
+            default = 300;
+            description = ''
+              Seconds a temporary IPv6 address is preferred for new outbound
+              connections (`net.ipv6.conf.*.temp_prefered_lft`). After this,
+              the kernel generates a fresh temp address. Must exceed
+              `maxDesyncFactor` plus regen_advance (~3s) or the kernel will
+              silently disable temp address generation.
+            '';
+          };
+
+          validLifetime = lib.mkOption {
+            type = lib.types.ints.positive;
+            default = 1800;
+            description = ''
+              Seconds a temporary IPv6 address remains usable for in-flight
+              connections (`net.ipv6.conf.*.temp_valid_lft`). Should be
+              several multiples of `preferredLifetime` to let SSH/long syncs
+              wrap up before their address expires.
+            '';
+          };
+
+          maxDesyncFactor = lib.mkOption {
+            type = lib.types.ints.positive;
+            default = 60;
+            description = ''
+              Random offset (0..N seconds) subtracted from `preferredLifetime`
+              per host so rotation does not happen in lockstep across a network
+              (`net.ipv6.conf.*.max_desync_factor`). Kernel default is 600.
+            '';
+          };
+
+          addrGenMode = lib.mkOption {
+            type = lib.types.enum [ 0 1 2 3 ];
+            default = 2;
+            description = ''
+              SLAAC base address generation mode (`net.ipv6.conf.*.addr_gen_mode`):
+              0 = EUI-64 (derived from MAC, privacy-bad),
+              1 = none,
+              2 = stable-privacy (RFC 7217, hash per network) — modern default,
+              3 = random (regenerated on every interface bring-up).
+              Outbound traffic uses the rotating temp address regardless of
+              this value; this controls the stable address used by listeners
+              and as a fallback.
+            '';
+          };
+        };
+
         monitoring = {
           enable = lib.mkEnableOption "network monitoring stack";
 
