@@ -113,7 +113,15 @@ in
           QT_QPA_PLATFORM = "wayland;xcb";
           QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
           MOZ_ENABLE_WAYLAND = "1";
-          WAYLAND_DISPLAY = "wayland-1";
+          # NOTE: do NOT set WAYLAND_DISPLAY here. It is assigned by the
+          # compositor at runtime (Hyprland creates wayland-0/-1/… and exports
+          # it; the session then runs `systemctl --user import-environment
+          # WAYLAND_DISPLAY` + `dbus-update-activation-environment`). Forcing it
+          # globally makes EVERY session — including the GDM greeter's mutter —
+          # see WAYLAND_DISPLAY before any socket exists, so the compositor
+          # tries to run *nested* against a non-existent display and bails
+          # ("GdmDisplay: Session never registered, failing" / "Unable to run
+          # session"). Harmless on older GNOME, fatal under GNOME 50.
         };
 
         services.dbus.enable = true;
