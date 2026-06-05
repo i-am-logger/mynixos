@@ -44,8 +44,16 @@ let
   };
 
   autostart = [
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP &"
-    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+    # NOTE: the Wayland/Hyprland session environment import lives in home-manager's
+    # Hyprland systemd integration (it emits the complete
+    # `dbus-update-activation-environment --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE
+    # WAYLAND_DISPLAY XDG_CURRENT_DESKTOP && systemctl --user restart
+    # hyprland-session.target` as the first exec-once, ordered before
+    # graphical-session.target members start). A second partial import here
+    # (only WAYLAND_DISPLAY + XDG_CURRENT_DESKTOP, backgrounded/unordered) used
+    # to live in this list — it imported neither HYPRLAND_INSTANCE_SIGNATURE nor
+    # DISPLAY, raced the real import, and muddied diagnosis. Removed: the HM
+    # integration is the single canonical importer.
     "1password --silent &"
     "wl-paste --watch cliphist store"
   ];
