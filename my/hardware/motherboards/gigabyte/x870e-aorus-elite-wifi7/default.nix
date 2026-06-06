@@ -14,6 +14,11 @@ in
     # Import motherboard-specific boot configuration (conditionally)
     (mkIf cfg.enable (import ./drivers/uefi-boot.nix { inherit config lib pkgs; }))
 
+    # Integrated-GPU (Raphael/RDNA2) driver quirks — GFXOFF disable etc.
+    # (the generic amdgpu driver comes from my/hardware/gpu/amd via the
+    # `my.hardware.gpu = "amd"` set below).
+    (mkIf cfg.enable (import ./drivers/amd-integrated-gpu.nix { inherit config lib pkgs; }))
+
     # Platform architecture (conditionally)
     (mkIf cfg.enable {
       nixpkgs.hostPlatform = mkDefault "x86_64-linux";
