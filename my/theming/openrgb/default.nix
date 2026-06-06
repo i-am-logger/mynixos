@@ -6,15 +6,16 @@ let
   cfg = config.my.theming.openrgb;
   hwCpu = config.my.hardware.cpu;
 
-  qmkDevicesJson = if cfg.qmkDevices != [ ] then {
-    devices = map
-      (dev: {
-        name = dev.name;
-        usb_vid = dev.vid;
-        usb_pid = dev.pid;
-      })
-      cfg.qmkDevices;
-  } else null;
+  qmkDevicesJson =
+    if cfg.qmkDevices != [ ] then {
+      devices = map
+        (dev: {
+          inherit (dev) name;
+          usb_vid = dev.vid;
+          usb_pid = dev.pid;
+        })
+        cfg.qmkDevices;
+    } else null;
 
   serverConfig = pkgs.writeText "openrgb-server-config.json" (builtins.toJSON {
     QMKOpenRGBDevices = qmkDevicesJson;

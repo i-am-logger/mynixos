@@ -434,9 +434,11 @@ in
   smoke-udev-master-off = mkSmokeTest {
     name = "test-udev-master-off";
     myConfig = {
-      system.enable = true;
-      system.hostname = "test-udev-master-off";
-      system.udev.enable = false;
+      system = {
+        enable = true;
+        hostname = "test-udev-master-off";
+        udev.enable = false;
+      };
       hardware.peripherals.keychron.k2-he.enable = true;
     };
     assertions = config:
@@ -462,9 +464,11 @@ in
   smoke-udev-device-force = mkSmokeTest {
     name = "test-udev-device-force";
     myConfig = {
-      system.enable = true;
-      system.hostname = "test-udev-device-force";
-      system.udev.enable = false;
+      system = {
+        enable = true;
+        hostname = "test-udev-device-force";
+        udev.enable = false;
+      };
       hardware.peripherals.keychron.k2-he = {
         enable = true;
         udev = lib.mkForce true;

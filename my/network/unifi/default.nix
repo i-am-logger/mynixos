@@ -34,12 +34,12 @@ in
 
     sops.secrets.${cfg.apiKeySecret} = {
       mode = "0400";
-      owner = cfg.owner;
+      inherit (cfg) owner;
     };
 
     sops.secrets.${cfg.desiredStateSecret} = {
       mode = "0400";
-      owner = cfg.owner;
+      inherit (cfg) owner;
     };
 
     environment.systemPackages = [ reconciler ];

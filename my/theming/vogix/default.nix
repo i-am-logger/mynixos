@@ -27,12 +27,13 @@ in
     # Allow vogix unfree license
     my.system.allowedUnfreePackages = [ "vogix" ];
 
-    # Enable vogix at the NixOS level (console colors, hardware, etc.)
-    vogix.enable = true;
-
-    # Auto-enable vogix hardware modules from mynixos hardware config
-    vogix.hardware.kraken-elite.enable = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable;
-    vogix.hardware.keychron-k2-he.enable = config.my.hardware.peripherals.keychron.k2-he.enable;
+    # Enable vogix at the NixOS level (console colors, hardware, etc.) and
+    # auto-enable its hardware modules from the mynixos hardware config.
+    vogix = {
+      enable = true;
+      hardware.kraken-elite.enable = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable;
+      hardware.keychron-k2-he.enable = config.my.hardware.peripherals.keychron.k2-he.enable;
+    };
 
     # Configure home-manager for each user with vogix enabled
     home-manager.users = mapAttrs

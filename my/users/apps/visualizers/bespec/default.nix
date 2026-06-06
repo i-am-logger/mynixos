@@ -30,7 +30,8 @@ let
       peak_release_time_ms = 1000.0;
       aggregation_mode = "Peak";
       retro_coloring = true;
-      color_link = if vogixEnabled
+      color_link =
+        if vogixEnabled
         then { Preset = "vogix theme"; }
         else { Preset = "VFD Blue"; };
       beos_enabled = false;
@@ -60,8 +61,7 @@ in
         _name: userCfg:
           let
             cfg = userCfg.apps.terminal.visualizers.bespec;
-          in
-          let
+
             vogixEnabled = userCfg.theming.vogix.enable or false;
           in
           mkIf cfg.enable {
