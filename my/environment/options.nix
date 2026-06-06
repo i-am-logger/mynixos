@@ -44,8 +44,17 @@
                               options = {
                                 command = lib.mkOption {
                                   type = lib.types.str;
-                                  default = "Hyprland";
-                                  description = "Command to run for the default session";
+                                  default = "start-hyprland";
+                                  description = ''
+                                    Command the greeter runs for the default session.
+                                    Defaults to `start-hyprland` (Hyprland's official
+                                    watchdog wrapper) rather than the bare `Hyprland`
+                                    binary — launching Hyprland directly triggers its
+                                    "launched without start-hyprland, highly advised
+                                    against" warning (main.cpp:261) and skips the
+                                    watchdog + proper Nix session-env setup. Needs
+                                    os-release NAME="NixOS" (set in my/system/core).
+                                  '';
                                 };
                                 user = lib.mkOption {
                                   type = lib.types.str;
