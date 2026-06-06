@@ -45,7 +45,7 @@ require_desired_state() {
   fi
 }
 
-api_key() { tr -d '\n\r ' < "$UNIFI_API_KEY_FILE"; }
+api_key() { tr -d '\n\r ' <"$UNIFI_API_KEY_FILE"; }
 
 # Curl wrapper: returns body, exits non-zero on HTTP >= 400 with diagnostics.
 api() {
@@ -68,7 +68,7 @@ api() {
     args+=(-H "Content-Type: application/json" --data "$body")
   fi
 
-  curl "${args[@]}" "$UNIFI_URL$path" > "$tmp_status" || {
+  curl "${args[@]}" "$UNIFI_URL$path" >"$tmp_status" || {
     err "curl failed for $method $path"
     cat "$tmp_body" >&2 || true
     return 1
@@ -124,8 +124,8 @@ inventory_to_yaml() {
     }] | add // {}
   ')
 
-  jq -n --argjson n "$networks" --argjson w "$wans" '{networks: $n, wans: $w}' \
-    | yq -p json -o yaml
+  jq -n --argjson n "$networks" --argjson w "$wans" '{networks: $n, wans: $w}' |
+    yq -p json -o yaml
 }
 
 cmd_inventory() {
@@ -147,12 +147,12 @@ cmd_plan() {
   current_yaml=$(cmd_inventory)
   desired_yaml=$(yq -p yaml -o yaml '.' "$UNIFI_DESIRED_STATE")
 
-  echo "$current_yaml" > "$tmp_current"
-  echo "$desired_yaml" > "$tmp_desired"
+  echo "$current_yaml" >"$tmp_current"
+  echo "$desired_yaml" >"$tmp_desired"
 
   echo "=== Plan: current → desired ==="
   if diff -u --label "current (live)" --label "desired ($UNIFI_DESIRED_STATE)" \
-      "$tmp_current" "$tmp_desired"; then
+    "$tmp_current" "$tmp_desired"; then
     echo "(no differences — controller already matches desired state)"
     return 0
   fi
@@ -187,26 +187,26 @@ cmd_apply() {
   current_json=$(fetch_networks)
 
   # Apply networks
-  echo "$desired_json" \
-    | jq -r '(.networks // {}) | to_entries[] | @json' \
-    | while IFS= read -r entry; do
-        local name desired_cfg current_doc current_id merged
-        name=$(echo "$entry" | jq -r '.key')
-        desired_cfg=$(echo "$entry" | jq '.value')
+  echo "$desired_json" |
+    jq -r '(.networks // {}) | to_entries[] | @json' |
+    while IFS= read -r entry; do
+      local name desired_cfg current_doc current_id merged
+      name=$(echo "$entry" | jq -r '.key')
+      desired_cfg=$(echo "$entry" | jq '.value')
 
-        current_doc=$(echo "$current_json" \
-          | jq --arg n "$name" '.[] | select(.purpose == "corporate" and .name == $n)')
+      current_doc=$(echo "$current_json" |
+        jq --arg n "$name" '.[] | select(.purpose == "corporate" and .name == $n)')
 
-        if [ -z "$current_doc" ] || [ "$current_doc" = "null" ]; then
-          err "network '$name' not found on controller; create-via-API not yet implemented"
-          continue
-        fi
+      if [ -z "$current_doc" ] || [ "$current_doc" = "null" ]; then
+        err "network '$name' not found on controller; create-via-API not yet implemented"
+        continue
+      fi
 
-        current_id=$(echo "$current_doc" | jq -r '._id')
+      current_id=$(echo "$current_doc" | jq -r '._id')
 
-        merged=$(jq -n \
-          --argjson current "$current_doc" \
-          --argjson desired "$desired_cfg" '
+      merged=$(jq -n \
+        --argjson current "$current_doc" \
+        --argjson desired "$desired_cfg" '
             $current
             + (if $desired.purpose != null then { purpose: $desired.purpose } else {} end)
             + (if $desired.vlan != null then { vlan: $desired.vlan } else {} end)
@@ -216,32 +216,32 @@ cmd_apply() {
             + (if $desired.ipv6.pdInterface != null then { ipv6_pd_interface: $desired.ipv6.pdInterface } else {} end)
           ')
 
-        echo "  PUT network '$name' (_id=$current_id)"
-        api PUT "/proxy/network/api/s/${UNIFI_SITE}/rest/networkconf/$current_id" "$merged" \
-          | jq -r '"    rc=" + (.meta.rc // "?")'
-      done
+      echo "  PUT network '$name' (_id=$current_id)"
+      api PUT "/proxy/network/api/s/${UNIFI_SITE}/rest/networkconf/$current_id" "$merged" |
+        jq -r '"    rc=" + (.meta.rc // "?")'
+    done
 
   # Apply WANs
-  echo "$desired_json" \
-    | jq -r '(.wans // {}) | to_entries[] | @json' \
-    | while IFS= read -r entry; do
-        local name desired_cfg current_doc current_id merged
-        name=$(echo "$entry" | jq -r '.key')
-        desired_cfg=$(echo "$entry" | jq '.value')
+  echo "$desired_json" |
+    jq -r '(.wans // {}) | to_entries[] | @json' |
+    while IFS= read -r entry; do
+      local name desired_cfg current_doc current_id merged
+      name=$(echo "$entry" | jq -r '.key')
+      desired_cfg=$(echo "$entry" | jq '.value')
 
-        current_doc=$(echo "$current_json" \
-          | jq --arg n "$name" '.[] | select(.purpose == "wan" and .name == $n)')
+      current_doc=$(echo "$current_json" |
+        jq --arg n "$name" '.[] | select(.purpose == "wan" and .name == $n)')
 
-        if [ -z "$current_doc" ] || [ "$current_doc" = "null" ]; then
-          err "wan '$name' not found on controller"
-          continue
-        fi
+      if [ -z "$current_doc" ] || [ "$current_doc" = "null" ]; then
+        err "wan '$name' not found on controller"
+        continue
+      fi
 
-        current_id=$(echo "$current_doc" | jq -r '._id')
+      current_id=$(echo "$current_doc" | jq -r '._id')
 
-        merged=$(jq -n \
-          --argjson current "$current_doc" \
-          --argjson desired "$desired_cfg" '
+      merged=$(jq -n \
+        --argjson current "$current_doc" \
+        --argjson desired "$desired_cfg" '
             $current
             + (if $desired.type != null then { wan_type: $desired.type } else {} end)
             + (if $desired.failoverPriority != null then { wan_failover_priority: $desired.failoverPriority } else {} end)
@@ -250,10 +250,10 @@ cmd_apply() {
             + (if $desired.ipv6.pdSizeAuto != null then { wan_dhcpv6_pd_size_auto: $desired.ipv6.pdSizeAuto } else {} end)
           ')
 
-        echo "  PUT wan '$name' (_id=$current_id)"
-        api PUT "/proxy/network/api/s/${UNIFI_SITE}/rest/networkconf/$current_id" "$merged" \
-          | jq -r '"    rc=" + (.meta.rc // "?")'
-      done
+      echo "  PUT wan '$name' (_id=$current_id)"
+      api PUT "/proxy/network/api/s/${UNIFI_SITE}/rest/networkconf/$current_id" "$merged" |
+        jq -r '"    rc=" + (.meta.rc // "?")'
+    done
 
   echo
   echo "Done. Controller validates each PUT; rejected changes show up as HTTP 4xx above."
@@ -277,9 +277,21 @@ EOF
 }
 
 case "${1:-}" in
-  inventory) shift; cmd_inventory "$@" ;;
-  plan)      shift; cmd_plan "$@" ;;
-  apply)     shift; cmd_apply "$@" ;;
-  ""|-h|--help|help) usage ;;
-  *) usage; exit 2 ;;
+inventory)
+  shift
+  cmd_inventory "$@"
+  ;;
+plan)
+  shift
+  cmd_plan "$@"
+  ;;
+apply)
+  shift
+  cmd_apply "$@"
+  ;;
+"" | -h | --help | help) usage ;;
+*)
+  usage
+  exit 2
+  ;;
 esac
