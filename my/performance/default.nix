@@ -30,57 +30,74 @@ in
       memoryPercent = mkDefault cfg.zramPercent;
     };
 
-    # vmtouch RAM caching service - keeps system closure in RAM for fast access
-    systemd.services.nix-system-ram = mkIf cfg.vmtouchCache {
-      description = "Load current system closure into RAM";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "local-fs.target" ];
-
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "cache-system" ''
-          # Cache current system
-          ${pkgs.vmtouch}/bin/vmtouch -dl $(readlink -f /run/current-system)
-
-          # Also cache current user profile (if exists)
-          for user in ${concatStringsSep " " (attrNames config.my.users)}; do
-            if [ -d /nix/var/nix/profiles/per-user/$user ]; then
-              ${pkgs.vmtouch}/bin/vmtouch -dl /nix/var/nix/profiles/per-user/$user/profile
-            fi
-          done
-
-          # Cache Firefox if installed (match exact package name pattern)
-          for f in /nix/store/*-firefox-unwrapped-*/; do
-            [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -dl "$f" 2>/dev/null
-          done
-
-          # Report status
-          echo "Current system closure size:"
-          ${pkgs.nix}/bin/nix path-info -Sh /run/current-system
-        '';
-        ExecStop = pkgs.writeShellScript "uncache-system" ''
-          ${pkgs.vmtouch}/bin/vmtouch -e $(readlink -f /run/current-system)
-          for user in ${concatStringsSep " " (attrNames config.my.users)}; do
-            if [ -d /nix/var/nix/profiles/per-user/$user ]; then
-              ${pkgs.vmtouch}/bin/vmtouch -e /nix/var/nix/profiles/per-user/$user/profile
-            fi
-          done
-          for f in /nix/store/*-firefox-unwrapped-*/; do
-            [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -e "$f" 2>/dev/null
-          done
-        '';
-
-        MemoryMax = "16G";
-        Restart = "no";
-        TimeoutStartSec = "5m";
+    systemd = {
+      # Keep the per-user manager off the OOM killer's target list. If
+      # user@UID.service is killed the whole user-service cohort dies with it,
+      # and systemd does not auto-restart it (kernel OOM is excluded from
+      # Restart=). The upstream default OOMScoreAdjust=100 makes it a preferred
+      # victim; -900 disfavours it (not -1000 — the kernel inherits that to
+      # unprivileged children which then cannot raise it back).
+      # ManagedOOMPreference steers systemd-oomd, a separate killer.
+      services."user@" = {
+        overrideStrategy = "asDropin";
+        serviceConfig = {
+          OOMScoreAdjust = mkForce (-900);
+          ManagedOOMPreference = "avoid";
+        };
       };
-    };
 
-    # Disable auto-generated timer (service runs once at boot)
-    systemd.timers.nix-system-ram = mkIf cfg.vmtouchCache {
-      enable = false;
-      timerConfig = { };
+      # vmtouch RAM caching service - keeps system closure in RAM for fast access
+      services.nix-system-ram = mkIf cfg.vmtouchCache {
+        description = "Load current system closure into RAM";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "local-fs.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "cache-system" ''
+            # Cache current system
+            ${pkgs.vmtouch}/bin/vmtouch -dl $(readlink -f /run/current-system)
+
+            # Also cache current user profile (if exists)
+            for user in ${concatStringsSep " " (attrNames config.my.users)}; do
+              if [ -d /nix/var/nix/profiles/per-user/$user ]; then
+                ${pkgs.vmtouch}/bin/vmtouch -dl /nix/var/nix/profiles/per-user/$user/profile
+              fi
+            done
+
+            # Cache Firefox if installed (match exact package name pattern)
+            for f in /nix/store/*-firefox-unwrapped-*/; do
+              [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -dl "$f" 2>/dev/null
+            done
+
+            # Report status
+            echo "Current system closure size:"
+            ${pkgs.nix}/bin/nix path-info -Sh /run/current-system
+          '';
+          ExecStop = pkgs.writeShellScript "uncache-system" ''
+            ${pkgs.vmtouch}/bin/vmtouch -e $(readlink -f /run/current-system)
+            for user in ${concatStringsSep " " (attrNames config.my.users)}; do
+              if [ -d /nix/var/nix/profiles/per-user/$user ]; then
+                ${pkgs.vmtouch}/bin/vmtouch -e /nix/var/nix/profiles/per-user/$user/profile
+              fi
+            done
+            for f in /nix/store/*-firefox-unwrapped-*/; do
+              [ -d "$f" ] && ${pkgs.vmtouch}/bin/vmtouch -e "$f" 2>/dev/null
+            done
+          '';
+
+          MemoryMax = "16G";
+          Restart = "no";
+          TimeoutStartSec = "5m";
+        };
+      };
+
+      # Disable auto-generated timer (service runs once at boot)
+      timers.nix-system-ram = mkIf cfg.vmtouchCache {
+        enable = false;
+        timerConfig = { };
+      };
     };
   };
 }
