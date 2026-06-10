@@ -73,6 +73,25 @@ in
           OLLAMA_MAX_LOADED_MODELS = "1";
           OLLAMA_FLASH_ATTENTION = "true";
         };
+
+        # ollama runs as DynamicUser, so its state lives in /var/lib/private/ollama
+        # (persisted via the /var/lib/private bind mount below). A public
+        # /var/lib/ollama directory left over from a static-user setup makes systemd
+        # try to migrate it into the private path with rename(2), which fails EXDEV
+        # across the impermanence bind-mount boundary (status=238/STATE_DIRECTORY).
+        # Drop the stale public directory so systemd creates the private state and
+        # symlink cleanly. A no-op once /var/lib/ollama is the expected symlink.
+        systemd.services.ollama-statedir-cleanup = {
+          description = "Remove stale public ollama state dir (DynamicUser migration guard)";
+          before = [ "ollama.service" ];
+          requiredBy = [ "ollama.service" ];
+          serviceConfig.Type = "oneshot";
+          script = ''
+            if [ -d /var/lib/ollama ] && [ ! -L /var/lib/ollama ]; then
+              ${pkgs.coreutils}/bin/rm -rf /var/lib/ollama
+            fi
+          '';
+        };
       })
 
       # ROCm-specific configuration (AMD GPU)
