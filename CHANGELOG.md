@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.0...mynixos-v0.10.1) (2026-06-10)
+
+
+### Miscellaneous
+
+* **flake:** update inputs (crane, disko, git-hooks, …) ([e943a6c](https://github.com/i-am-logger/mynixos/commit/e943a6cf83b28a68608fc357d6cec3d75284076f))
+
 ## [0.10.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.6...mynixos-v0.10.0) (2026-06-10)
 
 
