@@ -5,6 +5,45 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.6...mynixos-v0.10.0) (2026-06-10)
+
+
+### Features
+
+* **bespec:** bump to 1.7.0-linux-pipewire fork ([c163679](https://github.com/i-am-logger/mynixos/commit/c1636790c8e81790efb1bc515cc842aa8feb560a))
+* bridge vogix hardware modules from mynixos config ([c5f4a4c](https://github.com/i-am-logger/mynixos/commit/c5f4a4cd5bbf04de4eb07942270adc72b4763bb3))
+* **performance:** keep the per-user systemd manager off the OOM killer ([9b05e01](https://github.com/i-am-logger/mynixos/commit/9b05e010fe72ec77b1a7e9c1c5cb8084d9c803ce))
+* vogix app integration (bespec, wezterm, btop, helix) ([5a92380](https://github.com/i-am-logger/mynixos/commit/5a923806be82570da2eae18fed69908bdacecdba))
+* vogix behavior system + hardware RGB + console ([de4906c](https://github.com/i-am-logger/mynixos/commit/de4906c53c92a48d0e2b9e8bf890c6d99dd0cb81))
+
+
+### Bug Fixes
+
+* **environment:** launch Hyprland via start-hyprland in greetd ([4694050](https://github.com/i-am-logger/mynixos/commit/46940506496b9545e6aa5600d5f32753aa05fa7e))
+* **graphical:** drop hardcoded WAYLAND_DISPLAY (broke GDM greeter on GNOME 50) ([7d8843c](https://github.com/i-am-logger/mynixos/commit/7d8843ca68e7be3edc544bf708f87e47ba10ad2f))
+* **hardware/amd:** disable GFXOFF on the Raphael iGPU + restore machine-driver pattern ([c32e709](https://github.com/i-am-logger/mynixos/commit/c32e709c9cca95d509f9b00f94adda979512afc7))
+* **hyprland:** concatenate vogix-generated windowrules instead of clobbering ([350dd89](https://github.com/i-am-logger/mynixos/commit/350dd89508bcc9f1301983f5a7df0a8e92161035))
+* **hyprland:** drop the redundant partial session-env import ([f79e525](https://github.com/i-am-logger/mynixos/commit/f79e5256b8423e027724dccdf5f7548a43535803))
+* **keychron/k2-he:** unregister from OpenRGB QMK devices ([c78e30d](https://github.com/i-am-logger/mynixos/commit/c78e30d3dc9054c81f2c49098de9a54c7cb15bf6))
+* remove return config and duplicate require from wezterm ([8e0d6f6](https://github.com/i-am-logger/mynixos/commit/8e0d6f69bce3de967514c0670b40b640a41754b2))
+
+
+### Code Refactoring
+
+* move console window/workspace rules to vogix ([2d9730a](https://github.com/i-am-logger/mynixos/commit/2d9730a155b57af6925acffdfc4ccd941e611b40))
+* remove opencode integration ([e4608b0](https://github.com/i-am-logger/mynixos/commit/e4608b0c486a1f08e1e8e446f1c44affb738e3dd))
+* remove wezterm keybindings (now in vogix) ([367cf4c](https://github.com/i-am-logger/mynixos/commit/367cf4c25c29ecc2afcc6d26d2fda461c33a867f))
+* rename my.themes to my.theming ([2fad41f](https://github.com/i-am-logger/mynixos/commit/2fad41facd19ff97740cb1f8822e4608ab9c99ed))
+* strip hyprland to infrastructure — vogix owns appearance + behavior ([6647b85](https://github.com/i-am-logger/mynixos/commit/6647b85c24849a0fd08dd5e09b24c98f679b3ca2))
+* wire programs.vogix.appearance for scheme/theme/variant ([a4102c6](https://github.com/i-am-logger/mynixos/commit/a4102c62163611f90cc7ffacd12881e4c9522a08))
+
+
+### Miscellaneous
+
+* clear all statix lints (inherit-from, attrpath collapse, let-in merge) ([7041ccf](https://github.com/i-am-logger/mynixos/commit/7041ccfcd592f9f84dda1424afda3686985d7d7e))
+* flake.lock bump — sops-nix, stylix, vogix, nixpkgs ([4558838](https://github.com/i-am-logger/mynixos/commit/455883862d6172b19d628112d360e74e643103f1))
+* treefmt the unifi reconciler script (shfmt) ([feb70c9](https://github.com/i-am-logger/mynixos/commit/feb70c9a7110039d57ccd0c1e3c9f4b4c23a57e8))
+
 ## [0.9.6](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.9.5...mynixos-v0.9.6) (2026-03-19)
 
 
