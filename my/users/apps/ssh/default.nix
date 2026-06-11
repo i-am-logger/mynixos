@@ -16,35 +16,37 @@ in
           enable = true;
           enableDefaultConfig = false;
 
-          # Opinionated host configurations with SSH multiplexing
-          matchBlocks = {
+          # Opinionated host configurations with SSH multiplexing.
+          # `settings` is the current API (raw OpenSSH directive names); it
+          # replaces the deprecated `matchBlocks` (HM camelCase options).
+          settings = {
             "*" = lib.optionalAttrs (!(hasYubikeys userCfg)) {
               # SSH multiplexing disabled for YubiKey users
               # Can cause socket/permission issues with gpg-agent
               # For non-YubiKey users, reuse connections for efficiency
-              controlMaster = "auto";
-              controlPath = "~/.ssh/control-%r@%h:%p";
-              controlPersist = "10m";
+              ControlMaster = "auto";
+              ControlPath = "~/.ssh/control-%r@%h:%p";
+              ControlPersist = "10m";
             };
 
             "github.com" = {
-              hostname = "github.com";
-              user = "git";
-              # When using YubiKey/gpg-agent, allow agent keys
-              # Otherwise use default behavior (identitiesOnly = true for security)
-              identitiesOnly = !(hasYubikeys userCfg);
+              HostName = "github.com";
+              User = "git";
+              # With YubiKey/gpg-agent, allow agent keys; otherwise restrict to
+              # configured identities (IdentitiesOnly) for security.
+              IdentitiesOnly = if hasYubikeys userCfg then "no" else "yes";
             };
 
             "gitlab.com" = {
-              hostname = "gitlab.com";
-              user = "git";
-              identitiesOnly = !(hasYubikeys userCfg);
+              HostName = "gitlab.com";
+              User = "git";
+              IdentitiesOnly = if hasYubikeys userCfg then "no" else "yes";
             };
 
             "bitbucket.org" = {
-              hostname = "bitbucket.org";
-              user = "git";
-              identitiesOnly = !(hasYubikeys userCfg);
+              HostName = "bitbucket.org";
+              User = "git";
+              IdentitiesOnly = if hasYubikeys userCfg then "no" else "yes";
             };
           };
 
