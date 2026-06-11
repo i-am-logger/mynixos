@@ -22,11 +22,6 @@ in
           pkiBundle = "/var/lib/sbctl";
           # Bound the boot menu: keep only the latest generations' UKIs.
           configurationLimit = mkDefault 10;
-          settings = {
-            kernelSigningKeyPath = "/var/lib/sbctl/keys/db/db.key";
-            kernelSigningCertPath = "/var/lib/sbctl/keys/db/db.pem";
-            signByDefault = true;
-          };
         };
       };
 
