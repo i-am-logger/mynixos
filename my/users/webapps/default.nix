@@ -108,8 +108,8 @@ in
               adwaita-icon-theme
             ];
 
-            # Configure webApps (using per-user config)
-            programs.webApps = {
+            # Configure webapps (using per-user config)
+            programs.webapps = {
               enable = true;
               browser = chromiumWithWidevine;
 
