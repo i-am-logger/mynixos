@@ -88,15 +88,17 @@ in
           variant = mkDefault "";
         };
 
-        # Opinionated stateVersion - using 25.05 as baseline (can be overridden)
-        system.stateVersion = lib.mkDefault "25.05";
+        # Opinionated stateVersion - using 26.11 as baseline (can be overridden)
+        system.stateVersion = lib.mkDefault "26.11";
       }
 
       # Set home.stateVersion for all users (opinionated)
       {
         home-manager.users = mapAttrs
           (_name: _userCfg: {
-            home.stateVersion = lib.mkDefault "25.05";
+            home.stateVersion = lib.mkDefault "26.11";
+            # Keep the legacy default (HM 26.11 sets this false for stateVersion >= 26.05).
+            xdg.userDirs.setSessionVariables = lib.mkDefault true;
           })
           (activeUsers config.my.users);
       }

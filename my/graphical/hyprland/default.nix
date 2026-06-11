@@ -501,7 +501,7 @@ in
                 # XDG portals are provided by programs.hyprland.enable in graphical.nix
                 # Don't add xdg-desktop-portal-hyprland here to avoid conflicts
                 brightnessctl
-                swww
+                awww # formerly `swww` (renamed upstream)
                 waypaper
                 swaybg
                 grimblast
@@ -584,6 +584,8 @@ in
                 {
                   enable = true;
                   xwayland.enable = true;
+                  # Keep the hyprlang config format (HM 26.11 changed the default to "lua").
+                  configType = "hyprlang";
                   settings = lib.recursiveUpdate
                     (infraSettings // fallbackSettings)
                     (userHyprland.extraSettings or { });

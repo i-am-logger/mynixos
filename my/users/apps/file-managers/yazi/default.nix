@@ -22,6 +22,8 @@ with lib;
               enableBashIntegration = true;
               enableFishIntegration = true;
               enableZshIntegration = true;
+              # Keep the legacy wrapper name (HM 26.11 changed the default to "y").
+              shellWrapperName = "yy";
             }
             # Merge settings if provided
             fileManager.settings
