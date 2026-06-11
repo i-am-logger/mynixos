@@ -5,6 +5,23 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.1...mynixos-v0.10.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* **hm:** align with home-manager 26.11 — bump stateVersion to 26.11, pin changed defaults (yazi wrapper, hyprland configType, xdg.userDirs), swww-&gt;awww ([8303225](https://github.com/i-am-logger/mynixos/commit/8303225feb58267a98c6673b1035244788779b67))
+* **security:** bound lanzaboote boot menu (configurationLimit = 10) ([0a2bfec](https://github.com/i-am-logger/mynixos/commit/0a2bfecef3bc8044df3876870230ee09b8d50db5))
+* **security:** drop inert lanzaboote loader.conf signing keys (silence boot 'Unknown line' warnings) ([e3fe525](https://github.com/i-am-logger/mynixos/commit/e3fe525c2baae44a24548dd513fc8cafe027bab3))
+* **ssh:** migrate programs.ssh.matchBlocks -&gt; settings (HM 26.11 deprecation) ([7cdccc3](https://github.com/i-am-logger/mynixos/commit/7cdccc3250d33af96721d516f1bb5d1cc6daa4c4))
+* **webapps:** rename programs.webApps -&gt; programs.webapps; bump HM lock ([10ca744](https://github.com/i-am-logger/mynixos/commit/10ca74495b845cb6149f80cd2aaecdc78508bcfd))
+
+
+### Miscellaneous
+
+* **flake:** bump home-manager (webapps rebased onto HM 26.11; fixes HM/nixpkgs version skew) ([694a384](https://github.com/i-am-logger/mynixos/commit/694a384e15f8e78242fbda99cb170c7c8b8392e1))
+* **flake:** nix flake update (disko, lanzaboote) ([91dc8b5](https://github.com/i-am-logger/mynixos/commit/91dc8b574dfcedebb406c04dbc015ccc12ac326e))
+
 ## [0.10.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.0...mynixos-v0.10.1) (2026-06-10)
 
 
