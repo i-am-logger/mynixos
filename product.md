@@ -186,8 +186,8 @@ Pre-commit hooks (via git-hooks.nix): treefmt, statix, deadnix.
 
 ### Test Coverage
 
-- **Module evaluation:** `nix flake check` validates that all modules evaluate without errors and that the flake structure is correct.
-- **No unit tests:** No NixOS test VMs, no option validation tests, no integration tests exist.
+- **Eval tests** (`tests/`): `module-eval.nix` (modules evaluate), `type-validation.nix` (accept/reject of typed options via `tryEval`), `integration-smoke.nix` and `persistence-and-edge-cases.nix` (realistic configs evaluate, feature-derivation and persistence aggregation assertions). These run at Nix-eval time — fast, no VM.
+- **Booting VM test** (`tests/vm-system.nix`): a real `pkgs.testers.runNixOSTest` that BOOTS a qemu VM and asserts runtime behavior eval can't see — active user creation, the `activeUsers` filter excluding partial users, home-manager activation, feature-derived group membership, login-shell mapping, and that the `mkApp` pipeline installs app binaries into the user profile. Heavy (needs `/dev/kvm`); kept out of `checks` so `nix flake check` stays light — run with `nix build .#tests.<system>.vm-system -L`.
 - **Static analysis:** statix (anti-pattern detection) and deadnix (dead code detection) run on every PR.
 
 ### Code Quality

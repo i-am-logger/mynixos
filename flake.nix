@@ -508,6 +508,15 @@
         // edgeCaseTests
       );
 
+      # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
+      # light and KVM-free (it is part of the pre-push routine). Run on demand:
+      #   nix build .#tests.<system>.vm-system -L
+      tests = forAllSystems (system: {
+        vm-system = import ./tests/vm-system.nix {
+          inherit self inputs system lib nixpkgs;
+        };
+      });
+
       # Dev shell with pre-commit hooks installed
       devShells = forAllSystems (system:
         let
