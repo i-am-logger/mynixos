@@ -487,6 +487,11 @@
           edgeCaseTests = import ./tests/persistence-and-edge-cases.nix {
             inherit self inputs system;
           };
+          # Regression: evaluate a system the mkSystem way (pkgs NOT in
+          # specialArgs) so mkApp's pkgs sourcing is actually exercised.
+          realPkgsTest = import ./tests/real-system-pkgs.nix {
+            inherit lib nixpkgs system self inputs;
+          };
         in
         {
           formatting = treefmtEval.${system}.config.build.check self;
@@ -506,6 +511,7 @@
         // lib.mapAttrs' (name: value: lib.nameValuePair name value) typeValidationTests
         // smokeTests
         // edgeCaseTests
+        // realPkgsTest
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
