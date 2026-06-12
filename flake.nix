@@ -394,6 +394,9 @@
               # Users - Apps: Launchers
               ./my/users/apps/launchers/walker
 
+              # Users - Apps: Lockers
+              ./my/users/apps/lockers/hyprlock
+
               # Users - Apps: Media
               ./my/users/apps/media/audacious
               ./my/users/apps/media/audio-utils

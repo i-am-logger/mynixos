@@ -72,7 +72,13 @@ in
         launcher = lib.mkOption {
           type = lib.types.nullOr coercedAppType;
           default = null;
-          description = "Application launcher (no standard environment variable). Opinionated default: walker when graphical.enable = true";
+          description = "Application launcher. Exported as $LAUNCHER (mynixos convention) for consumers like vogix's Super+Space. Opinionated default: walker when graphical.enable = true";
+        };
+
+        locker = lib.mkOption {
+          type = lib.types.nullOr coercedAppType;
+          default = null;
+          description = "Screen locker. Exported as $LOCKER (mynixos convention) for consumers like vogix's Super+Shift+X. Opinionated default: hyprlock when graphical.enable = true";
         };
 
         multiplexer = lib.mkOption {

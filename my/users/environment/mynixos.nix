@@ -40,6 +40,11 @@
             package = pkgs.walker;
             settings = { };
           };
+          locker = lib.mkDefault {
+            enable = true;
+            package = pkgs.hyprlock;
+            settings = { };
+          };
           multiplexer = lib.mkDefault {
             enable = true;
             package = pkgs.zellij;

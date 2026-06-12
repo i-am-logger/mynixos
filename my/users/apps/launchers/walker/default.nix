@@ -14,6 +14,9 @@ with lib;
           home = {
             packages = with pkgs; [
               walker
+              elephant # walker 2.x backend daemon + bundled data providers — REQUIRED
+                # (walker 2.0 was rewritten to split its providers into elephant;
+                # without it walker crash-loops with "Please install elephant").
               libqalculate # For calculator functionality
               fd # For file finder functionality
               wshowkeys # For screencasting - show keypresses
@@ -28,7 +31,6 @@ with lib;
                 hotreload_theme = true
                 force_keyboard_focus = true
                 timeout = 60
-                ignore_elephant = true
 
                 [list]
                 max_entries = 200
@@ -295,11 +297,31 @@ with lib;
             };
           };
 
-          # Enable walker as a systemd service
+          # Elephant — walker 2.x's backend daemon (data providers, bundled in the
+          # package). Must be running before walker connects, else walker exits with
+          # "Please install elephant". `elephant` (bare) runs the daemon.
+          systemd.user.services.elephant = {
+            Unit = {
+              Description = "Elephant data-provider backend (for walker)";
+              PartOf = [ "graphical-session.target" ];
+            };
+            Service = {
+              ExecStart = "${pkgs.elephant}/bin/elephant";
+              Restart = "on-failure";
+            };
+            Install = {
+              WantedBy = [ "graphical-session.target" ];
+            };
+          };
+
+          # Enable walker as a systemd service — ordered AFTER elephant so the
+          # backend is up before walker tries to connect.
           systemd.user.services.walker = {
             Unit = {
               Description = "Walker application launcher service";
               PartOf = [ "graphical-session.target" ];
+              After = [ "elephant.service" ];
+              Wants = [ "elephant.service" ];
             };
             Service = {
               ExecStart = "${pkgs.walker}/bin/walker --gapplication-service";
