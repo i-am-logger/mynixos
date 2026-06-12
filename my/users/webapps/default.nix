@@ -15,32 +15,6 @@ let
   anyUserSignal = any (userCfg: (userCfg.graphical.webapps.signal or false)) (attrValues config.my.users);
   anyUser1Password = any (userCfg: (userCfg.graphical.webapps.onePassword or false)) (attrValues config.my.users);
 
-  # mynixos opinionated defaults for webapps
-  defaults = {
-    # Browser-based webapps
-    gmail = true;
-    vscode = true;
-    github = true;
-    spotify = true;
-    discord = true;
-    whatsapp = true;
-    youtube = true;
-    netflix = true;
-    twitch = true;
-    zoom = true;
-    chatgpt = true;
-    claude = true;
-    grok = true;
-    x = true;
-
-    # Electron apps
-    slack = false;
-    signal = false;
-
-    # Password managers
-    onePassword = false;
-  };
-
   # Helper function to wrap Electron apps
   wrapElectronApp = pkg: bin: pkgs.symlinkJoin {
     name = "${pkg.pname or pkg.name}-wrapped";
@@ -120,98 +94,98 @@ in
                   icon = "gmail";
                   categories = [ "Network" "Email" "Office" ];
                   mimeTypes = [ "x-scheme-handler/mailto" ];
-                  enabled = userWebapps.gmail or defaults.gmail;
+                  enabled = userWebapps.gmail;
                 })
                 (mkWebapp {
                   name = "vscode";
                   url = "https://vscode.dev";
                   icon = "code";
                   categories = [ "Development" "TextEditor" ];
-                  enabled = userWebapps.vscode or defaults.vscode;
+                  enabled = userWebapps.vscode;
                 })
                 (mkWebapp {
                   name = "github";
                   url = "https://github.com";
                   icon = "github-desktop";
                   categories = [ "Development" "Network" ];
-                  enabled = userWebapps.github or defaults.github;
+                  enabled = userWebapps.github;
                 })
                 (mkWebapp {
                   name = "spotify";
                   url = "https://open.spotify.com";
                   icon = "spotify";
                   categories = [ "Audio" "Music" "AudioVideo" ];
-                  enabled = userWebapps.spotify or defaults.spotify;
+                  enabled = userWebapps.spotify;
                 })
                 (mkWebapp {
                   name = "discord";
                   url = "https://discord.com/app";
                   icon = "discord";
                   categories = [ "Network" "Chat" "Game" ];
-                  enabled = userWebapps.discord or defaults.discord;
+                  enabled = userWebapps.discord;
                 })
                 (mkWebapp {
                   name = "whatsapp";
                   url = "https://web.whatsapp.com";
                   icon = "whatsapp";
                   categories = [ "Network" "Chat" "InstantMessaging" ];
-                  enabled = userWebapps.whatsapp or defaults.whatsapp;
+                  enabled = userWebapps.whatsapp;
                 })
                 (mkWebapp {
                   name = "youtube";
                   url = "https://youtube.com";
                   icon = "youtube";
                   categories = [ "AudioVideo" "Network" "Video" ];
-                  enabled = userWebapps.youtube or defaults.youtube;
+                  enabled = userWebapps.youtube;
                 })
                 (mkWebapp {
                   name = "netflix";
                   url = "https://netflix.com";
                   icon = "netflix";
                   categories = [ "AudioVideo" "Video" "Network" ];
-                  enabled = userWebapps.netflix or defaults.netflix;
+                  enabled = userWebapps.netflix;
                 })
                 (mkWebapp {
                   name = "twitch";
                   url = "https://twitch.tv";
                   icon = "twitch";
                   categories = [ "AudioVideo" "Video" "Network" "Game" ];
-                  enabled = userWebapps.twitch or defaults.twitch;
+                  enabled = userWebapps.twitch;
                 })
                 (mkWebapp {
                   name = "zoom";
                   url = "https://zoom.us/signin";
                   icon = "zoom";
                   categories = [ "Network" "VideoConference" "Office" ];
-                  enabled = userWebapps.zoom or defaults.zoom;
+                  enabled = userWebapps.zoom;
                 })
                 (mkWebapp {
                   name = "chatgpt";
                   url = "https://chat.openai.com";
                   icon = "openai";
                   categories = [ "Network" "Office" "Education" ];
-                  enabled = userWebapps.chatgpt or defaults.chatgpt;
+                  enabled = userWebapps.chatgpt;
                 })
                 (mkWebapp {
                   name = "claude";
                   url = "https://claude.ai";
                   icon = "anthropic";
                   categories = [ "Network" "Office" "Education" ];
-                  enabled = userWebapps.claude or defaults.claude;
+                  enabled = userWebapps.claude;
                 })
                 (mkWebapp {
                   name = "grok";
                   url = "https://grok.com";
                   icon = "x";
                   categories = [ "Network" "Office" "Education" ];
-                  enabled = userWebapps.grok or defaults.grok;
+                  enabled = userWebapps.grok;
                 })
                 (mkWebapp {
                   name = "x";
                   url = "https://x.com";
                   icon = "twitter";
                   categories = [ "Network" "News" ];
-                  enabled = userWebapps.x or defaults.x;
+                  enabled = userWebapps.x;
                 })
               ];
             };
