@@ -25,11 +25,6 @@
             package = pkgs.helix;
             settings = { };
           };
-          SHELL = lib.mkDefault {
-            enable = true;
-            package = pkgs.bashInteractive;
-            settings = { };
-          };
           FILE_MANAGER = lib.mkDefault {
             enable = true;
             package = pkgs.yazi;
@@ -43,11 +38,6 @@
           locker = lib.mkDefault {
             enable = true;
             package = pkgs.hyprlock;
-            settings = { };
-          };
-          multiplexer = lib.mkDefault {
-            enable = true;
-            package = pkgs.zellij;
             settings = { };
           };
         };

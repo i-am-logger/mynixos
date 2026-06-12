@@ -345,7 +345,6 @@
               # Users - Core
               ./my/users/defaults
               ./my/users/environment-defaults
-              ./my/users/environment-validation
               ./my/users/users
 
               # Users - Features

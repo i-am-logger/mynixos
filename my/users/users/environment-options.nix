@@ -33,8 +33,12 @@ let
     appSubmodule;
 in
 {
+  # These options are the "default/preferred app of a kind" SELECTORS. Setting one
+  # installs that app, exports its environment variable (BROWSER/TERMINAL/EDITOR/
+  # LAUNCHER/LOCKER) and wires xdg defaults. The matching app implementations
+  # (brave/firefox/wezterm/yazi/walker/hyprlock) install based on this selection.
   options.environment = lib.mkOption {
-    description = "User environment configuration (applications and shell environment)";
+    description = "User environment configuration (default/preferred applications)";
     default = { };
     type = lib.types.submodule {
       options = {
@@ -56,12 +60,6 @@ in
           description = "Text editor (sets EDITOR and VISUAL environment variables). Opinionated default: helix when graphical.enable = true";
         };
 
-        SHELL = lib.mkOption {
-          type = lib.types.nullOr coercedAppType;
-          default = null;
-          description = "Shell (sets SHELL environment variable). Opinionated default: bash when graphical.enable = true";
-        };
-
         FILE_MANAGER = lib.mkOption {
           type = lib.types.nullOr coercedAppType;
           default = null;
@@ -79,12 +77,6 @@ in
           type = lib.types.nullOr coercedAppType;
           default = null;
           description = "Screen locker. Exported as $LOCKER (mynixos convention) for consumers like vogix's Super+Shift+X. Opinionated default: hyprlock when graphical.enable = true";
-        };
-
-        multiplexer = lib.mkOption {
-          type = lib.types.nullOr coercedAppType;
-          default = null;
-          description = "Terminal multiplexer (no standard environment variable). Opinionated default: zellij when graphical.enable = true";
         };
       };
     };
