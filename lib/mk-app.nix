@@ -33,6 +33,14 @@
 
       activeUsers = import ./active-users.nix lib;
 
+      # `pkgs` is a _module.args entry: the module system only injects it into
+      # modules that NAME it. The app modules are bare `args:` lambdas (naming
+      # pkgs would make deadnix flag it as unused), so they do NOT receive pkgs —
+      # `mkSystem` does not pass it via specialArgs either. Source it from config
+      # (where the nixpkgs module stores it) so `home` always gets it. In the test
+      # harness pkgs IS a specialArg, so it stays in moduleArgs and short-circuits.
+      pkgs = moduleArgs.pkgs or config._module.args.pkgs;
+
       pathList = splitString "." spec.path;
       getCfg = userCfg:
         attrByPath pathList
@@ -45,7 +53,7 @@
       perUser = mapAttrs
         (name: userCfg:
           let cfg = getCfg userCfg;
-          in mkIf cfg.enable (home (moduleArgs // { inherit cfg userCfg name; })))
+          in mkIf cfg.enable (home (moduleArgs // { inherit cfg userCfg name pkgs; })))
         (activeUsers config.my.users);
 
       anyEnabled = any
