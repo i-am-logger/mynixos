@@ -17,10 +17,11 @@ let
   hostPkgs = nixpkgs.legacyPackages.${system};
 
   eval = lib.nixosSystem {
-    # Mirror lib/mkSystem.nix specialArgs — note the ABSENCE of `pkgs`.
+    # Match lib/mkSystem.nix specialArgs EXACTLY — note the absence of `pkgs`
+    # (mkSystem does not pass it; that is precisely what this test exercises).
+    # sops-nix is imported as a module below, not a specialArg (as in mkSystem).
     specialArgs = {
-      inherit inputs self system;
-      secrets = null;
+      inherit inputs;
       inherit (inputs)
         disko
         impermanence
@@ -28,8 +29,9 @@ let
         vogix
         hypr-vogix
         lanzaboote
-        sops-nix
+        self
         ;
+      secrets = inputs.secrets or null;
     };
     modules = [
       self.nixosModules.default
