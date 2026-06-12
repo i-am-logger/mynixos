@@ -99,7 +99,7 @@ Apps are per-user, structured as `my.users.<name>.apps.<feature>.<category>.<app
 - `.persistedFiles` -- Files to persist (relative to home)
 - App-specific extra options (e.g., Hyprland sensitivity, bash history size)
 
-The `appHelpers.shouldEnable` function dynamically searches all feature namespaces to determine if an app is enabled, enabling cross-feature app lookup.
+Each app is enabled at its own fixed path (`apps.<feature>.<category>.<app>.enable`). The persistence aggregation pipeline (`my/storage/impermanence/aggregation.nix`) recursively walks the whole `apps` tree -- any attrset carrying an `enable` field is treated as a leaf app -- and collects the `persistedDirectories`/`persistedFiles` of every app that is both enabled and persisted.
 
 ### Feature Bundle Auto-Derivation
 
@@ -157,7 +157,7 @@ Pre-commit hooks (via git-hooks.nix): treefmt, statix, deadnix.
 
 - **release-please** with manifest-based config
 - Conventional commits drive versioning (feat = minor, fix = patch)
-- Current version: 0.1.2
+- Current version: tracked in `version.txt` and `.release-please-manifest.json`
 - Changelog sections: Features, Bug Fixes, Code Refactoring, Documentation, Miscellaneous
 
 ### External Dependencies
