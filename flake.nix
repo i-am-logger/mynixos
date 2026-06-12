@@ -181,7 +181,14 @@
         in
         {
           config = {
-            # Make helpers available to all modules
+            # Make helpers available to all modules.
+            # NOTE: mkApp is intentionally NOT delivered here. It is imported
+            # directly by each app module (lib/mk-app.nix). Routing it through
+            # _module.args caused infinite recursion: an app module's return
+            # value *is* `mkApp args {...}`, so mkApp is forced at module-structure
+            # time, and resolving _module.args.mkApp requires the full config —
+            # config -> imports -> config. activeUsers is safe because it is only
+            # forced lazily inside config bodies.
             _module.args = {
               inherit (mynixosLib) activeUsers;
             };
@@ -338,7 +345,6 @@
               # Users - Core
               ./my/users/defaults
               ./my/users/environment-defaults
-              ./my/users/environment-validation
               ./my/users/users
 
               # Users - Features
@@ -393,6 +399,9 @@
 
               # Users - Apps: Launchers
               ./my/users/apps/launchers/walker
+
+              # Users - Apps: Lockers
+              ./my/users/apps/lockers/hyprlock
 
               # Users - Apps: Media
               ./my/users/apps/media/audacious
@@ -498,6 +507,15 @@
         // smokeTests
         // edgeCaseTests
       );
+
+      # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
+      # light and KVM-free (it is part of the pre-push routine). Run on demand:
+      #   nix build .#tests.<system>.vm-system -L
+      tests = forAllSystems (system: {
+        vm-system = import ./tests/vm-system.nix {
+          inherit self inputs system lib nixpkgs;
+        };
+      });
 
       # Dev shell with pre-commit hooks installed
       devShells = forAllSystems (system:

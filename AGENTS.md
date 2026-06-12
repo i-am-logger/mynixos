@@ -24,7 +24,7 @@ nix build /etc/nixos#github-runner-image                     # Build runner imag
 
 ## Important Constraints
 
-- **No amend commits**: Create new commits (don't use `git commit --amend`)
+- **Single commit per feature branch**: keep one commit and use `git commit --amend` to update it (matches `CLAUDE.md`; avoids dirty fix-up commits)
 - **No signatures**: Never add "Generated with Claude Code" or similar to files, commits, or PRs
 - **Separation**: mynixos provides types/options/implementations; user configs in `/etc/nixos/Systems/` provide data
 - **No auto-imports**: All modules explicitly imported in flake.nix (no dynamic discovery)

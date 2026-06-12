@@ -1,16 +1,8 @@
-{ activeUsers, config, lib, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.graphical.terminals.alacritty.enable {
-          programs.alacritty = {
-            enable = true;
-          };
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "graphical.terminals.alacritty";
+  home = _: {
+    programs.alacritty.enable = true;
   };
 }

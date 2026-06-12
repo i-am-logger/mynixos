@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.media.players.audacious.enable or false {
-          home.packages = with pkgs; [
-            audacious
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "media.players.audacious";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      audacious
+    ];
   };
 }

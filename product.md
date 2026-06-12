@@ -99,7 +99,7 @@ Apps are per-user, structured as `my.users.<name>.apps.<feature>.<category>.<app
 - `.persistedFiles` -- Files to persist (relative to home)
 - App-specific extra options (e.g., Hyprland sensitivity, bash history size)
 
-The `appHelpers.shouldEnable` function dynamically searches all feature namespaces to determine if an app is enabled, enabling cross-feature app lookup.
+Each app is enabled at its own fixed path (`apps.<feature>.<category>.<app>.enable`). The persistence aggregation pipeline (`my/storage/impermanence/aggregation.nix`) recursively walks the whole `apps` tree -- any attrset carrying an `enable` field is treated as a leaf app -- and collects the `persistedDirectories`/`persistedFiles` of every app that is both enabled and persisted.
 
 ### Feature Bundle Auto-Derivation
 
@@ -157,7 +157,7 @@ Pre-commit hooks (via git-hooks.nix): treefmt, statix, deadnix.
 
 - **release-please** with manifest-based config
 - Conventional commits drive versioning (feat = minor, fix = patch)
-- Current version: 0.1.2
+- Current version: tracked in `version.txt` and `.release-please-manifest.json`
 - Changelog sections: Features, Bug Fixes, Code Refactoring, Documentation, Miscellaneous
 
 ### External Dependencies
@@ -186,8 +186,8 @@ Pre-commit hooks (via git-hooks.nix): treefmt, statix, deadnix.
 
 ### Test Coverage
 
-- **Module evaluation:** `nix flake check` validates that all modules evaluate without errors and that the flake structure is correct.
-- **No unit tests:** No NixOS test VMs, no option validation tests, no integration tests exist.
+- **Eval tests** (`tests/`): `module-eval.nix` (modules evaluate), `type-validation.nix` (accept/reject of typed options via `tryEval`), `integration-smoke.nix` and `persistence-and-edge-cases.nix` (realistic configs evaluate, feature-derivation and persistence aggregation assertions). These run at Nix-eval time — fast, no VM.
+- **Booting VM test** (`tests/vm-system.nix`): a real `pkgs.testers.runNixOSTest` that BOOTS a qemu VM and asserts runtime behavior eval can't see — active user creation, the `activeUsers` filter excluding partial users, home-manager activation, feature-derived group membership, login-shell mapping, and that the `mkApp` pipeline installs app binaries into the user profile. Heavy (needs `/dev/kvm`); kept out of `checks` so `nix flake check` stays light — run with `nix build .#tests.<system>.vm-system -L`.
 - **Static analysis:** statix (anti-pattern detection) and deadnix (dead code detection) run on every PR.
 
 ### Code Quality

@@ -1,389 +1,366 @@
-{ activeUsers
-, config
-, lib
-, pkgs
-, ...
-}:
+args:
 
-with lib;
-
-let
-  # Use the dedicated app option instead of inspecting environment.EDITOR.
-  # Checking environment.EDITOR would trigger pkgs evaluation and infinite
-  # recursion when hardware modules set nixpkgs.hostPlatform.
-  # The app option is set mkDefault true by graphical/mynixos.nix for
-  # graphical users and can be explicitly enabled by non-graphical users.
-  anyUserHelix = any
-    (userCfg: userCfg.apps.graphical.editors.helix.enable or false)
-    (attrValues config.my.users);
-in
-{
-  config = mkMerge [
-    # Allow github-copilot-cli unfree package (when ANY user has helix)
-    (mkIf anyUserHelix {
-      my.system.allowedUnfreePackages = [ "github-copilot-cli" ];
-    })
-
+# Use the dedicated app option instead of inspecting environment.EDITOR.
+# Checking environment.EDITOR would trigger pkgs evaluation and infinite
+# recursion when hardware modules set nixpkgs.hostPlatform.
+# The app option is set mkDefault true by graphical/mynixos.nix for
+# graphical users and can be explicitly enabled by non-graphical users.
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "graphical.editors.helix";
+  unfree = [ "github-copilot-cli" ];
+  home = { pkgs, userCfg, ... }:
+    let
+      vogixEnabled = userCfg.theming.vogix.enable or false;
+    in
     {
-      home-manager.users = mapAttrs
-        (
-          _name: userCfg:
-            let
-              vogixEnabled = userCfg.theming.vogix.enable or false;
-            in
-            mkIf (userCfg.apps.graphical.editors.helix.enable or false) {
-              home.packages = with pkgs; [
-                helix
-                alejandra
+      home.packages = with pkgs; [
+        helix
+        alejandra
 
-                # pkgs.nodePackages.bash-language-server
-                cmake-language-server
-                marksman
-                markdown-oxide
+        # pkgs.nodePackages.bash-language-server
+        cmake-language-server
+        marksman
+        markdown-oxide
 
-                # zellij
-                # lazygit
-                nil
-                # pkgs.rnix-lsp
-                rust-analyzer
-                lldb
-                clang-tools
-                # ocamlPackages.ocaml-lsp
-                vscode-langservers-extracted
-                # dockerfile-language-server-nodejs
-                # haskellPackages.haskell-language-server
-                # nodePackages.typescript-language-server
-                texlab
-                # lua-language-server
-                # marksman
-                # pkgs.nodePackages.pyright
-                # pkgs.python310Packages.python-lsp-server
-                # nodePackages.vue-language-server
-                yaml-language-server
-                taplo
-                github-copilot-cli
-                # pkgs.vimPlugins.copilot-vim
-                tree-sitter
-                (tree-sitter.withPlugins (_: tree-sitter.allGrammars))
-                # nixpkgs-fmt
-                # nixfmt
-                nixfmt
-                # nixpkgs-fmt
+        # zellij
+        # lazygit
+        nil
+        # pkgs.rnix-lsp
+        rust-analyzer
+        lldb
+        clang-tools
+        # ocamlPackages.ocaml-lsp
+        vscode-langservers-extracted
+        # dockerfile-language-server-nodejs
+        # haskellPackages.haskell-language-server
+        # nodePackages.typescript-language-server
+        texlab
+        # lua-language-server
+        # marksman
+        # pkgs.nodePackages.pyright
+        # pkgs.python310Packages.python-lsp-server
+        # nodePackages.vue-language-server
+        yaml-language-server
+        taplo
+        github-copilot-cli
+        # pkgs.vimPlugins.copilot-vim
+        tree-sitter
+        (tree-sitter.withPlugins (_: tree-sitter.allGrammars))
+        # nixpkgs-fmt
+        # nixfmt
+        nixfmt
+        # nixpkgs-fmt
+      ];
+
+      programs.helix = {
+        enable = true;
+        defaultEditor = true;
+        settings = {
+          theme = if vogixEnabled then "base16_terminal" else "default";
+          editor = {
+            # line-number = "relative";
+            rulers = [ 120 ];
+            bufferline = "always";
+            mouse = true;
+            true-color = true;
+            color-modes = true;
+            cursorline = true;
+            auto-completion = true;
+            completion-trigger-len = 1;
+
+            end-of-line-diagnostics = "hint";
+            inline-diagnostics = {
+              cursor-line = "error";
+            };
+            cursor-shape = {
+              insert = "bar";
+              normal = "block";
+              select = "underline";
+            };
+            file-picker = {
+              hidden = false;
+              git-ignore = true;
+            };
+            soft-wrap = {
+              enable = true;
+            };
+            statusline = {
+              left = [
+                "mode"
+                "file-name"
+                "spinner"
               ];
+              center = [ "position-percentage" ];
+              right = [
+                "version-control"
+                "diagnostics"
+                "selections"
+                "position"
+                "file-encoding"
+                "file-line-ending"
+                "file-type"
+              ];
+              separator = "│";
+            };
+            lsp = {
+              enable = true;
+              display-messages = true;
+              auto-signature-help = true;
+              # display-inlay-hints = true;
+              display-signature-help-docs = true;
+              snippets = true;
+              goto-reference-include-declaration = true;
+            };
+            whitespace = {
+              render = "all";
+              characters = {
+                space = " ";
+                nbsp = "⍽";
+                tab = "→";
+                # newline = "⏎";
+                tabpad = " "; # "·"; # Tabs will look like "→···" (depending on tab width)
+              };
+            };
+            indent-guides = {
+              render = true;
+              character = "│"; # "╎";
+            };
+          };
+          keys.normal = {
+            esc = [
+              "collapse_selection"
+              "keep_primary_selection"
+            ];
+            J = [
+              "delete_selection"
+              "paste_after"
+            ];
+            K = [
+              "delete_selection"
+              "move_line_up"
+              "paste_before"
+            ];
+            C-u = [
+              "half_page_up"
+              "align_view_center"
+            ];
+            C-d = [
+              "half_page_down"
+              "align_view_center"
+            ];
 
-              programs.helix = {
-                enable = true;
-                defaultEditor = true;
-                settings = {
-                  theme = if vogixEnabled then "base16_terminal" else "default";
-                  editor = {
-                    # line-number = "relative";
-                    rulers = [ 120 ];
-                    bufferline = "always";
-                    mouse = true;
-                    true-color = true;
-                    color-modes = true;
-                    cursorline = true;
-                    auto-completion = true;
-                    completion-trigger-len = 1;
+            "[" = "goto_previous_buffer";
+            "]" = "goto_next_buffer";
 
-                    end-of-line-diagnostics = "hint";
-                    inline-diagnostics = {
-                      cursor-line = "error";
-                    };
-                    cursor-shape = {
-                      insert = "bar";
-                      normal = "block";
-                      select = "underline";
-                    };
-                    file-picker = {
-                      hidden = false;
-                      git-ignore = true;
-                    };
-                    soft-wrap = {
-                      enable = true;
-                    };
-                    statusline = {
-                      left = [
-                        "mode"
-                        "file-name"
-                        "spinner"
-                      ];
-                      center = [ "position-percentage" ];
-                      right = [
-                        "version-control"
-                        "diagnostics"
-                        "selections"
-                        "position"
-                        "file-encoding"
-                        "file-line-ending"
-                        "file-type"
-                      ];
-                      separator = "│";
-                    };
-                    lsp = {
-                      enable = true;
-                      display-messages = true;
-                      auto-signature-help = true;
-                      # display-inlay-hints = true;
-                      display-signature-help-docs = true;
-                      snippets = true;
-                      goto-reference-include-declaration = true;
-                    };
-                    whitespace = {
-                      render = "all";
-                      characters = {
-                        space = " ";
-                        nbsp = "⍽";
-                        tab = "→";
-                        # newline = "⏎";
-                        tabpad = " "; # "·"; # Tabs will look like "→···" (depending on tab width)
-                      };
-                    };
-                    indent-guides = {
-                      render = true;
-                      character = "│"; # "╎";
-                    };
-                  };
-                  keys.normal = {
-                    esc = [
-                      "collapse_selection"
-                      "keep_primary_selection"
-                    ];
-                    J = [
-                      "delete_selection"
-                      "paste_after"
-                    ];
-                    K = [
-                      "delete_selection"
-                      "move_line_up"
-                      "paste_before"
-                    ];
-                    C-u = [
-                      "half_page_up"
-                      "align_view_center"
-                    ];
-                    C-d = [
-                      "half_page_down"
-                      "align_view_center"
-                    ];
+            g = {
+              x = ":buffer-close";
+              j = "jump_backward";
+              k = "jump_forward";
+            };
+            space = {
+              l = ":toggle lsp.display-inlay-hints";
+              n = ":toggle lsp.auto-signature_help";
 
-                    "[" = "goto_previous_buffer";
-                    "]" = "goto_next_buffer";
+              space = {
+                space = "file_picker";
+                w = ":w";
+                q = ":q";
+              };
+            };
 
-                    g = {
-                      x = ":buffer-close";
-                      j = "jump_backward";
-                      k = "jump_forward";
-                    };
-                    space = {
-                      l = ":toggle lsp.display-inlay-hints";
-                      n = ":toggle lsp.auto-signature_help";
+            backspace = {
+              b = {
+                r = ":run-shell-command zellij run -fc -- cargo build";
+                n = ":run-shell-command zellij run -f -- nix build";
+              };
 
-                      space = {
-                        space = "file_picker";
-                        w = ":w";
-                        q = ":q";
-                      };
-                    };
+              d = {
+                d = ":run-shell-command zellij run -fc -- watch --color -n 0.2 lsd /dev/ttyACM* -h --color always";
+                b = ":run-shell-command zellij run -fc -- btop";
+              };
 
-                    backspace = {
-                      b = {
-                        r = ":run-shell-command zellij run -fc -- cargo build";
-                        n = ":run-shell-command zellij run -f -- nix build";
-                      };
+              r = {
+                n = ":run-shell-command zellij run -f -- nix run";
+                r = ":run-shell-command zellij run -fc -- cargo run";
+              };
 
-                      d = {
-                        d = ":run-shell-command zellij run -fc -- watch --color -n 0.2 lsd /dev/ttyACM* -h --color always";
-                        b = ":run-shell-command zellij run -fc -- btop";
-                      };
+              t = {
+                n = ":run-shell-command zellij run -f -- nix test";
+                r = ":run-shell-command zellij run -fc -- cargo test";
+              };
 
-                      r = {
-                        n = ":run-shell-command zellij run -f -- nix run";
-                        r = ":run-shell-command zellij run -fc -- cargo run";
-                      };
+              g = ":run-shell-command zellij run -fc -- lazygit";
+              f = ":run-shell-command zellij run -fc -- broot";
+            };
+          };
+        };
+        languages = {
 
-                      t = {
-                        n = ":run-shell-command zellij run -f -- nix test";
-                        r = ":run-shell-command zellij run -fc -- cargo test";
-                      };
+          language-server =
+            with pkgs;
+            {
+              typescript-language-server = {
+                command = "${typescript-language-server}/bin/typescript-language-server";
+                args = [ "--stdio" ];
+              };
+              svelteserver.command = "${svelte-language-server}/bin/svelteserver";
+              tailwindcss-ls.command = "${tailwindcss-language-server}/bin/tailwindcss-language-server";
+              # nixd = {
+              #   command = "${nixd}/bin/nixd";
+              # };
+              # eslint = {
+              #   command = "${eslint}/bin/eslint";
+              #   args = [ "--stdin" ];
+              # };
+              copilot = {
+                command = "github-copilot-cli";
+                args = [ "--stdio" ];
+              };
+              nil.command = "${nil}/bin/nil";
+              rust-analyzer.command = "${rust-analyzer-unwrapped}/bin/rust-analyzer";
+              rust-analyzer.config = {
+                "inlayHints.bindingModeHints.enable" = true;
+                "inlayHints.closingBraceHints.minLines" = 10;
+                "inlayHints.closureReturnTypeHints.enable" = "with_block";
+                "inlayHints.discrimiinantHints.enable" = "skip_trivial";
+                "inlayHints.typeHints.hideClosureInitialization" = false;
+              };
 
-                      g = ":run-shell-command zellij run -fc -- lazygit";
-                      f = ":run-shell-command zellij run -fc -- broot";
-                    };
-                  };
-                };
-                languages = {
-
-                  language-server =
-                    with pkgs;
-                    {
-                      typescript-language-server = {
-                        command = "${typescript-language-server}/bin/typescript-language-server";
-                        args = [ "--stdio" ];
-                      };
-                      svelteserver.command = "${svelte-language-server}/bin/svelteserver";
-                      tailwindcss-ls.command = "${tailwindcss-language-server}/bin/tailwindcss-language-server";
-                      # nixd = {
-                      #   command = "${nixd}/bin/nixd";
-                      # };
-                      # eslint = {
-                      #   command = "${eslint}/bin/eslint";
-                      #   args = [ "--stdin" ];
-                      # };
-                      copilot = {
-                        command = "github-copilot-cli";
-                        args = [ "--stdio" ];
-                      };
-                      nil.command = "${nil}/bin/nil";
-                      rust-analyzer.command = "${rust-analyzer-unwrapped}/bin/rust-analyzer";
-                      rust-analyzer.config = {
-                        "inlayHints.bindingModeHints.enable" = true;
-                        "inlayHints.closingBraceHints.minLines" = 10;
-                        "inlayHints.closureReturnTypeHints.enable" = "with_block";
-                        "inlayHints.discrimiinantHints.enable" = "skip_trivial";
-                        "inlayHints.typeHints.hideClosureInitialization" = false;
-                      };
-
-                      yaml-language-server = {
-                        command = "${yaml-language-server}/bin/yaml-language-server";
-                        args = [ "--stdio" ];
-                        config.yaml.schemas = {
-                          "https://json.schemastore.org/github-action.json" = [
-                            "action.yml"
-                            "action.yaml"
-                          ];
-                        };
-                      };
-                    };
-
-                  #https://github.com/helix-editor/helix/blob/master/languages.toml
-                  language = [
-                    # {
-                    #   name = "json5";
-                    #   scope = "*";
-                    #   # shebangs = ["json"];
-                    # }
-                    {
-                      name = "javascript";
-                      formatter = {
-                        command = "prettier";
-                        args = [
-                          "--parser"
-                          "typescript"
-                        ];
-                      };
-                      language-servers = [
-                        "typescript-language-server"
-                        "eslint"
-                      ];
-                      auto-format = true;
-                    }
-                    {
-                      name = "typescript";
-                      formatter = {
-                        command = "prettier";
-                        args = [
-                          "--parser"
-                          "typescript"
-                        ];
-                      };
-                      language-servers = [
-                        "typescript-language-server"
-                        "eslint"
-                      ];
-                      auto-format = true;
-                    }
-                    {
-                      name = "svelte";
-                      formatter = {
-                        command = "prettier";
-                        args = [
-                          "--plugin"
-                          "prettier-plugin-svelte"
-                        ];
-                      };
-                      language-servers = [
-                        "tailwindcss-ls"
-                        "svelteserver"
-                        "eslint"
-                      ];
-                      auto-format = true;
-                    }
-                    {
-                      name = "nix";
-                      auto-format = true;
-                      formatter = {
-                        command = "nixfmt"; # "nixpkgs-fmt";
-                      };
-                      language-servers = [
-                        "nixd"
-                        "nil"
-                        "copilot"
-                      ];
-                    }
-                    {
-                      name = "nim";
-                      auto-format = true;
-                      formatter = {
-                        command = "nimpretty";
-                      };
-                      # language-servers = [ "nimlsp" "nimlangserver" ];
-                    }
-                    {
-                      name = "python";
-                      language-servers = [
-                        "pylsp"
-                        "pyright"
-                      ];
-                      formatter = {
-                        command = "black";
-                        args = [
-                          "--quiet"
-                          "-"
-                        ];
-                      };
-                      auto-format = true;
-                    }
-                    {
-                      name = "rust";
-                      auto-format = true;
-                      language-servers = [
-                        "rust-analyzer"
-                        "copilot"
-                      ];
-                    }
-                    {
-                      name = "markdown";
-                      auto-format = true;
-                      formatter = {
-                        command = "dprint";
-                        args = [
-                          "fmt"
-                          "--stdin"
-                          "md"
-                        ];
-                      };
-                      language-servers = [
-                        "marksman"
-                      ];
-                    }
-                    {
-                      name = "yaml";
-                      scope = "source.yaml";
-                      file-types = [
-                        "yml"
-                        "yaml"
-                      ];
-                      auto-format = true;
-                      language-servers = [ "yaml-language-server" ];
-                    }
+              yaml-language-server = {
+                command = "${yaml-language-server}/bin/yaml-language-server";
+                args = [ "--stdio" ];
+                config.yaml.schemas = {
+                  "https://json.schemastore.org/github-action.json" = [
+                    "action.yml"
+                    "action.yaml"
                   ];
                 };
               };
+            };
+
+          #https://github.com/helix-editor/helix/blob/master/languages.toml
+          language = [
+            # {
+            #   name = "json5";
+            #   scope = "*";
+            #   # shebangs = ["json"];
+            # }
+            {
+              name = "javascript";
+              formatter = {
+                command = "prettier";
+                args = [
+                  "--parser"
+                  "typescript"
+                ];
+              };
+              language-servers = [
+                "typescript-language-server"
+                "eslint"
+              ];
+              auto-format = true;
             }
-        )
-        (activeUsers config.my.users);
-    }
-  ];
+            {
+              name = "typescript";
+              formatter = {
+                command = "prettier";
+                args = [
+                  "--parser"
+                  "typescript"
+                ];
+              };
+              language-servers = [
+                "typescript-language-server"
+                "eslint"
+              ];
+              auto-format = true;
+            }
+            {
+              name = "svelte";
+              formatter = {
+                command = "prettier";
+                args = [
+                  "--plugin"
+                  "prettier-plugin-svelte"
+                ];
+              };
+              language-servers = [
+                "tailwindcss-ls"
+                "svelteserver"
+                "eslint"
+              ];
+              auto-format = true;
+            }
+            {
+              name = "nix";
+              auto-format = true;
+              formatter = {
+                command = "nixfmt"; # "nixpkgs-fmt";
+              };
+              language-servers = [
+                "nixd"
+                "nil"
+                "copilot"
+              ];
+            }
+            {
+              name = "nim";
+              auto-format = true;
+              formatter = {
+                command = "nimpretty";
+              };
+              # language-servers = [ "nimlsp" "nimlangserver" ];
+            }
+            {
+              name = "python";
+              language-servers = [
+                "pylsp"
+                "pyright"
+              ];
+              formatter = {
+                command = "black";
+                args = [
+                  "--quiet"
+                  "-"
+                ];
+              };
+              auto-format = true;
+            }
+            {
+              name = "rust";
+              auto-format = true;
+              language-servers = [
+                "rust-analyzer"
+                "copilot"
+              ];
+            }
+            {
+              name = "markdown";
+              auto-format = true;
+              formatter = {
+                command = "dprint";
+                args = [
+                  "fmt"
+                  "--stdin"
+                  "md"
+                ];
+              };
+              language-servers = [
+                "marksman"
+              ];
+            }
+            {
+              name = "yaml";
+              scope = "source.yaml";
+              file-types = [
+                "yml"
+                "yaml"
+              ];
+              auto-format = true;
+              language-servers = [ "yaml-language-server" ];
+            }
+          ];
+        };
+      };
+    };
 }

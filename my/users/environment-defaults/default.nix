@@ -16,6 +16,8 @@ with lib;
           preferredBrowser = if env.BROWSER != null then env.BROWSER.package else null;
           preferredTerminal = if env.TERMINAL != null then env.TERMINAL.package else null;
           preferredEditor = if env.EDITOR != null then env.EDITOR.package else null;
+          preferredLauncher = if env.launcher != null then env.launcher.package else null;
+          preferredLocker = if env.locker != null then env.locker.package else null;
 
           # Map package to desktop file name
           browserDesktopFile = pname:
@@ -42,6 +44,18 @@ with lib;
           (mkIf (preferredEditor != null) {
             home.sessionVariables.EDITOR = mkDefault "${preferredEditor}/bin/${preferredEditor.pname or "editor"}";
             home.sessionVariables.VISUAL = mkDefault "${preferredEditor}/bin/${preferredEditor.pname or "editor"}";
+          })
+
+          # $LAUNCHER / $LOCKER are mynixos's own (non-standard) conventions so
+          # consumers — vogix's Super+Space / Super+Shift+X, the Hyprland binds —
+          # use the chosen launcher/locker instead of hardcoding one. Appearance
+          # lives in each tool's own config, so the command is just the binary.
+          (mkIf (preferredLauncher != null) {
+            home.sessionVariables.LAUNCHER = mkDefault "${preferredLauncher}/bin/${preferredLauncher.pname or "launcher"}";
+          })
+
+          (mkIf (preferredLocker != null) {
+            home.sessionVariables.LOCKER = mkDefault "${preferredLocker}/bin/${preferredLocker.pname or "locker"}";
           })
 
           # Set XDG MIME defaults for preferred apps

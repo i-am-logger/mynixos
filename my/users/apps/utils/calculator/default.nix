@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.graphical.utils.calculator.enable {
-          home.packages = with pkgs; [
-            qalculate-gtk # Calculator with qalc CLI
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "graphical.utils.calculator";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      qalculate-gtk # Calculator with qalc CLI
+    ];
   };
 }

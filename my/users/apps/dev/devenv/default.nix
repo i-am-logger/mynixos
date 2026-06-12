@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.dev.tools.devenv.enable {
-          home.packages = with pkgs; [
-            devenv
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "dev.tools.devenv";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      devenv
+    ];
   };
 }

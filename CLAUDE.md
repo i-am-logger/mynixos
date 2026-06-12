@@ -66,10 +66,11 @@ Options are imported in flake.nix's options section. Implementations are importe
 - **`activeUsers`** - Filters users to only those with `fullName` defined (fully configured users)
 - **`mkAppOption`** (`lib/app-options.nix`) - Creates structured app options with enable, persisted, persistedDirectories, persistedFiles
 - **`floatBetween`** (`lib/app-options.nix`) - Float type constrained to a range [min, max]
+- **`mkApp`** (`lib/mk-app.nix`) - Builds a per-user app implementation module from a `path` (under `userCfg.apps`) and a `home` function, collapsing the repeated `home-manager.users = mapAttrs … mkIf … (activeUsers …)` boilerplate. Injected into every module via `_module.args`. Optional `unfree` adds packages to `my.system.allowedUnfreePackages` when any user enables the app.
 
 ### Key Design Patterns
 
-**App Configuration:** Apps are per-user under `config.my.users.<name>.apps.<feature>.<category>.<app>`. Each app has `.enable`, `.persisted`, `.persistedDirectories`, `.persistedFiles`. Implementations map over `config.my.users` and use `home-manager.users = mapAttrs`.
+**App Configuration:** Apps are per-user under `config.my.users.<name>.apps.<feature>.<category>.<app>`. Each app has `.enable`, `.persisted`, `.persistedDirectories`, `.persistedFiles`. Simple per-user app implementations are built with the `mkApp` helper (`lib/mk-app.nix`); apps that are environment-selected (e.g. `environment.BROWSER`), always-on, or system-level keep an explicit `home-manager.users = mapAttrs` implementation.
 
 **Persistence Aggregation:** Apps contribute persistence paths to `my.system.persistence.aggregated`, features to `my.system.persistence.features`. Aggregation modules: `my/storage/impermanence/{aggregation.nix, feature-aggregation.nix, impermanence.nix}`.
 
@@ -79,10 +80,17 @@ Options are imported in flake.nix's options section. Implementations are importe
 
 ## Adding a New App Module
 
-1. Create `my/users/apps/<category>/<app-name>/` with `options.nix`, `default.nix`, and optionally `mynixos.nix`
-2. Import the implementation module in flake.nix's imports list
-3. Add the option in the appropriate section of flake.nix's options
-4. Use `mkIf` to conditionally enable based on the user's app setting
+1. Add the option via `mkAppOption` in the appropriate section of `my/users/users/apps-options.nix`
+2. Create `my/users/apps/<category>/<app-name>/default.nix` as a `mkApp` module:
+   ```nix
+   { mkApp, ... } @ args:
+   mkApp args {
+     path = "<feature>.<category>.<app>";          # under userCfg.apps
+     home = { pkgs, ... }: { programs.<app>.enable = true; };
+   }
+   ```
+3. Import the implementation module in flake.nix's imports list
+4. For non-trivial apps (system packages, env-selected, always-on), write the module explicitly instead of `mkApp`
 
 ## Adding a New Feature
 

@@ -25,11 +25,6 @@
             package = pkgs.helix;
             settings = { };
           };
-          SHELL = lib.mkDefault {
-            enable = true;
-            package = pkgs.bashInteractive;
-            settings = { };
-          };
           FILE_MANAGER = lib.mkDefault {
             enable = true;
             package = pkgs.yazi;
@@ -40,9 +35,9 @@
             package = pkgs.walker;
             settings = { };
           };
-          multiplexer = lib.mkDefault {
+          locker = lib.mkDefault {
             enable = true;
-            package = pkgs.zellij;
+            package = pkgs.hyprlock;
             settings = { };
           };
         };

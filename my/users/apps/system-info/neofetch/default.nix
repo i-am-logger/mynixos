@@ -1,26 +1,19 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.sysinfo.neofetch";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      neofetch
+      w3m
+      imagemagick
+    ];
 
-{
-  # Option is declared in flake.nix
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.sysinfo.neofetch.enable {
-          home.packages = with pkgs; [
-            neofetch
-            w3m
-            imagemagick
-          ];
-
-          # NOTE: Config files from /etc/nixos/home/cli/neofetch/config/ need manual migration
-          # Copy them to a suitable location if customization is needed
-          # xdg.configFile."neofetch/" = {
-          #   source = ./config;
-          #   recursive = true;
-          # };
-        })
-      (activeUsers config.my.users);
+    # NOTE: Config files from /etc/nixos/home/cli/neofetch/config/ need manual migration
+    # Copy them to a suitable location if customization is needed
+    # xdg.configFile."neofetch/" = {
+    #   source = ./config;
+    #   recursive = true;
+    # };
   };
 }

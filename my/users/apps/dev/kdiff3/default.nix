@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.dev.tools.kdiff3.enable {
-          home.packages = with pkgs; [
-            kdiff3
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "dev.tools.kdiff3";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      kdiff3
+    ];
   };
 }

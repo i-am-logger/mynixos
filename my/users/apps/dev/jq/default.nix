@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.dev.tools.jq.enable {
-          home.packages = with pkgs; [
-            jq
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "dev.tools.jq";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      jq
+    ];
   };
 }

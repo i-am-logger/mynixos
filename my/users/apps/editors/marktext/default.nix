@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.graphical.editors.marktext.enable {
-          home.packages = with pkgs; [
-            marktext
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "graphical.editors.marktext";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      marktext
+    ];
   };
 }

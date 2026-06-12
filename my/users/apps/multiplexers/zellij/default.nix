@@ -1,32 +1,25 @@
-{ activeUsers, config, lib, ... }:
+args:
 
-with lib;
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.multiplexers.zellij";
+  home = _: {
+    programs.zellij = {
+      enable = true;
+      enableFishIntegration = false;
+      enableBashIntegration = false;
 
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.multiplexers.zellij.enable {
-          programs.zellij = {
-            enable = true;
-            enableFishIntegration = false;
-            enableBashIntegration = false;
+      settings = {
+        mouse_mode = true;
+        copy_on_select = true;
+        scrollback_editor = "hx";
+        default_layout = "compact";
 
-            settings = {
-              mouse_mode = true;
-              copy_on_select = true;
-              scrollback_editor = "hx";
-              default_layout = "compact";
-
-              ui = {
-                pane_frames = {
-                  hide_session_name = false;
-                };
-              };
-            };
+        ui = {
+          pane_frames = {
+            hide_session_name = false;
           };
-        }
-      )
-      (activeUsers config.my.users);
+        };
+      };
+    };
   };
 }
