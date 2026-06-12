@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.finance.tracking.cointop.enable or false {
-          home.packages = with pkgs; [
-            cointop
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "finance.tracking.cointop";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      cointop
+    ];
   };
 }

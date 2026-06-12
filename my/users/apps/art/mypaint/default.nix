@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.art.drawing.mypaint.enable or false {
-          home.packages = with pkgs; [
-            mypaint
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "art.drawing.mypaint";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      mypaint
+    ];
   };
 }

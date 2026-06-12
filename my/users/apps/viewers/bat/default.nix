@@ -1,17 +1,10 @@
-{ activeUsers, config, lib, ... }:
+args:
 
-with lib;
-
-{
-  # Option is declared in flake.nix
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.viewers.bat.enable {
-          programs.bat = {
-            enable = true;
-          };
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.viewers.bat";
+  home = _: {
+    programs.bat = {
+      enable = true;
+    };
   };
 }

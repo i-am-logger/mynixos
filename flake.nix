@@ -181,7 +181,14 @@
         in
         {
           config = {
-            # Make helpers available to all modules
+            # Make helpers available to all modules.
+            # NOTE: mkApp is intentionally NOT delivered here. It is imported
+            # directly by each app module (lib/mk-app.nix). Routing it through
+            # _module.args caused infinite recursion: an app module's return
+            # value *is* `mkApp args {...}`, so mkApp is forced at module-structure
+            # time, and resolving _module.args.mkApp requires the full config —
+            # config -> imports -> config. activeUsers is safe because it is only
+            # forced lazily inside config bodies.
             _module.args = {
               inherit (mynixosLib) activeUsers;
             };

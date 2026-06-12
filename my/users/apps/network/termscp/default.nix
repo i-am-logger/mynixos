@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.network.termscp.enable {
-          home.packages = with pkgs; [
-            termscp
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.network.termscp";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      termscp
+    ];
   };
 }

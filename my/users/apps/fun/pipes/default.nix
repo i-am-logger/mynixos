@@ -1,18 +1,12 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.fun.pipes.enable {
-          home.packages = with pkgs; [
-            pipes
-            neo
-            asciiquarium
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.fun.pipes";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      pipes
+      neo
+      asciiquarium
+    ];
   };
 }

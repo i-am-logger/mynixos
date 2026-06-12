@@ -1,18 +1,12 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "terminal.viewers.feh";
+  home = { pkgs, lib, ... }: {
+    home.packages = with pkgs; [
+      feh
+    ];
 
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.terminal.viewers.feh.enable {
-          home.packages = with pkgs; [
-            feh
-          ];
-
-          programs.feh.enable = mkDefault true;
-        })
-      (activeUsers config.my.users);
+    programs.feh.enable = lib.mkDefault true;
   };
 }

@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.dev.tools.githubDesktop.enable {
-          home.packages = with pkgs; [
-            github-desktop
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "dev.tools.githubDesktop";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      github-desktop
+    ];
   };
 }

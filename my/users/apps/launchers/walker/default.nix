@@ -15,8 +15,8 @@ with lib;
             packages = with pkgs; [
               walker
               elephant # walker 2.x backend daemon + bundled data providers — REQUIRED
-                # (walker 2.0 was rewritten to split its providers into elephant;
-                # without it walker crash-loops with "Please install elephant").
+              # (walker 2.0 was rewritten to split its providers into elephant;
+              # without it walker crash-loops with "Please install elephant").
               libqalculate # For calculator functionality
               fd # For file finder functionality
               wshowkeys # For screencasting - show keypresses

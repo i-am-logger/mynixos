@@ -1,18 +1,12 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.media.tools.audioUtils.enable or false {
-          home.packages = with pkgs; [
-            # Audio utilities
-            pavucontrol
-            pamixer
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "media.tools.audioUtils";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      # Audio utilities
+      pavucontrol
+      pamixer
+    ];
   };
 }

@@ -1,16 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+args:
 
-with lib;
-
-{
-  config = {
-    home-manager.users = mapAttrs
-      (_name: userCfg:
-        mkIf userCfg.apps.graphical.terminals.warp.enable {
-          home.packages = with pkgs; [
-            warp-terminal
-          ];
-        })
-      (activeUsers config.my.users);
+(import ../../../../../lib/mk-app.nix).mkApp args {
+  path = "graphical.terminals.warp";
+  home = { pkgs, ... }: {
+    home.packages = with pkgs; [
+      warp-terminal
+    ];
   };
 }
