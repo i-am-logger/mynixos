@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.3...mynixos-v0.10.4) (2026-06-12)
+
+
+### Bug Fixes
+
+* **apps:** mkApp must source pkgs from config — hotfix for broken real builds ([#119](https://github.com/i-am-logger/mynixos/issues/119) regression) ([#121](https://github.com/i-am-logger/mynixos/issues/121)) ([7d38cd9](https://github.com/i-am-logger/mynixos/commit/7d38cd91e85e529bc853d5f44445b2e43b6110db))
+
 ## [0.10.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.2...mynixos-v0.10.3) (2026-06-12)
 
 
