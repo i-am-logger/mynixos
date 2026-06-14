@@ -36,6 +36,27 @@ in
       };
     })
 
+    # TPM2 measured boot: when the TPM isn't used (tpm.enable = false, the
+    # default), disable systemd's NvPCR/SRK setup so it stops writing a new
+    # nvpcr-anchor credential to the ESP every generation, and remove the stale
+    # ones. Otherwise they accumulate (one per generation) and PID1's
+    # import-creds logs them as "untrusted credentials" on every boot — they are
+    # measured into PCR 12 but never required, so it's pure noise without FDE.
+    # Flip tpm.enable = true when adopting TPM-sealed disk unlock (it needs the SRK).
+    (mkIf (cfg.enable && !cfg.tpm.enable) {
+      systemd.services = {
+        systemd-tpm2-setup.enable = false;
+        systemd-tpm2-setup-early.enable = false;
+      };
+
+      # Remove ONLY the NvPCR anchor credentials (never pcrlock or other creds),
+      # at boot. The stub still packs whatever is present this boot, so the line
+      # clears from the next boot onward (once the ESP dir is empty).
+      systemd.tmpfiles.rules = [
+        "r! /boot/loader/credentials/nvpcr-anchor.*.cred"
+      ];
+    })
+
     # YubiKey configuration (enabled when security stack is enabled and any user has yubikey)
     (mkIf (cfg.enable && (cfg.yubikey.enable || hasYubikey)) {
       services = {
