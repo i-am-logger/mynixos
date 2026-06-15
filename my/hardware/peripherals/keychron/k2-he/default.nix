@@ -37,7 +37,7 @@ in
     # firmware: its OpenRGB command handler was never compiled in (a QMK
     # build-wiring bug), so the keyboard never answered the protocol and
     # OpenRGB kept re-probing/resetting the device. Fixed 2026-06-14 in
-    # qmk PR Keychron/qmk_firmware#476; OpenRGB has since enumerated and
+    # QMK PR Keychron/qmk_firmware#476; OpenRGB has since enumerated and
     # managed the keyboard with no hub cycling. Revert to disabled if it recurs.
     # my.theming.openrgb.qmkDevices = mkIf cfg.enable [{ name = "Keychron K2 HE"; vid = "0x3434"; pid = "0x0E20"; }];
   };
