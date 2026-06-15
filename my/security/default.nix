@@ -51,9 +51,11 @@ in
 
       # Remove ONLY the NvPCR anchor credentials (never pcrlock or other creds),
       # at boot. The stub still packs whatever is present this boot, so the line
-      # clears from the next boot onward (once the ESP dir is empty).
+      # clears from the next boot onward (once the ESP dir is empty). Path follows
+      # the configured ESP mountpoint (efiSysMountPoint, mkDefault "/boot") so it
+      # still tracks the real credentials dir on hosts that relocate the ESP.
       systemd.tmpfiles.rules = [
-        "r! /boot/loader/credentials/nvpcr-anchor.*.cred"
+        "r! ${config.boot.loader.efi.efiSysMountPoint}/loader/credentials/nvpcr-anchor.*.cred"
       ];
     })
 
