@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.5...mynixos-v0.11.0) (2026-06-15)
+
+
+### Features
+
+* **security:** add my.security.tpm to suppress unused NvPCR measured-boot setup ([#123](https://github.com/i-am-logger/mynixos/issues/123)) ([d86fed5](https://github.com/i-am-logger/mynixos/commit/d86fed57a365f7008347558c6889b3172013bfcd))
+
 ## [0.10.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.4...mynixos-v0.10.5) (2026-06-15)
 
 
