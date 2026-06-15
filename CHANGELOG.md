@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.5](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.4...mynixos-v0.10.5) (2026-06-15)
+
+
+### Bug Fixes
+
+* **hardware/k2-he:** correct the OpenRGB registration note ([#124](https://github.com/i-am-logger/mynixos/issues/124)) ([1667a0b](https://github.com/i-am-logger/mynixos/commit/1667a0b74d3364499b98457a8da76694c92f2ad8))
+
 ## [0.10.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.10.3...mynixos-v0.10.4) (2026-06-12)
 
 
