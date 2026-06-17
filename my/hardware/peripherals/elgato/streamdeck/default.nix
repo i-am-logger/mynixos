@@ -265,7 +265,7 @@ in
           home.packages = with pkgs; [
             streamdeck-ui
             # Qt platform dependencies
-            libsForQt5.qt5.qtwayland
+            qt5.qtwayland
             qt6.qtwayland
             # Audio utilities (already have pamixer from your config)
             pamixer
@@ -364,7 +364,7 @@ in
     # Fix Qt platform plugin issues for streamdeck-ui
     environment.sessionVariables = {
       # Set Qt platform plugins path
-      QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.libsForQt5.qt5.qtbase.bin}/lib/qt-${pkgs.libsForQt5.qt5.qtbase.version}/plugins/platforms:${pkgs.qt6.qtbase}/lib/qt-6/plugins/platforms";
+      QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins/platforms:${pkgs.qt6.qtbase}/lib/qt-6/plugins/platforms";
       # Prefer Wayland but fallback to xcb
       QT_QPA_PLATFORM = "wayland;xcb";
       # Enable Qt logging for debugging

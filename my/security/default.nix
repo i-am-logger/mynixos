@@ -16,7 +16,8 @@ in
     # Secure Boot configuration
     (mkIf (cfg.enable && cfg.secureBoot.enable) {
       boot = {
-        bootspec.enable = true;
+        # bootspec is always generated in current nixpkgs (the enable option was
+        # removed); lanzaboote consumes it automatically.
         lanzaboote = {
           enable = true;
           pkiBundle = "/var/lib/sbctl";
