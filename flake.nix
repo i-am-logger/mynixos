@@ -39,6 +39,9 @@
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
         tinted-schemes.url = "github:i-am-logger/tinted-schemes";
+        # Track vogix16-themes directly (vogix's own lock can lag its releases),
+        # so mynixos always builds against the latest theme set.
+        vogix16-themes.url = "github:i-am-logger/vogix16-themes";
         rust-overlay.follows = "lanzaboote/rust-overlay";
         devenv.inputs.git-hooks.follows = "git-hooks";
       };
@@ -55,11 +58,7 @@
       url = "github:nix-community/lanzaboote";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        pre-commit.inputs = {
-          nixpkgs.follows = "nixpkgs";
-          flake-compat.follows = "vogix/crate2nix/flake-compat";
-          gitignore.follows = "vogix/crate2nix/pre-commit-hooks/gitignore";
-        };
+        pre-commit.inputs.nixpkgs.follows = "nixpkgs";
       };
     };
 
