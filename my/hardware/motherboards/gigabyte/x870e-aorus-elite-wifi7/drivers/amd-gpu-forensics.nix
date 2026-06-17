@@ -28,6 +28,15 @@ let
     set -euo pipefail
     inst="''${1:?usage: amdgpu-devcoredump-capture <devcdN>}"
     src="/sys/class/devcoredump/''${inst}/data"
+    # The devcoredump udev rule fires for EVERY driver's dump, but this unit is
+    # amdgpu-specific. Resolve the failing device's driver and skip anything that
+    # is a known non-amdgpu driver. An undetermined driver is still captured —
+    # better to keep evidence than miss the amdgpu dump we are here for.
+    drv="$(${pkgs.coreutils}/bin/basename "$(${pkgs.coreutils}/bin/readlink -f "/sys/class/devcoredump/''${inst}/failing_device/driver" 2>/dev/null)" 2>/dev/null || echo unknown)"
+    if [ "''${drv}" != "amdgpu" ] && [ "''${drv}" != "unknown" ]; then
+      echo "amdgpu-devcoredump: ''${inst} is from driver ''${drv}, not amdgpu; skipping" >&2
+      exit 0
+    fi
     outdir="/var/log/gpu-forensics"
     out="''${outdir}/amdgpu-devcoredump-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)-''${inst}.bin"
     ${pkgs.coreutils}/bin/mkdir -p "''${outdir}"

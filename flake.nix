@@ -39,8 +39,9 @@
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
         tinted-schemes.url = "github:i-am-logger/tinted-schemes";
-        # Track vogix16-themes directly (vogix's own lock can lag its releases),
-        # so mynixos always builds against the latest theme set.
+        # Track vogix16-themes directly rather than through vogix's lock (which
+        # can lag its releases). Still pinned by flake.lock — a `nix flake update`
+        # is what pulls in the newest theme set.
         vogix16-themes.url = "github:i-am-logger/vogix16-themes";
         rust-overlay.follows = "lanzaboote/rust-overlay";
         devenv.inputs.git-hooks.follows = "git-hooks";
