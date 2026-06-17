@@ -18,12 +18,21 @@ with lib;
                 name = "brave-with-gopass";
                 paths = [ pkgs.brave ];
                 nativeBuildInputs = [ pkgs.makeWrapper ];
+                # GPU-fault forensics (Raphael iGPU reset incident, 2026-06):
+                # route Brave's GPU process + GL driver logs to stderr so a
+                # future web-triggered amdgpu shader fault is diagnosable from
+                # the (now persistent) journal. See the x870e
+                # drivers/amd-gpu-forensics.nix module for the matching journald
+                # persistence + devcoredump capture.
                 postBuild = ''
                   wrapProgram $out/bin/brave \
                     --add-flags "--password-store=basic" \
                     --add-flags "--disable-password-manager" \
                     --add-flags "--enable-features=UseOzonePlatform" \
                     --add-flags "--ozone-platform=wayland" \
+                    --add-flags "--enable-logging=stderr" \
+                    --add-flags "--enable-gpu-driver-debug-logging" \
+                    --add-flags "--vmodule=*gpu*=2,*command_buffer*=2,*gl_context*=1,*shared_image*=1,*webgl*=1" \
                     --set GNOME_KEYRING_CONTROL "" \
                     --set DISABLE_GNOME_KEYRING "1" \
                     --set SSH_AUTH_SOCK "$(gpgconf --list-dirs agent-ssh-socket)"

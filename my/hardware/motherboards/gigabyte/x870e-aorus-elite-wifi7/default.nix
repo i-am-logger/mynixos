@@ -19,6 +19,11 @@ in
     # `my.hardware.gpu = "amd"` set below).
     (mkIf cfg.enable (import ./drivers/amd-integrated-gpu.nix { inherit config lib pkgs; }))
 
+    # GPU-fault forensics: capture the amdgpu devcoredump (the faulting shader,
+    # which the kernel deletes after ~5 min) + persistent journald, so a
+    # recurrence of the web-triggered iGPU reset is diagnosable to root cause.
+    (mkIf cfg.enable (import ./drivers/amd-gpu-forensics.nix { inherit config lib pkgs; }))
+
     # Platform architecture (conditionally)
     (mkIf cfg.enable {
       nixpkgs.hostPlatform = mkDefault "x86_64-linux";
