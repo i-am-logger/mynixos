@@ -159,11 +159,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781195293,
-        "narHash": "sha256-C9OFghpvf3RzK2rGsZjjNNrTrHgFOecEkpDhFnU4QGs=",
+        "lastModified": 1781627264,
+        "narHash": "sha256-TPj5d5MUyvuQZjsfDAAoYJ0SB+tNNNBrdCpD8XL0WeU=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "5f5109c83854577191634f7b86fc6e0c8fd44964",
+        "rev": "0fe5629a2955141c336b95e384e2c793c01214fb",
         "type": "github"
       },
       "original": {
@@ -931,11 +931,11 @@
         "vogix16-themes": "vogix16-themes"
       },
       "locked": {
-        "lastModified": 1781644630,
-        "narHash": "sha256-4iJAO+15V7ix5D7tmOcVos022xLxLx0I2QCQwOpODlQ=",
+        "lastModified": 1781721001,
+        "narHash": "sha256-ElDHGis+5nYaZwtz5le+LFazOEtXGkSUnnLEVeh4B2Q=",
         "owner": "i-am-logger",
         "repo": "vogix",
-        "rev": "27981db94afe918bba3845bd94e5f22ed6705513",
+        "rev": "5f04ff6d6dbc6e46567fd94fddbb45f18b496393",
         "type": "github"
       },
       "original": {
