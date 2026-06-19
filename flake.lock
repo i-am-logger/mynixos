@@ -931,11 +931,11 @@
         "vogix16-themes": "vogix16-themes"
       },
       "locked": {
-        "lastModified": 1781721001,
-        "narHash": "sha256-ElDHGis+5nYaZwtz5le+LFazOEtXGkSUnnLEVeh4B2Q=",
+        "lastModified": 1781847176,
+        "narHash": "sha256-vnkNjOQOonP/xPk0theCMZyn40NvLe2GTdaDyuVHKxY=",
         "owner": "i-am-logger",
         "repo": "vogix",
-        "rev": "5f04ff6d6dbc6e46567fd94fddbb45f18b496393",
+        "rev": "05321819652d6496a35826ff49f418aae567ac22",
         "type": "github"
       },
       "original": {
