@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.11.1...mynixos-v0.11.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **deps:** vogix 0.8.1 — WmAction ontology (presets sourced from praxis) ([92eef69](https://github.com/i-am-logger/mynixos/commit/92eef690c865181eb986b2baa5369e53736ba945))
+
 ## [0.11.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.11.0...mynixos-v0.11.1) (2026-06-17)
 
 
