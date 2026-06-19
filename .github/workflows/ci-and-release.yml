@@ -24,9 +24,9 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v17
+        uses: DeterminateSystems/nix-installer-action@v22
         with:
           extra-conf: |
             extra-substituters = https://nix-community.cachix.org https://cache.nixos.org
@@ -43,9 +43,9 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v17
+        uses: DeterminateSystems/nix-installer-action@v22
       - name: Run statix
         run: nix run nixpkgs#statix -- check .
       - name: Run deadnix
@@ -61,11 +61,11 @@ jobs:
       )
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Generate module coverage report
         run: bash scripts/module-coverage.sh --lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage.lcov
           flags: modules
@@ -87,7 +87,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
