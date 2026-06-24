@@ -2,25 +2,23 @@
 
 # AMD iGPU GPU-fault forensics for this Raphael (gfx10.3.6 / RDNA2) host.
 #
-# Context: a web page (Brave's GPU process) can issue a shader that triggers a
-# GCVM_L2_PROTECTION_FAULT -> `ring gfx_0.1.0` timeout -> full MODE2 GPU reset,
-# which Hyprland does not survive (it RASSERT-aborts in CHyprOpenGLImpl::begin,
-# hyprwm/Hyprland#9746). This module does NOT mitigate the crash and removes no
-# feature; it makes the NEXT occurrence diagnosable to ROOT CAUSE by preserving
-# the two highest-value artifacts, both of which were LOST in the 2026-06-14
-# event:
+# A GPU shader reading an unmapped or permission-revoked address raises a
+# GCVM_L2_PROTECTION_FAULT that can escalate to a ring timeout and a full GPU
+# reset, which a Wayland compositor does not survive. This module does not
+# mitigate the fault and removes no feature; it makes the fault diagnosable to
+# root cause by preserving, at the moment of a reset, the three highest-value
+# artifacts:
 #
-#   1. the amdgpu *devcoredump* — the faulting shader / IB disassembly — which
-#      the kernel auto-expires ~5 min after creation; copied here to
-#      /var/log/gpu-forensics before it disappears; and
-#   2. a *persistent* journal (kernel amdgpu fault block + Brave's GPU-process
-#      log), so the evidence survives the reboot that usually follows the
-#      session-killing reset.
+#   1. the amdgpu devcoredump — the faulting shader / IB disassembly — which
+#      the kernel auto-expires ~5 min after creation; copied to
+#      /var/log/gpu-forensics before it disappears;
+#   2. a snapshot of each browser's GPU debug log, taken before the browser
+#      relaunches and truncates it (the log names the page and shader); and
+#   3. a persistent journal carrying the kernel amdgpu fault block.
 #
-# /var/log and /var/lib/systemd (systemd-coredump) are already in the
-# impermanence persistence set (my/storage/impermanence/impermanence.nix), so
-# both the captures and the process coredumps survive reboots with no extra
-# persistence wiring.
+# /var/log is in the impermanence persistence set
+# (my/storage/impermanence/impermanence.nix), so the captures survive reboots
+# with no extra persistence wiring.
 
 let
   # Copy a devcoredump out before the kernel reclaims it, then release it.
@@ -49,6 +47,16 @@ let
     else
       echo "amdgpu-devcoredump: ''${src} not readable; nothing captured" >&2
     fi
+
+    # Snapshot each browser's GPU debug log alongside the dump, before the
+    # browser relaunches and truncates it. This ties the reset to the page and
+    # shader that triggered it.
+    for blog in /home/*/.cache/brave-gpu-debug.log; do
+      [ -r "''${blog}" ] || continue
+      u="''${blog#/home/}"; u="''${u%%/*}"
+      ${pkgs.coreutils}/bin/cp "''${blog}" "''${outdir}/brave-gpu-''${u}-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)-''${inst}.log" 2>/dev/null \
+        && echo "amdgpu-devcoredump: snapshotted browser log ''${blog}"
+    done
   '';
 in
 {
@@ -71,9 +79,8 @@ in
     "d /var/log/gpu-forensics 0750 root root -"
   ];
 
-  # Retain the journal (kernel amdgpu fault + Brave GPU-process log) across the
-  # reboot that typically follows a session-killing GPU reset. /var/log is
-  # already persisted, so this just forces journald to write there.
+  # Retain the kernel amdgpu fault block across reboots. /var/log is already
+  # persisted, so this just forces journald to write there.
   services.journald.extraConfig = ''
     Storage=persistent
     SystemMaxUse=2G
