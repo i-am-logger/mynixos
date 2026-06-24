@@ -49,12 +49,6 @@
                 description = "Additional system directories to persist";
               };
 
-              extraSystemFiles = lib.mkOption {
-                type = lib.types.listOf lib.types.nonEmptyStr;
-                default = [ ];
-                description = "Additional system files to persist";
-              };
-
               extraUserDirectories = lib.mkOption {
                 type = lib.types.listOf lib.types.nonEmptyStr;
                 default = [ ];

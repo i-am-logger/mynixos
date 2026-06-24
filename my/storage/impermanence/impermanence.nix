@@ -89,19 +89,6 @@ in
       ++ cfg.extraSystemDirectories # Allow custom additions
       ++ config.my.system.persistence.features.systemDirectories; # Feature-declared system directories
 
-      # System files that must survive the wiped root. Persisting
-      # /etc/machine-id keeps journald writing to a single
-      # /var/log/journal/<machine-id>/ across reboots; without it the fresh
-      # root generates a new random id every boot, so the journal fragments
-      # into one unreachable directory per boot and `journalctl -b -N` (and
-      # any post-crash forensics that rely on it) only ever sees the current
-      # boot. impermanence seeds the id on first boot via its built-in
-      # /etc/machine-id handling, so no manual seeding is required.
-      files = [
-        "/etc/machine-id"
-      ]
-      ++ cfg.extraSystemFiles;
-
       # Per-user persistence
       users = mkMerge (
         map
