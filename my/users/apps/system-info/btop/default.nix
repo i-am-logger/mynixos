@@ -2,7 +2,13 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.sysinfo.btop";
-  home = { pkgs, lib, config, userCfg, ... }:
+  home =
+    { pkgs
+    , lib
+    , config
+    , userCfg
+    , ...
+    }:
     let
       vogixEnabled = userCfg.theming.vogix.enable or false;
       # Match btop's GPU backend to the host GPU (my.hardware.gpu): ROCm for AMD,
@@ -16,7 +22,7 @@ args:
           enable = true;
           settings = {
             update_ms = 100;
-            show_gpu_info = "On";
+            show_gpu_info = "Auto";
             shown_boxes = "cpu mem net proc gpu0";
           };
           package = pkgs.btop.override {
