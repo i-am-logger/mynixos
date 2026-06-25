@@ -40,6 +40,10 @@ let
     ${pkgs.coreutils}/bin/mkdir -p "''${outdir}"
     if [ -r "''${src}" ]; then
       ${pkgs.coreutils}/bin/cp "''${src}" "''${out}"
+      # Forensics that need root to read are forensics no one reads. Make the
+      # capture group-readable by wheel so it can be analysed without sudo.
+      ${pkgs.coreutils}/bin/chgrp wheel "''${out}" 2>/dev/null || true
+      ${pkgs.coreutils}/bin/chmod 0640 "''${out}"
       echo "amdgpu-devcoredump: captured ''${src} -> ''${out} ($(${pkgs.coreutils}/bin/stat -c %s "''${out}") bytes)"
       # We have a copy; free the kernel dump promptly (it would otherwise linger
       # ~5 min, pinning GPU-dump memory).
@@ -54,8 +58,12 @@ let
     for blog in /home/*/.cache/brave-gpu-debug.log; do
       [ -r "''${blog}" ] || continue
       u="''${blog#/home/}"; u="''${u%%/*}"
-      ${pkgs.coreutils}/bin/cp "''${blog}" "''${outdir}/brave-gpu-''${u}-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)-''${inst}.log" 2>/dev/null \
-        && echo "amdgpu-devcoredump: snapshotted browser log ''${blog}"
+      snap="''${outdir}/brave-gpu-''${u}-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)-''${inst}.log"
+      if ${pkgs.coreutils}/bin/cp "''${blog}" "''${snap}" 2>/dev/null; then
+        ${pkgs.coreutils}/bin/chgrp wheel "''${snap}" 2>/dev/null || true
+        ${pkgs.coreutils}/bin/chmod 0640 "''${snap}"
+        echo "amdgpu-devcoredump: snapshotted browser log ''${blog}"
+      fi
     done
   '';
 in
@@ -75,8 +83,10 @@ in
     };
   };
 
+  # setgid + wheel group so captures land group-readable and stay analysable
+  # without sudo (see the chgrp/chmod in the capture script).
   systemd.tmpfiles.rules = [
-    "d /var/log/gpu-forensics 0750 root root -"
+    "d /var/log/gpu-forensics 2750 root wheel -"
   ];
 
   # Retain the kernel amdgpu fault block across reboots. /var/log is already
