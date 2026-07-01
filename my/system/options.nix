@@ -13,9 +13,44 @@
         };
 
         kernel = lib.mkOption {
-          type = lib.types.nullOr lib.types.package;
-          default = null;
-          description = "Kernel package override (e.g., pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). If null, uses hardware module default (typically latest).";
+          description = "Kernel selection: override the packaged kernel set, or build boot.kernelPackages from a local source tree.";
+          default = { };
+          type = lib.types.submodule {
+            options = {
+              package = lib.mkOption {
+                type = lib.types.nullOr lib.types.package;
+                default = null;
+                description = "Kernel packages override (e.g. pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). If null (and localSource is unset) the mynixos default (linuxPackages_latest) is used; hardware modules may mkDefault-override boot.kernelPackages.";
+              };
+
+              localSource = lib.mkOption {
+                default = null;
+                description = "Build boot.kernelPackages from a local kernel source tree instead of a packaged kernel. Takes precedence over `package`. Intended for a checked-out git tree exposed as a `flake = false` git+file input (copies tracked files only). mynixos overrides a nixpkgs mainline kernel's src/version so NixOS kernel-config generation and boot.kernelPatches still apply to the source build.";
+                type = lib.types.nullOr (lib.types.submodule {
+                  options = {
+                    src = lib.mkOption {
+                      type = lib.types.path;
+                      description = "Kernel source tree (must contain the top-level Makefile); e.g. the outPath of a `flake = false` source input.";
+                    };
+                    version = lib.mkOption {
+                      type = lib.types.str;
+                      description = "Upstream version of the tree, e.g. \"7.1.0\". MUST equal the tree's Makefile VERSION.PATCHLEVEL.SUBLEVEL, otherwise a /lib/modules modDirVersion mismatch hard-fails the build.";
+                    };
+                    modDirVersion = lib.mkOption {
+                      type = lib.types.nullOr lib.types.str;
+                      default = null;
+                      description = "Module directory version = `make kernelrelease` = include/config/kernel.release. Defaults to `version`; set explicitly only if the tree appends a LOCALVERSION/`+` suffix.";
+                    };
+                    base = lib.mkOption {
+                      type = lib.types.nullOr lib.types.package;
+                      default = null;
+                      description = "nixpkgs mainline kernel whose config baseline to override (e.g. pkgs.linux_7_1). Pin it to the source's series so a future nixpkgs `latest` bump does not shift the common-config baseline. If null, uses pkgs.linux_latest.";
+                    };
+                  };
+                });
+              };
+            };
+          };
         };
 
         architecture = lib.mkOption {
