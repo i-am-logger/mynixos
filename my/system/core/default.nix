@@ -8,6 +8,7 @@ with lib;
 
 let
   cfg = config.my.system;
+  f = config.my.forensics;
 
   # Get list of all user names from my.features.users
   userNames = attrNames config.my.users;
@@ -82,15 +83,34 @@ in
           };
 
           initrd.enable = true;
+          # Kernel panic/oops capture (my.forensics.kernel): load pstore-ramoops
+          # early so it is armed to record a splat across the reboot.
+          initrd.kernelModules = lib.optionals (f.enable && f.kernel.enable) [ "ramoops" ];
+          kernelModules = lib.optionals (f.enable && f.kernel.enable) [ "ramoops" ];
           kernelParams = [
             # Plymouth boot splash
             "splash"
             "quiet"
             "vt.global_cursor_default=0"
+            # Console verbosity is a boot/display concern, kept quiet here and
+            # decoupled from my.forensics.level - the forensic retention lever is
+            # journald MaxLevelStore (set from the level in my/system/systemd).
             "loglevel=3"
             "rd.systemd.show_status=false"
             "rd.udev.log_level=3"
             "acpi_osi=Linux"
+          ]
+          # Reserve a RAM region for pstore-ramoops (the persist + tree live in
+          # my/system/systemd).
+          ++ lib.optionals (f.enable && f.kernel.enable) [
+            "reserve_mem=4M:4096:oops"
+            "ramoops.mem_name=oops"
+            # Without explicit record/console sizes, ramoops_probe() rejects a
+            # non-zero region and pstore never appears - nothing would be
+            # captured. 128 KiB each holds a full panic/oops dmesg + console.
+            "ramoops.record_size=0x20000"
+            "ramoops.console_size=0x20000"
+            "ramoops.ecc=1"
           ];
 
           # Boot loader configuration (opinionated)

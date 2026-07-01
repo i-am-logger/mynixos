@@ -38,6 +38,14 @@
           windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
         };
 
+        systemd = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Master switch for mynixos-managed systemd configuration (journald, coredump). When false, the host keeps NixOS defaults.";
+          };
+        };
+
         allowedUnfreePackages = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
