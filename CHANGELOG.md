@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.11.2...mynixos-v0.12.0) (2026-07-01)
+
+
+### Features
+
+* **forensics:** unify diagnostics under my.forensics ([#131](https://github.com/i-am-logger/mynixos/issues/131)) ([0a30c6c](https://github.com/i-am-logger/mynixos/commit/0a30c6cde9e7cb2813fca4cfb919acbe6d8cdc0b))
+
 ## [0.11.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.11.1...mynixos-v0.11.2) (2026-06-19)
 
 
