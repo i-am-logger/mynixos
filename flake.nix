@@ -200,6 +200,7 @@
               # Top-level options
               (mkOptionsModule ./my/system/options.nix { inherit lib; })
               (mkOptionsModule ./my/security/options.nix { inherit lib; })
+              (mkOptionsModule ./my/forensics/options.nix { inherit lib; })
               (mkOptionsModule ./my/environment/options.nix { inherit lib; })
               (mkOptionsModule ./my/performance/options.nix { inherit lib; })
               (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
@@ -273,6 +274,7 @@
               # System
               ./my/system/core
               ./my/system/kernel
+              ./my/system/systemd
               ./my/system/scripts
               ./my/system/unfree
 
