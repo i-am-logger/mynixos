@@ -46,11 +46,14 @@ in
       boot.kernelPackages = kernelFromSource;
     })
     (mkIf (ls == null) {
-      boot.kernelPackages = mkDefault (
+      # `package` (when set) at NORMAL priority so it overrides a hardware
+      # module's mkDefault kernel (e.g. the Legion's mkDefault linuxPackages_latest
+      # in legion-16irx8h/drivers/uefi-boot.nix); only the fallback is mkDefault,
+      # so hardware may still pick a default. A host mkForce still wins over both.
+      boot.kernelPackages =
         if cfg.kernel.package != null
         then cfg.kernel.package
-        else pkgs.linuxPackages_latest # mynixos default
-      );
+        else mkDefault pkgs.linuxPackages_latest; # mynixos default
     })
 
     # Architecture configuration (auto-detected from hardware, can be overridden)

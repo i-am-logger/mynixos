@@ -20,7 +20,7 @@
               package = lib.mkOption {
                 type = lib.types.nullOr lib.types.package;
                 default = null;
-                description = "Kernel packages override (e.g. pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). If null (and localSource is unset) the mynixos default (linuxPackages_latest) is used; hardware modules may mkDefault-override boot.kernelPackages.";
+                description = "Kernel packages override (e.g. pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). When set, assigned at normal priority so it overrides a hardware module's mkDefault kernel (a host mkForce still wins). If null (and localSource is unset) the mynixos default (linuxPackages_latest) is used at mkDefault, which hardware may override.";
               };
 
               localSource = lib.mkOption {
