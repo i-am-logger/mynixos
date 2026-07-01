@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.12.0...mynixos-v0.13.0) (2026-07-01)
+
+
+### Features
+
+* **system:** build the kernel from a local source tree ([#133](https://github.com/i-am-logger/mynixos/issues/133)) ([4db4f5e](https://github.com/i-am-logger/mynixos/commit/4db4f5ec8a2fcd4e62760f4e452cd48af7fc33e2))
+
 ## [0.12.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.11.2...mynixos-v0.12.0) (2026-07-01)
 
 
