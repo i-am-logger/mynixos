@@ -8,6 +8,7 @@ with lib;
       (_name: userCfg: {
         home.packages = with pkgs; [
           gh
+          glab
           lazygit
         ];
 
@@ -37,6 +38,7 @@ with lib;
 
             # Opinionated config
             url."git@github.com:".insteadOf = "https://github.com/";
+            url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
             core.editor = "hx";
           };
 
