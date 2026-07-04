@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.13.0...mynixos-v0.14.0) (2026-07-04)
+
+
+### Features
+
+* **git:** add glab and gitlab.com SSH URL rewrite ([#135](https://github.com/i-am-logger/mynixos/issues/135)) ([ac4c558](https://github.com/i-am-logger/mynixos/commit/ac4c5584e0b1d65e36a7d26331672e2f451d3ac1))
+
 ## [0.13.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.12.0...mynixos-v0.13.0) (2026-07-01)
 
 
