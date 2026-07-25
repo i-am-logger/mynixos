@@ -59,7 +59,9 @@ rustPlatform.buildRustPackage rec {
     '';
     homepage = "https://github.com/SofusA/qobine";
     changelog = "https://github.com/SofusA/qobine/releases/tag/v${version}";
-    license = licenses.gpl3Only;
+    # LICENSE carries the plain GPLv3 text; upstream declares the "or later"
+    # intent in flatpak/io.github.sofusa.qobine.metainfo.xml.
+    license = licenses.gpl3Plus;
     platforms = platforms.linux;
     mainProgram = "qobine-tui";
   };
