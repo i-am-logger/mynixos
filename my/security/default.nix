@@ -9,10 +9,37 @@ let
   hasYubikey = any (user: (length user.yubikeys) > 0)
     (attrValues config.my.users);
 
-  # Get all yubikey users
+  # Authentication DEVICES live under my.hardware; this domain owns policy, so
+  # here we only observe them.
+  #
+  # Only the Linux-side device is consulted, because my/security is itself
+  # Linux-only: my.hardware.biometrics is declared in platforms/darwin.nix and
+  # does not exist here, so reading it would be an evaluation error, not `false`.
+  authHardware = config.my.hardware.securityKeys.yubico.enable || hasYubikey;
 in
 {
   config = mkMerge [
+    # Authentication devices are declared under my.hardware, so they are not
+    # discoverable from `my.security.*`. A host can therefore enable the security
+    # stack and end up with no authentication hardware without noticing.
+    #
+    # Report, do not enforce: password-only auth is a legitimate choice, which is
+    # why this is a warning with an explicit opt-out rather than an assertion.
+    (mkIf (cfg.enable && !authHardware && !cfg.passwordAuthOnly) {
+      warnings = [
+        ''
+          my.security.enable = true, but no authentication hardware is configured.
+
+          Authentication devices are declared under my.hardware:
+            my.hardware.securityKeys.yubico.enable  - YubiKey (pcscd, udev, PAM, gnupg)
+            my.hardware.biometrics.enable           - Touch ID / Watch ID (darwin only)
+
+          If this host authenticates with passwords only, set
+          my.security.passwordAuthOnly = true to silence this.
+        ''
+      ];
+    })
+
     # Secure Boot configuration
     (mkIf (cfg.enable && cfg.secureBoot.enable) {
       boot = {
@@ -58,146 +85,6 @@ in
       systemd.tmpfiles.rules = [
         "r! ${config.boot.loader.efi.efiSysMountPoint}/loader/credentials/nvpcr-anchor.*.cred"
       ];
-    })
-
-    # YubiKey configuration (enabled when security stack is enabled and any user has yubikey)
-    (mkIf (cfg.enable && (cfg.yubikey.enable || hasYubikey)) {
-      services = {
-        pcscd = {
-          enable = true;
-          plugins = [ pkgs.ccid ];
-        };
-
-        yubikey-agent.enable = false; # Use gpg-agent instead
-
-        udev.packages = [
-          pkgs.yubikey-personalization
-          pkgs.libu2f-host
-        ];
-
-        # Disable GNOME keyring entirely — using pass with GPG/YubiKey instead.
-        # All three settings are required: NixOS service, PAM integration, and env vars.
-        gnome = {
-          gnome-keyring.enable = false;
-          glib-networking.enable = true;
-        };
-      };
-
-      systemd = {
-        services.pcscd = {
-          enable = true;
-          wantedBy = [ "multi-user.target" ];
-        };
-
-        # YubiKey touch detector service
-        user.services.yubikey-touch-detector = {
-          enable = true;
-          description = "Detects when YubiKey is waiting for a touch";
-          wantedBy = [ "graphical-session.target" ];
-          partOf = [ "graphical-session.target" ];
-          after = [ "graphical-session.target" ];
-          serviceConfig = {
-            ExecStart = "${pkgs.yubikey-touch-detector}/bin/yubikey-touch-detector --libnotify";
-            Restart = "always";
-            RestartSec = 1;
-            Environment = [ "PATH=${pkgs.libnotify}/bin" ];
-          };
-        };
-      };
-
-      hardware.gpgSmartcards.enable = true;
-
-      environment = {
-        systemPackages = with pkgs; [
-          pinentry-gnome3
-          gopass
-          ripasso-cursive
-          libsecret
-          libnotify
-          yubikey-touch-detector
-          yubikey-manager
-        ];
-
-        # PAM U2F configuration for yubikey users
-        # Generate u2f_keys file from user yubikey data
-        # Format: username:keyHandle1,publicKey1,algorithm,flags:keyHandle2,publicKey2,algorithm,flags
-        # U2F keys must be registered using: pamu2fcfg -u <username>
-        # See: https://developers.yubico.com/pam-u2f/
-
-        # Create u2f_keys file in nix store from user configurations
-        etc."u2f_keys".text = lib.concatStringsSep "\n" (
-          lib.filter (line: line != "") (
-            lib.mapAttrsToList
-              (username: userCfg:
-                if (length userCfg.yubikeys) > 0
-                then "${username}:${lib.concatMapStringsSep ":" (yk:
-                  # Format: keyHandle,publicKey,algorithm,flags
-                  "${yk.u2fKeyHandle},${yk.u2fPublicKey},${yk.u2fAlgorithm},${yk.u2fFlags}"
-                ) userCfg.yubikeys}"
-                else ""
-              )
-              (activeUsers config.my.users)
-          )
-        );
-
-        sessionVariables = {
-          GNOME_KEYRING_CONTROL = "";
-          DISABLE_GNOME_KEYRING = "1";
-        };
-      };
-
-      security = {
-        polkit.enable = true;
-
-        pam = {
-          services = {
-            login.u2fAuth = true;
-            sudo.u2fAuth = true;
-            gdm = {
-              u2fAuth = true;
-              enableGnomeKeyring = false;
-            };
-            login.enableGnomeKeyring = false;
-          };
-          u2f = {
-            enable = true;
-            control = "sufficient";
-            settings = {
-              # Point to nix-managed u2f keys file in /etc
-              authfile = "/etc/u2f_keys";
-              cue = true;
-              interactive = true;
-              origin = "pam://";
-              appid = "pam://";
-            };
-          };
-        };
-      };
-
-      # Configure GPG agent
-      programs = {
-        gnupg.agent = {
-          enable = true;
-          enableSSHSupport = true;
-          pinentryPackage = pkgs.pinentry-gnome3;
-        };
-
-        ssh.startAgent = false;
-        dconf.enable = true;
-      };
-
-      # Required groups and user group membership
-      users = {
-        groups.plugdev = { };
-        groups.pcscd = { };
-
-        # Add users to security-related groups
-        users = mapAttrs
-          (_name: _userCfg: {
-            extraGroups = [ "plugdev" "pcscd" ];
-          })
-          (activeUsers config.my.users);
-      };
     })
 
     # NOPASSWD sudo for nixos-rebuild (avoids YubiKey touch on every rebuild)

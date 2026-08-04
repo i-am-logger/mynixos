@@ -9,20 +9,76 @@ let
   testLib = import ./lib.nix { inherit lib nixpkgs system self inputs; };
   inherit (testLib) pkgs specialArgs baseModules baseConfig;
 
-  # Helper: evaluate a NixOS system with the mynixos module and given config
+  # Helper: evaluate a NixOS system with the mynixos module and given config.
+  #
+  # These checks used to force `networking.hostName` alone, which is set by the
+  # test config itself -- so they passed without evaluating any mynixos module's
+  # output. What they actually prove depends entirely on how hard they pull, so
+  # they now force the four places module config lands: system packages, the
+  # per-user home-manager package sets, the systemd unit names and the created
+  # accounts.
+  #
+  # `system.build.toplevel` is deliberately NOT forced. vogix uses
+  # import-from-derivation, so building the toplevel needs an x86_64-linux
+  # builder at EVALUATION time -- which would make these checks unrunnable
+  # anywhere else, for no extra coverage of mynixos itself.
+  # Like evalTest, but also asserts a predicate over the resulting config, so the
+  # check fails when the modules produce the wrong VALUES rather than merely
+  # evaluating.
+  evalAssert = name: testConfig: predicate:
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig testConfig ];
+      };
+      ok = predicate eval.config;
+    in
+    if !ok then builtins.throw "FAIL: module-eval-${name} -- config assertion did not hold"
+    else
+      pkgs.runCommand "module-eval-${name}" { } ''
+        echo "PASS: ${name}"
+        touch $out
+      '';
+
   evalTest = name: testConfig:
     let
       eval = lib.nixosSystem {
         inherit specialArgs;
         modules = baseModules ++ [ baseConfig testConfig ];
       };
+      inherit (eval) config;
 
-      # Force evaluation by referencing config values
-      evaluatedHostname = eval.config.networking.hostName;
+      # `attrNames` alone would force only the KEY SET -- a unit whose script or
+      # serviceConfig is wrong, or a program whose settings are silently dropped,
+      # would still pass. These force the values.
+      forced = builtins.deepSeq
+        {
+          packages = map (p: p.name or "?") config.environment.systemPackages;
+          # Names only. Forcing unit VALUES reaches the vogix home-manager
+          # activation service, whose data comes from an import-from-derivation
+          # that needs an x86_64-linux builder at evaluation time -- the same
+          # reason system.build.toplevel is not forced. Deep-forcing the whole
+          # unit set also exhausts the evaluator's call depth.
+          units = builtins.attrNames config.systemd.services;
+          accounts = lib.mapAttrs
+            (_: u: { isNormalUser = u.isNormalUser or false; inherit (u) extraGroups; })
+            config.users.users;
+          home = lib.mapAttrs
+            (_: u: {
+              packages = map (p: p.name or "?") u.home.packages;
+              files = builtins.attrNames u.home.file;
+              sessionVariables = u.home.sessionVariables;
+              # NOT forced: every `programs.<x>.enable`. home-manager declares
+              # hundreds, and walking them all overflows the evaluator. The
+              # multiplexer checks below force specific programs.*.settings
+              # instead, which is where a mis-gated module actually shows up.
+            })
+            config.home-manager.users;
+        }
+        "ok";
     in
     pkgs.runCommand "module-eval-${name}" { } ''
-      # If we got here, evaluation succeeded (it happens at nix eval time)
-      echo "Evaluated config for host: ${evaluatedHostname}"
+      echo "Evaluated ${name}: ${forced} (${toString (builtins.length config.environment.systemPackages)} system packages)"
       touch $out
     '';
 
@@ -54,19 +110,54 @@ in
   };
 
   # Test 5: A user with features enabled evaluates
+  # There is no `my.users.<n>.features`; the per-user feature flags are
+  # top-level submodules with their own `enable`. This config named the option
+  # that never existed and still passed, because the check only forced
+  # `networking.hostName` and so never merged the definition.
+  # Multiplexer selection. The zellij module used to gate on an app option that
+  # nothing set, so its whole settings block was discarded while
+  # `programs.zellij.enable` was true from elsewhere -- the enable flag alone
+  # therefore proves nothing. These force the SETTINGS, and assert the two
+  # multiplexers are mutually exclusive.
+  multiplexer-zellij = evalAssert "multiplexer-zellij"
+    {
+      networking.hostName = "test-mux-zellij";
+      my.users.muxuser = {
+        fullName = "Mux User";
+        description = "mux";
+        email = "mux@example.com";
+        terminal = { enable = true; multiplexer = "zellij"; };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.muxuser; in
+      hm.programs.zellij.enable
+      && hm.programs.zellij.settings.default_layout == "compact"
+      && hm.programs.zellij.settings.copy_on_select
+      && !hm.programs.tmux.enable);
+
+  multiplexer-tmux = evalAssert "multiplexer-tmux"
+    {
+      networking.hostName = "test-mux-tmux";
+      my.users.muxuser = {
+        fullName = "Mux User";
+        description = "mux";
+        email = "mux@example.com";
+        terminal = { enable = true; multiplexer = "tmux"; };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.muxuser; in
+      hm.programs.tmux.enable && !hm.programs.zellij.enable);
+
   user-features = evalTest "user-features" {
     networking.hostName = "test-user-features";
     my.users.testuser = {
       fullName = "Test User";
-      features = {
-        terminal = true;
-        dev = true;
-      };
-    };
-    home-manager = {
-      useUserPackages = true;
-      backupFileExtension = "backup";
-      users.testuser = { };
+      description = "test user";
+      email = "testuser@example.com";
+      terminal.enable = true;
+      dev.enable = true;
     };
   };
 

@@ -7,11 +7,5 @@
       default = true;
       description = "Enable UEFI boot (default: true)";
     };
-
-    secure = lib.mkEnableOption "Secure Boot with Lanzaboote";
-
-    dualBoot = {
-      enable = lib.mkEnableOption "dual-boot support (Windows/Linux)";
-    };
   };
 }

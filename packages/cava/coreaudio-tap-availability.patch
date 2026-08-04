@@ -1,0 +1,29 @@
+diff --git a/input/coreaudio_tap.m b/input/coreaudio_tap.m
+index 54b855b..6044f07 100644
+--- a/input/coreaudio_tap.m
++++ b/input/coreaudio_tap.m
+@@ -274,7 +274,9 @@ static void cleanup_tap_state(struct tap_state *state) {
+     }
+ 
+     if (state->tap_created) {
+-        AudioHardwareDestroyProcessTap(state->tap_id);
++        if (@available(macOS 14.2, *)) {
++            AudioHardwareDestroyProcessTap(state->tap_id);
++        }
+         state->tap_created = false;
+     }
+ 
+@@ -309,7 +311,12 @@ static void cleanup_tap_state(struct tap_state *state) {
+             tap.UUID = tap_uuid;
+         }
+ 
+-        OSStatus status = AudioHardwareCreateProcessTap(tap, &state.tap_id);
++        OSStatus status = kAudioHardwareUnsupportedOperationError;
++        if (@available(macOS 14.2, *)) {
++            status = AudioHardwareCreateProcessTap(tap, &state.tap_id);
++        } else {
++            fprintf(stderr, "Error: Core Audio process taps require macOS 14.2 or newer\n");
++        }
+         if (status != noErr) {
+             fprintf(stderr, "Error: AudioHardwareCreateProcessTap failed (status %d)\n", (int)status);
+             signal_threadparams(state.audio);

@@ -11,7 +11,7 @@ in
 {
   config = mkMerge [
     # Set system flag
-    { my.streaming.enable = anyUserStreaming; }
+    { my.streaming.enable = mkDefault anyUserStreaming; }
 
     # Feature configuration
     (mkIf config.my.streaming.enable (mkMerge [

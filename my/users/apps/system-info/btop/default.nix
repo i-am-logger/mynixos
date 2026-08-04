@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.sysinfo.btop";
+  option = {
+    name = "btop";
+    default = false;
+    description = "btop system monitor";
+    persistedDirectories = [ ];
+  };
   home =
     { pkgs
     , lib

@@ -2,7 +2,7 @@
 
 {
   # System builder function - the core mynixos API
-  inherit (import ./mkSystem.nix { inherit inputs lib nixpkgs self; }) mkSystem;
+  inherit (import ./mkSystem.nix { inherit inputs lib self; }) mkSystem;
 
   # Installer ISO builder
   inherit (import ./mkInstallerISO.nix { inherit inputs lib nixpkgs; }) mkInstallerISO;

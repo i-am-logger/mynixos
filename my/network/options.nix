@@ -13,6 +13,7 @@
         headscale = {
           enable = lib.mkEnableOption "Headscale coordination server (self-hosted Tailscale control plane)";
 
+
           serverUrl = lib.mkOption {
             type = lib.types.str;
             default = "";
@@ -73,16 +74,94 @@
         tailscale = {
           enable = lib.mkEnableOption "Tailscale VPN client (connects to Headscale)";
 
+          controlPlane = lib.mkOption {
+            type = lib.types.enum [ "tailscale" "headscale-local" "headscale-remote" ];
+            default = "tailscale";
+            description = ''
+              Which coordination server this node joins.
+
+              Previously this was inferred: an empty `loginServer` meant
+              "Tailscale SaaS" UNLESS headscale happened to be enabled on the
+              same machine, in which case it silently meant "auto-join the local
+              headscale". That conflated two unrelated facts — whether this host
+              RUNS a control server, and which one it JOINS — so a machine
+              hosting headscale could not join any other tailnet.
+
+              - "tailscale"         Tailscale Inc.'s coordination server.
+              - "headscale-local"   The headscale running on THIS machine.
+                                    Requires my.network.headscale.enable.
+              - "headscale-remote"  A headscale elsewhere; set loginServer.
+            '';
+          };
+
           loginServer = lib.mkOption {
             type = lib.types.str;
             default = "";
-            description = "Headscale server URL for login (e.g. http://<onion>.onion:8080). Set after yoga bootstrap.";
+            example = "http://<onion>.onion:8090";
+            description = ''
+              Coordination server URL. Only used when
+              controlPlane = "headscale-remote".
+            '';
           };
 
           authKeyFile = lib.mkOption {
             type = lib.types.nullOr lib.types.path;
             default = null;
-            description = "Path to file containing pre-auth key for automatic registration";
+            description = ''
+              File containing the credential used to register this node
+              unattended. Two kinds are accepted:
+
+              - a pre-auth key (`tskey-auth-…`), which expires after at most
+                90 days and therefore has to be reissued; or
+              - an OAuth client secret (`tskey-client-…`), which does NOT
+                expire. Prefer this: there is nothing to refresh.
+
+              OAuth-registered nodes are not owned by a user, so Tailscale
+              REQUIRES them to be tagged — set `tags` below, or registration
+              fails.
+
+              See https://tailscale.com/kb/1215/oauth-clients
+            '';
+          };
+
+          authKeyParameters = lib.mkOption {
+            type = lib.types.submodule {
+              options = {
+                ephemeral = lib.mkOption {
+                  type = lib.types.nullOr lib.types.bool;
+                  default = null;
+                  description = "Register as an ephemeral node (removed when offline).";
+                };
+                preauthorized = lib.mkOption {
+                  type = lib.types.nullOr lib.types.bool;
+                  default = null;
+                  description = "Skip manual device approval. Usually wanted for unattended joins.";
+                };
+                baseURL = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = "Base URL for the Tailscale API.";
+                };
+              };
+            };
+            default = { };
+            description = ''
+              Parameters appended to the auth key as a query string, which is
+              how OAuth client secrets carry their registration options.
+            '';
+          };
+
+          tags = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            example = [ "tag:server" ];
+            description = ''
+              ACL tags to advertise (`--advertise-tags`).
+
+              Required when registering with an OAuth client secret. Also
+              useful on their own: tagged nodes do not have their node key
+              expire, so a tagged server never silently drops off the tailnet.
+            '';
           };
 
           exitNode = lib.mkOption {
@@ -197,7 +276,7 @@
 
           preferredLifetime = lib.mkOption {
             type = lib.types.ints.positive;
-            default = 300;
+            default = 120;
             description = ''
               Seconds a temporary IPv6 address is preferred for new outbound
               connections (`net.ipv6.conf.*.temp_prefered_lft`). After this,
@@ -209,7 +288,7 @@
 
           validLifetime = lib.mkOption {
             type = lib.types.ints.positive;
-            default = 1800;
+            default = 600;
             description = ''
               Seconds a temporary IPv6 address remains usable for in-flight
               connections (`net.ipv6.conf.*.temp_valid_lft`). Should be
@@ -220,7 +299,7 @@
 
           maxDesyncFactor = lib.mkOption {
             type = lib.types.ints.positive;
-            default = 60;
+            default = 30;
             description = ''
               Random offset (0..N seconds) subtracted from `preferredLifetime`
               per host so rotation does not happen in lockstep across a network

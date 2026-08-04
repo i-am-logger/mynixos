@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # module-coverage.sh - Track module coverage for mynixos
 #
-# Counts modules imported in flake.nix and cross-references with
-# checks/tests to produce a coverage percentage. For NixOS module
-# projects, "coverage" means: which modules are exercised by the
+# Counts modules imported by the platform composition files and
+# cross-references with checks/tests to produce a coverage percentage. For
+# NixOS module projects, "coverage" means: which modules are exercised by the
 # flake checks (nix flake check evaluates all imports).
 #
 # Output: coverage summary + optional LCOV-style report for badge generation.
@@ -12,10 +12,17 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Extract all module paths imported in flake.nix (./my/ paths)
+# Extract all module paths imported by the platform composition layer.
+#
+# platforms/{common,linux,darwin}.nix are where modules are actually imported;
+# they reference them as ../my/... relative to platforms/. flake.nix keeps only
+# the handful of hardware-profile paths it exports as lib.hardware, so scraping
+# it here reports near-zero coverage.
 extract_imported_modules() {
-  grep -oP '\./my/[a-zA-Z0-9_./-]+' "$REPO_ROOT/flake.nix" |
-    sed 's|^\./||' |
+  # -E rather than -P: the pattern needs no PCRE, and BSD grep (macOS, now a
+  # supported platform) has no -P.
+  grep -ohE '\.\./my/[a-zA-Z0-9_./-]+' "$REPO_ROOT"/platforms/*.nix |
+    sed 's|^\.\./||' |
     sort -u
 }
 
@@ -27,7 +34,7 @@ count_module_dirs() {
 }
 
 # All modules are evaluated by `nix flake check` because:
-# - flake.nix imports every module in nixosModules.default
+# - platforms/linux.nix imports every Linux module into nixosModules.default
 # - `nix flake check` evaluates the flake outputs including the module
 # - The checks (formatting, pre-commit) exercise the full module tree
 #
@@ -77,7 +84,7 @@ generate_report() {
   echo "=== mynixos Module Coverage Report ==="
   echo ""
   echo "Total module directories: $total_modules"
-  echo "Imported in flake.nix:    $imported_count"
+  echo "Imported by platforms/:    $imported_count"
   echo "Not imported:             $unimported_count"
   echo "Coverage:                 ${coverage_pct}%"
   echo ""

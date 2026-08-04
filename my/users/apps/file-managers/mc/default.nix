@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.fileManagers.mc";
+  option = {
+    name = "mc";
+    default = false;
+    description = "Midnight Commander";
+    persistedDirectories = [ ];
+  };
   home = { pkgs, ... }: {
     home.packages = with pkgs; [
       mc

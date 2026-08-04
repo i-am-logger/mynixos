@@ -4,6 +4,7 @@ with lib;
 
 {
   config = {
+
     home-manager.users = mapAttrs
       (name: userCfg:
         let
@@ -41,24 +42,35 @@ with lib;
                 '';
               };
             in
+            # macOS gets Brave unwrapped. Every flag the wrapper adds is
+              # Linux-desktop-specific and would be wrong or fatal here:
+              # --ozone-platform=wayland has no backend on macOS, the
+              # gopass/gpg-agent SSH_AUTH_SOCK wiring has no counterpart (macOS
+              # Brave uses the system Keychain), and /home/<name> is not where a
+              # macOS home directory lives.
             [
-              brave-with-gopass
+              (if pkgs.stdenv.hostPlatform.isDarwin then pkgs.brave else brave-with-gopass)
             ];
 
-          # Configure XDG for Brave
-          xdg.desktopEntries.brave-browser = {
-            name = "Brave Browser";
-            comment = "Brave browser";
-            exec = "brave %U";
-            icon = "brave-browser";
-            categories = [ "Network" "WebBrowser" ];
-            mimeType = [
-              "text/html"
-              "text/xml"
-              "application/xhtml+xml"
-              "x-scheme-handler/http"
-              "x-scheme-handler/https"
-            ];
+          # Configure XDG for Brave.
+          #
+          # .desktop entries are a freedesktop concept; macOS uses LaunchServices
+          # and the .app bundle instead.
+          xdg.desktopEntries = mkIf pkgs.stdenv.hostPlatform.isLinux {
+            brave-browser = {
+              name = "Brave Browser";
+              comment = "Brave browser";
+              exec = "brave %U";
+              icon = "brave-browser";
+              categories = [ "Network" "WebBrowser" ];
+              mimeType = [
+                "text/html"
+                "text/xml"
+                "application/xhtml+xml"
+                "x-scheme-handler/http"
+                "x-scheme-handler/https"
+              ];
+            };
           };
         }
       )

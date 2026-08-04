@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "graphical.terminals.ghostty";
+  option = {
+    name = "ghostty";
+    default = false;
+    description = "Ghostty terminal";
+    persistedDirectories = [ ];
+  };
   home = _: {
     # Copy shader files from source
     # Note: You'll need to copy the shaders directory from /etc/nixos/home/gui/ghostty/shaders

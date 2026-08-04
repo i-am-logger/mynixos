@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.sysinfo.neofetch";
+  option = {
+    name = "neofetch";
+    default = false;
+    description = "neofetch system info";
+    persistedDirectories = [ ];
+  };
   home = { pkgs, ... }: {
     home.packages = with pkgs; [
       neofetch

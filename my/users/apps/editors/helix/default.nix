@@ -7,6 +7,12 @@ args:
 # graphical users and can be explicitly enabled by non-graphical users.
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "graphical.editors.helix";
+  option = {
+    name = "helix";
+    default = false;
+    description = "Helix editor";
+    persistedDirectories = [ ".config/helix" ];
+  };
   unfree = [ "github-copilot-cli" ];
   home = { pkgs, userCfg, ... }:
     let

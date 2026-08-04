@@ -2,19 +2,77 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.sysinfo.fastfetch";
-  home = { pkgs, ... }:
+  option = {
+    name = "fastfetch";
+    default = false;
+    description = "Fastfetch system info";
+    persistedDirectories = [ ];
+  };
+  home = { lib, pkgs, ... }:
     let
+      inherit (pkgs.stdenv.hostPlatform) isLinux;
+
       # mynixos logo from assets directory
       mynixosLogo = ../../../../../assets/logos/mynixos.txt;
 
-      # Secure Boot check script (single bootctl call with conditional colors)
-      secureBootScript = pkgs.writeShellScript "fastfetch-secureboot" ''
-        status=$(${pkgs.systemd}/bin/bootctl status 2>/dev/null | ${pkgs.gawk}/bin/awk '/Secure Boot:/ {print $3; exit}')
-        case "$status" in
-          enabled)  printf '\033[32m\033[1mEnabled\033[0m' ;;
-          disabled) printf '\033[31m\033[1m\033[5mDisabled\033[0m' ;;
-          *)        printf '\033[33m\033[1mUnknown\033[0m' ;;
-        esac
+      # Boot modules: systemd-boot manager, and a Secure Boot check.
+      #
+      # `${pkgs.systemd}` is a store-path interpolation, so it is forced as soon
+      # as this string is evaluated -- and pkgs.systemd does not exist on darwin.
+      # Building it inside `lib.optionalString isLinux` is what keeps fastfetch
+      # evaluable on macOS: optionalString does not force its second argument
+      # when the condition is false.
+      #
+      # Nothing here has a macOS analogue anyway: there is no bootctl, no
+      # UEFI Secure Boot, and no login manager to report.
+      bootModules = lib.optionalString isLinux ''
+          {
+            "type": "bootmgr",
+            "key": "      Bootmgr",
+            "keyColor": "reset_"
+          },
+          {
+            "type": "command",
+            "key": "  \u001b[1mSecure Boot\u001b[0m",
+            "text": "${pkgs.writeShellScript "fastfetch-secureboot" ''
+          status=$(${pkgs.systemd}/bin/bootctl status 2>/dev/null | ${pkgs.gawk}/bin/awk '/Secure Boot:/ {print $3; exit}')
+          case "$status" in
+            enabled)  printf '\033[32m\033[1mEnabled\033[0m' ;;
+            disabled) printf '\033[31m\033[1m\033[5mDisabled\033[0m' ;;
+            *)        printf '\033[33m\033[1mUnknown\033[0m' ;;
+          esac
+        ''}"
+          },
+      '';
+
+      loginManagerModule = lib.optionalString isLinux ''
+        {
+          "type": "lm",
+          "key": "Login Manager",
+          "keyColor": "reset_"
+        },
+      '';
+
+      # /boot and /persist are NixOS layout; macOS has neither.
+      bootDiskModule = lib.optionalString isLinux ''
+        {
+          "type": "disk",
+          "key": "         Disk",
+          "keyColor": "reset_",
+          "folders": "/boot",
+          "hideFolders": [],
+          "format": "{size-percentage-bar} [   /boot] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+        },
+      '';
+
+      persistDiskModule = lib.optionalString isLinux ''
+        {
+          "type": "disk",
+          "key": "         Disk",
+          "keyColor": "reset_",
+          "folders": "/persist",
+          "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
+        },
       '';
     in
     {
@@ -70,26 +128,13 @@ args:
               "key": "       Uptime",
               "format": "\u001b[1m{10}\u001b[0m"
             },
-            {
-              "type": "bootmgr",
-              "key": "      Bootmgr",
-              "keyColor": "reset_"
-            },
-            {
-              "type": "command",
-              "key": "  \u001b[1mSecure Boot\u001b[0m",
-              "text": "${secureBootScript}"
-            },
+            ${bootModules}
             {
               "type": "kernel",
               "key": "       Kernel",
               "keyColor": "reset_"
             },
-            {
-              "type": "lm",
-              "key": "Login Manager",
-              "keyColor": "reset_"
-            },
+            ${loginManagerModule}
             {
               "type": "shell",
               "key": "        Shell",
@@ -137,14 +182,7 @@ args:
               "folders": "/",
               "format": "{size-percentage-bar} [       /] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
             },
-            {
-              "type": "disk",
-              "key": "         Disk",
-              "keyColor": "reset_",
-              "folders": "/boot",
-              "hideFolders": [],
-              "format": "{size-percentage-bar} [   /boot] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
-            },
+            ${bootDiskModule}
             {
               "type": "disk",
               "key": "         Disk",
@@ -152,13 +190,7 @@ args:
               "folders": "/nix",
               "format": "{size-percentage-bar} [    /nix] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
             },
-            {
-              "type": "disk",
-              "key": "         Disk",
-              "keyColor": "reset_",
-              "folders": "/persist",
-              "format": "{size-percentage-bar} [/persist] {size-used} / {size-total} ({size-percentage}) - {filesystem}"
-            },
+            ${persistDiskModule}
             {
               "type": "battery",
               "key": "      Battery",

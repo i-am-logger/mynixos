@@ -37,6 +37,9 @@ with lib;
             };
 
             # Opinionated config
+            merge.conflictstyle = "zdiff3"; # show the common ancestor in conflicts
+            diff.colorMoved = "default"; # distinguish moved lines from added/removed
+
             url."git@github.com:".insteadOf = "https://github.com/";
             url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
             core.editor = "hx";
@@ -62,6 +65,13 @@ with lib;
             };
             features = "decorations";
             whitespace-error-style = "22 reverse";
+
+            navigate = true; # n / N jump between diff hunks
+            line-numbers = true;
+            side-by-side = true;
+            hyperlinks = true;
+            # mkDefault so a theming layer (vogix) can take it over.
+            syntax-theme = lib.mkDefault "ansi"; # follows the terminal's light/dark
           };
         };
       })

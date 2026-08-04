@@ -1,7 +1,10 @@
 # mynixos Opinionated Defaults: Terminal Apps
 #
-# This file defines which apps are enabled when terminal.enable = true
-# Users can override by setting apps.{app}.enable = false
+# Apps enabled when terminal.enable = true. Users override with
+# apps.{app}.enable = false.
+#
+# Apps whose answer differs by platform live in ./mynixos-{linux,darwin}.nix, so
+# this file states only what holds everywhere.
 
 { lib, ... }:
 
@@ -11,7 +14,7 @@
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
       config = lib.mkIf (config.terminal.enable or false) {
         apps.terminal = {
-          # Shells (bash is default, fish optional)
+          # Shells. zsh is defaulted per platform in ./mynixos-{linux,darwin}.nix.
           shells = {
             bash.enable = lib.mkDefault true;
             fish.enable = lib.mkDefault false;
@@ -28,10 +31,8 @@
           fileUtils.lsd.enable = lib.mkDefault true;
 
           # File managers
-          fileManagers = {
-            yazi.enable = lib.mkDefault true;
-            mc.enable = lib.mkDefault false;
-          };
+          # environment.FILE_MANAGER picks the primary file manager.
+          fileManagers.mc.enable = lib.mkDefault false;
 
           # System info
           sysinfo = {
@@ -43,8 +44,7 @@
           # Network tools
           network.termscp.enable = lib.mkDefault false;
 
-          # Visualizers
-          visualizers.bespec.enable = lib.mkDefault true;
+          # Visualizers. bespec is Linux-only; see ./mynixos-linux.nix.
           visualizers.cava.enable = lib.mkDefault true;
 
           # Fun/Eye candy

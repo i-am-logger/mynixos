@@ -1,7 +1,11 @@
 # mynixos Opinionated Defaults: Graphical Apps
 #
-# This file defines which apps are enabled when graphical.enable = true
-# Users can override by setting apps.{app}.enable = false
+# Apps enabled when graphical.enable = true. Users override with
+# apps.{app}.enable = false.
+#
+# Only apps that exist on every platform live here. Wayland/X11-only ones —
+# hyprland, waybar, feh — are in ./mynixos-linux.nix, so darwin never defaults
+# on something it cannot run.
 
 { lib, ... }:
 
@@ -11,28 +15,17 @@
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
       config = lib.mkIf (config.graphical.enable or false) {
         apps.graphical = {
-          # Window managers
-          windowManagers.hyprland.enable = lib.mkDefault true;
-
           # Browsers
-          browsers = {
-            brave.enable = lib.mkDefault true;
-            firefox.enable = lib.mkDefault false;
-            chromium.enable = lib.mkDefault false;
-          };
+          # The primary browser comes from environment.BROWSER; these toggles
+          # add extra ones alongside it.
+          browsers.chromium.enable = lib.mkDefault false;
 
           # Terminals
+          # Likewise environment.TERMINAL picks the primary terminal.
           terminals = {
-            wezterm.enable = lib.mkDefault true;
             kitty.enable = lib.mkDefault false;
             ghostty.enable = lib.mkDefault false;
           };
-
-          # Launchers
-          launchers.walker.enable = lib.mkDefault true;
-
-          # Status bars
-          statusbars.waybar.enable = lib.mkDefault true;
 
           # Editors (graphical)
           editors = {
@@ -42,9 +35,6 @@
 
           # File managers (graphical use)
           # yazi already enabled by terminal if terminal.enable
-
-          # Viewers
-          viewers.feh.enable = lib.mkDefault true;
 
           # Utilities
           utils = {

@@ -3,13 +3,13 @@
 with lib;
 
 {
-  # Option is declared in flake.nix
+  # No option of its own: tmux is selected by `terminal.multiplexer`, the same
+  # way zellij is (my/users/apps/multiplexers/zellij).
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg:
         let
-          termCfg = userCfg.terminal or { };
-          isTmux = (termCfg.multiplexer or "zellij") == "tmux";
+          isTmux = userCfg.terminal.multiplexer == "tmux";
         in
         mkIf isTmux {
           programs.tmux = {

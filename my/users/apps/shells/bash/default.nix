@@ -1,7 +1,44 @@
-args:
+{ lib, ... }@args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.shells.bash";
+  option = {
+    name = "Bash";
+    default = false;
+    description = "Bash shell";
+    persistedFiles = [ ".bash_history" ];
+    extraOptions = {
+      historySize = lib.mkOption {
+        type = lib.types.int;
+        default = 10000;
+        description = "Number of commands to keep in history";
+      };
+      historyFileSize = lib.mkOption {
+        type = lib.types.int;
+        default = 10000;
+        description = "Number of lines to keep in history file";
+      };
+      historyControl = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "ignoredups"
+          "ignorespace"
+        ];
+        description = "History control options";
+      };
+      shellOptions = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "histappend"
+          "checkwinsize"
+          "extglob"
+          "globstar"
+          "checkjobs"
+        ];
+        description = "Shell options (shopt)";
+      };
+    };
+  };
   home = { cfg, ... }: {
     programs.bash = {
       enable = true;
@@ -13,12 +50,6 @@ args:
       inherit (cfg) historyFileSize;
       inherit (cfg) historySize;
       inherit (cfg) shellOptions;
-    };
-
-    # fzf integration for enhanced history search (Ctrl+R, Ctrl+T, Alt+C)
-    programs.fzf = {
-      enable = true;
-      enableBashIntegration = true;
     };
   };
 }

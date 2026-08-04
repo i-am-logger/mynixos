@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.prompts.starship";
+  option = {
+    name = "Starship";
+    default = false;
+    description = "Starship prompt";
+    persistedDirectories = [ ".config/starship" ];
+  };
   home = _: {
     programs.starship = {
       enable = true;

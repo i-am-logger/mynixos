@@ -25,13 +25,11 @@ let
       inherit (inputs)
         disko
         impermanence
-        stylix
         vogix
         hypr-vogix
         lanzaboote
         self
         ;
-      secrets = inputs.secrets or null;
     };
     modules = [
       self.nixosModules.default

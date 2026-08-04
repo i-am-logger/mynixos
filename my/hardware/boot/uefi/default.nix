@@ -4,24 +4,22 @@ with lib;
 
 let
   cfg = config.my.boot;
+  # Lanzaboote replaces systemd-boot, so the bootloader choice follows the live
+  # secure-boot flag. There used to be a second `my.boot.secure` switch here that
+  # nothing set, and which read `false` on a host with secure boot ON.
+  secure = config.my.security.secureBoot.enable;
 in
 {
-  # Options are defined in flake.nix under my.boot namespace
-  # This module only provides the implementation
-
   config = mkMerge [
-    # Common UEFI settings
     (mkIf cfg.uefi {
       boot.loader.efi.canTouchEfiVariables = true;
     })
 
-    # Standard systemd-boot (when secure boot is disabled)
-    (mkIf (cfg.uefi && !cfg.secure) {
+    (mkIf (cfg.uefi && !secure) {
       boot.loader.systemd-boot.enable = true;
     })
 
-    # Secure boot mode (disable systemd-boot for Lanzaboote)
-    (mkIf cfg.secure {
+    (mkIf secure {
       boot.loader.systemd-boot.enable = mkForce false;
     })
   ];

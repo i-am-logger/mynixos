@@ -12,74 +12,59 @@
           description = "System hostname (if null, uses my.hostname for backwards compatibility)";
         };
 
-        kernel = lib.mkOption {
-          description = "Kernel selection: override the packaged kernel set, or build boot.kernelPackages from a local source tree.";
-          default = { };
-          type = lib.types.submodule {
-            options = {
-              package = lib.mkOption {
-                type = lib.types.nullOr lib.types.package;
-                default = null;
-                description = "Kernel packages override (e.g. pkgs.linuxPackages_latest, pkgs.linuxPackages_6_12). When set, assigned at normal priority so it overrides a hardware module's mkDefault kernel (a host mkForce still wins). If null (and localSource is unset) the mynixos default (linuxPackages_latest) is used at mkDefault, which hardware may override.";
-              };
 
-              localSource = lib.mkOption {
-                default = null;
-                description = "Build boot.kernelPackages from a local kernel source tree instead of a packaged kernel. Takes precedence over `package`. Intended for a checked-out git tree exposed as a `flake = false` git+file input (copies tracked files only). mynixos overrides a nixpkgs mainline kernel's src/version so NixOS kernel-config generation and boot.kernelPatches still apply to the source build.";
-                type = lib.types.nullOr (lib.types.submodule {
-                  options = {
-                    src = lib.mkOption {
-                      type = lib.types.path;
-                      description = "Kernel source tree (must contain the top-level Makefile); e.g. the outPath of a `flake = false` source input.";
-                    };
-                    version = lib.mkOption {
-                      type = lib.types.str;
-                      description = "Upstream version of the tree, e.g. \"7.1.0\". MUST equal the tree's Makefile VERSION.PATCHLEVEL.SUBLEVEL, otherwise a /lib/modules modDirVersion mismatch hard-fails the build.";
-                    };
-                    modDirVersion = lib.mkOption {
-                      type = lib.types.nullOr lib.types.str;
-                      default = null;
-                      description = "Module directory version = `make kernelrelease` = include/config/kernel.release. Defaults to `version`; set explicitly only if the tree appends a LOCALVERSION/`+` suffix.";
-                    };
-                    base = lib.mkOption {
-                      type = lib.types.nullOr lib.types.package;
-                      default = null;
-                      description = "nixpkgs mainline kernel whose config baseline to override (e.g. pkgs.linux_7_1). Pin it to the source's series so a future nixpkgs `latest` bump does not shift the common-config baseline. If null, uses pkgs.linux_latest.";
-                    };
-                  };
-                });
-              };
-            };
-          };
+
+        flakeDir = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "/Users/logger/Code/flake";
+          description = ''
+            Where the rebuild-system / test-system / build-system / update-system
+            scripts should look for this host's flake.
+
+            When null they fall back to /etc/nixos then ~/.flake, which are NixOS
+            conventions -- neither exists on macOS, so a darwin host must set this
+            or the scripts cannot find anything to build.
+
+            Scope is deliberately narrow: this is a RUNTIME lookup path for those
+            scripts, not a declaration of where the configuration lives.
+            my/storage/impermanence hardcodes /etc/nixos on purpose and is not
+            wired to this option -- coupling them would let a scripts-convenience
+            setting change what a tmpfs-root host persists.
+          '';
         };
 
-        architecture = lib.mkOption {
-          type = lib.types.nullOr (lib.types.enum [ "x86_64-linux" "aarch64-linux" ]);
-          default = null;
-          description = "System architecture (auto-detected from hardware if null)";
+        localInputs = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          example = { mynixos = "/Users/logger/Code/mynixos"; };
+          description = ''
+            Local checkouts the rebuild scripts should prefer over the locked
+            inputs, as input name -> path. Each one that is PRESENT at run time
+            becomes `--override-input <name> <path>`.
+
+            Existence is checked when the script runs, not when it is built, so
+            one configuration serves both the machine that has the checkout and
+            the machine that does not -- the latter silently falls back to
+            flake.lock. That is what makes this safe to state in a profile
+            shared by every host.
+
+            The alternative it replaces is locking an input to a local path,
+            which pins every OTHER host to a directory that exists on one
+            machine. Here the lock keeps naming a real revision and only the
+            local build departs from it.
+
+            A build that overrides is a build that does not match flake.lock, so
+            the scripts say which inputs they replaced. Type is str rather than
+            path: a path would be copied into the store at evaluation time,
+            which would defeat the point of pointing at a working tree.
+          '';
         };
 
         enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
 
-        udev = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Master switch for custom device udev rules. When false, sets all device udev options to false via mkDefault. Individual devices can override with mkForce.";
-          };
-        };
 
-        dualBoot = {
-          windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
-        };
 
-        systemd = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Master switch for mynixos-managed systemd configuration (journald, coredump). When false, the host keeps NixOS defaults.";
-          };
-        };
 
         allowedUnfreePackages = lib.mkOption {
           type = lib.types.listOf lib.types.str;
@@ -87,61 +72,6 @@
           description = "List of unfree package names to allow. Modules append to this list and a single predicate is built centrally.";
         };
 
-        persistence = lib.mkOption {
-          description = "System persistence configuration";
-          default = { };
-          type = lib.types.submodule {
-            options = {
-              aggregated = lib.mkOption {
-                type = lib.types.attrsOf (lib.types.submodule {
-                  options = {
-                    directories = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      description = "Aggregated directories to persist for this user";
-                      readOnly = true;
-                    };
-                    files = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      description = "Aggregated files to persist for this user";
-                      readOnly = true;
-                    };
-                    apps = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      description = "List of enabled and persisted apps for this user";
-                      readOnly = true;
-                    };
-                  };
-                });
-                description = "Aggregated persistence data from user app configurations (read-only)";
-                readOnly = true;
-              };
-
-              features = lib.mkOption {
-                type = lib.types.submodule {
-                  options = {
-                    systemDirectories = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      default = [ ];
-                      description = "Aggregated system directories from features";
-                    };
-                    userDirectories = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      default = [ ];
-                      description = "Aggregated user directories from features (per-user)";
-                    };
-                    userFiles = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
-                      default = [ ];
-                      description = "Aggregated user files from features (per-user)";
-                    };
-                  };
-                };
-                default = { };
-                description = "Aggregated persistence data from features";
-              };
-            };
-          };
-        };
       };
     };
   };

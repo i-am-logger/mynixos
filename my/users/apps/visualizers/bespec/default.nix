@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.visualizers.bespec";
+  option = {
+    name = "bespec";
+    default = true;
+    description = "BeSpec real-time audio spectrum visualizer with peak hold";
+    persistedDirectories = [ ".config/BeSpec" ];
+  };
   home = { pkgs, userCfg, ... }:
     let
       bespec = pkgs.callPackage ../../../../../packages/bespec { };

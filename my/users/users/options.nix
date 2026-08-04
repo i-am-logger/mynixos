@@ -17,8 +17,7 @@
             ../dev/options.nix
             ../ai/options.nix
             ../terminal/options.nix
-            ../theming/options.nix
-            ./apps-options.nix
+            ../input/options.nix
           ];
         }
       )

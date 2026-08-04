@@ -11,20 +11,7 @@ let
     (attrValues config.my.users);
 
   # Check if any user has specific apps enabled
-  anyUserSlack = any (userCfg: (userCfg.graphical.webapps.slack or false)) (attrValues config.my.users);
-  anyUserSignal = any (userCfg: (userCfg.graphical.webapps.signal or false)) (attrValues config.my.users);
-  anyUser1Password = any (userCfg: (userCfg.graphical.webapps.onePassword or false)) (attrValues config.my.users);
 
-  # Helper function to wrap Electron apps
-  wrapElectronApp = pkg: bin: pkgs.symlinkJoin {
-    name = "${pkg.pname or pkg.name}-wrapped";
-    paths = [ pkg ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      wrapProgram $out/bin/${bin} \
-        --add-flags "--password-store=basic"
-    '';
-  };
 
   # Create chromium with Widevine enabled for DRM content
   chromiumWithWidevine = pkgs.chromium.override {
@@ -53,19 +40,6 @@ in
         "widevine-cdm"
       ];
     }
-
-    # Electron apps
-    (mkIf (anyUserSlack || anyUserSignal) {
-      environment.systemPackages =
-        (optional anyUserSlack (wrapElectronApp pkgs.slack "slack")) ++
-        (optional anyUserSignal (wrapElectronApp pkgs.signal-desktop "signal-desktop"));
-    })
-
-    # 1Password
-    (mkIf anyUser1Password {
-      programs._1password.enable = true;
-      programs._1password-gui.enable = true;
-    })
 
     # Browser-based webapps (per-user configuration)
     {

@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "graphical.terminals.kitty";
+  option = {
+    name = "kitty";
+    default = false;
+    description = "Kitty terminal";
+    persistedDirectories = [ ];
+  };
   home = _: {
     programs.kitty = {
       enable = true;

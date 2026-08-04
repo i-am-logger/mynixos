@@ -2,6 +2,12 @@ args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
   path = "terminal.shells.fish";
+  option = {
+    name = "fish";
+    default = false;
+    description = "Fish shell";
+    persistedDirectories = [ ];
+  };
   home = { pkgs, ... }: {
     home.packages = with pkgs; [
       # thefuck has been removed, using pay-respects instead

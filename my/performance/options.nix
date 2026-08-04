@@ -16,7 +16,7 @@
 
         vmtouchCache = lib.mkOption {
           type = lib.types.bool;
-          default = false;
+          default = true;
           description = "Enable vmtouch RAM caching for system closure";
         };
       };
