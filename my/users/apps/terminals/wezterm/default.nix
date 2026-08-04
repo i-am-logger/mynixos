@@ -2,6 +2,11 @@
 
 with lib;
 
+let
+  # Same option on both platforms, different interior: the module is shared, so
+  # the platform is read here rather than expressed by file placement.
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
+in
 {
   config = {
 
@@ -39,13 +44,49 @@ with lib;
 
                 -- Terminal settings
                 config.enable_wayland = true
+
                 config.window_background_opacity = 0.70
+
+                -- Transparency is only legible when something blurs what shows
+                -- through. On Linux the compositor does that pass, so opacity
+                -- alone is enough; macOS has no equivalent, and the same 0.70
+                -- reads as plain see-through over whatever is behind the window.
+                --
+                -- wezterm draws its own surface with wgpu and adopts no AppKit
+                -- materials, so the system Liquid Glass look is not available to
+                -- it. This is the native blur it does expose.
+                ${optionalString isDarwin "config.macos_window_background_blur = 30"}
                 config.hide_tab_bar_if_only_one_tab = true
                 config.default_cursor_style = 'BlinkingBlock'
                 config.cursor_blink_rate = 200
                 config.cursor_thickness = 1
                 config.window_close_confirmation = 'NeverPrompt'
+
+                -- Ctrl+= / Ctrl+- change how much fits in the window, not how
+                -- big the window is. The default holds rows x columns fixed and
+                -- resizes the window to match the new cell size, which moves and
+                -- rescales the window every time the font changes.
+                config.adjust_window_size_when_changing_font_size = false
                 config.term = 'wezterm'
+                ${optionalString isDarwin ''
+                  -- TERM=wezterm is only usable if the shell can resolve that
+                  -- terminfo entry AT STARTUP. On macOS wezterm is launched by
+                  -- LaunchServices, whose environment has no TERMINFO_DIRS, so
+                  -- zsh looks the terminal up before /etc/zshenv can set one,
+                  -- fails, and DISABLES ZLE -- which breaks line editing: with no
+                  -- cursor control, syntax highlighting redraws append instead of
+                  -- overwrite and typed characters appear duplicated. ncurses
+                  -- caches that first failure, so setting the variable later in
+                  -- shell startup does not repair it.
+                  --
+                  -- Naming the terminfo package directly rather than a profile
+                  -- keeps this correct for root and for any shell, not just an
+                  -- interactive login one. Linux needs none of this: the system
+                  -- profile aggregates terminfo and the lookup already succeeds.
+                  config.set_environment_variables = {
+                    TERMINFO_DIRS = '${pkgs.wezterm.terminfo}/share/terminfo:/usr/share/terminfo',
+                  }
+                ''}
                 config.check_for_updates = false
 
                 -- Vogix theme colors (live-reloaded on theme switch via SIGUSR1)
