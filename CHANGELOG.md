@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.15.0...mynixos-v0.15.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* **wezterm:** repair line editing, window sizing and transparency on macOS ([#139](https://github.com/i-am-logger/mynixos/issues/139)) ([a623c0b](https://github.com/i-am-logger/mynixos/commit/a623c0b25f3bc43bb66a346743a613e84642157c))
+
 ## [0.15.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.14.0...mynixos-v0.15.0) (2026-08-04)
 
 
