@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.14.0...mynixos-v0.15.0) (2026-08-04)
+
+
+### Features
+
+* **platforms:** first-class nix-darwin support ([#137](https://github.com/i-am-logger/mynixos/issues/137)) ([606cb98](https://github.com/i-am-logger/mynixos/commit/606cb98a7dfa31c27c2457d1fbe063d27f16b6ac))
+
 ## [0.14.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.13.0...mynixos-v0.14.0) (2026-07-04)
 
 
