@@ -21,15 +21,18 @@
           enable = lib.mkEnableOption "TPM2 measured-boot setup (SRK + NvPCR anchors)";
         };
 
-        yubikey = {
-          enable = lib.mkEnableOption "yubikey support";
-        };
-
         auditRules = {
           enable = lib.mkEnableOption "audit rules";
         };
 
         nopasswdRebuild = lib.mkEnableOption "NOPASSWD sudo for nixos-rebuild (skips YubiKey touch on rebuild)";
+
+        # Authentication DEVICES are not declared here — they live under
+        # my.hardware (securityKeys.yubico, biometrics). This domain owns policy
+        # and only observes them, warning when the security stack is on but no
+        # auth hardware is configured. Password-only auth is legitimate, so this
+        # is the opt-out for that warning.
+        passwordAuthOnly = lib.mkEnableOption "password-only authentication on this host (silences the no-auth-hardware warning)";
       };
     };
   };

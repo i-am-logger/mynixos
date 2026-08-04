@@ -25,12 +25,6 @@
                 description = "Use dedicated partition for persistent storage (vs tmpfiles)";
               };
 
-              persistUserData = lib.mkOption {
-                type = lib.types.bool;
-                default = true;
-                description = "Persist user data directories (Media, Code)";
-              };
-
               cloneFlakeRepo = lib.mkOption {
                 type = lib.types.nullOr lib.types.nonEmptyStr;
                 default = null;
@@ -40,7 +34,7 @@
               symlinkFlakeToHome = lib.mkOption {
                 type = lib.types.bool;
                 default = false;
-                description = "Create ~/.flake symlink pointing to /etc/nixos for all users (auto-detected from my.users)";
+                description = "Create a ~/.flake symlink to /etc/nixos for all users (auto-detected from my.users). Deliberately NOT wired to my.system.flakeDir — see the comment in my/storage/impermanence/impermanence.nix.";
               };
 
               extraSystemDirectories = lib.mkOption {
@@ -52,7 +46,12 @@
               extraUserDirectories = lib.mkOption {
                 type = lib.types.listOf lib.types.nonEmptyStr;
                 default = [ ];
-                description = "Additional user directories to persist (applied to all users)";
+                description = ''
+                  Additional user directories to persist, applied to EVERY user on
+                  the host. For one person's own folders use
+                  `my.users.<name>.persistedDirectories` instead; for a piece of
+                  software's state, declare it in that software's module.
+                '';
               };
 
               extraUserFiles = lib.mkOption {

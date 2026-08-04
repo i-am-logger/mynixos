@@ -150,29 +150,17 @@ in
             unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:br-*
           '';
 
-          # System packages
+          # Linux-only half of the base set. The portable half lives in
+          # my/system/base-packages, which platforms/common.nix imports so the
+          # Mac gets it too.
           systemPackages = with pkgs; [
-            # Managing secrets
-            sops
-            pass
-
-            # CLI tools
-            mc
-            yazi
-            helix
-            fastfetch
-            tree
-            btop
-
-            # Hardware utilities
+            # Hardware inspection: lsusb/lspci have no meaning on macOS, which
+            # exposes the same information through system_profiler and ioreg.
             usbutils
             pciutils
-            screen
 
-            # Network tools
+            # Packet capture needs a Linux capability model to be useful here.
             tcpdump
-            wget
-            curl
 
             # Boot splash
             plymouth

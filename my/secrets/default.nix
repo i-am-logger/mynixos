@@ -23,12 +23,6 @@ in
         })
         cfg.sshKeyPaths);
 
-    # Persistence configuration
-    my.system.persistence.features = {
-      userDirectories = [
-        ".secrets"
-      ];
-    };
 
     # Configure sops-nix
     sops = {

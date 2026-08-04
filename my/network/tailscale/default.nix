@@ -10,22 +10,57 @@ let
   cfg = config.my.network.tailscale;
   hsCfg = config.my.network.headscale;
 
-  # Detect if headscale is running on the same machine
-  localHeadscale = hsCfg.enable;
+  # Whether THIS node joins the headscale running on THIS machine. Deliberately
+  # not inferred from `hsCfg.enable`: hosting a control server and joining it
+  # are independent choices, and conflating them stopped a headscale host from
+  # ever joining another tailnet.
+  localHeadscale = cfg.controlPlane == "headscale-local";
 
   localLoginServer = "http://${hsCfg.address}:${toString hsCfg.port}";
 in
 {
   config = mkIf cfg.enable (mkMerge [
     {
+      assertions = [
+        {
+          assertion = cfg.controlPlane == "headscale-remote" -> cfg.loginServer != "";
+          message = "my.network.tailscale.controlPlane = \"headscale-remote\" requires loginServer to be set";
+        }
+        {
+          assertion = cfg.controlPlane != "headscale-remote" -> cfg.loginServer == "";
+          message = "my.network.tailscale.loginServer is only used when controlPlane = \"headscale-remote\"";
+        }
+        {
+          # Not fatal for pre-auth keys, only for OAuth client secrets — but we
+          # cannot tell which is in the file at eval time, and an untagged
+          # OAuth join fails at runtime with an opaque error. Warn loudly here
+          # instead, where it is actionable.
+          assertion = cfg.authKeyFile != null -> cfg.tags != [ ];
+          message = ''
+            my.network.tailscale.authKeyFile is set but tags is empty.
+
+            If authKeyFile holds an OAuth client secret (tskey-client-…),
+            registration WILL fail: Tailscale requires OAuth-registered nodes
+            to be tagged. Set e.g. tags = [ "tag:server" ].
+
+            If it holds a plain pre-auth key (tskey-auth-…), tagging is still
+            recommended — tagged nodes do not have their node key expire.
+          '';
+        }
+      ];
+
       services.tailscale = {
         enable = true;
-        inherit (cfg) useRoutingFeatures;
+        inherit (cfg) useRoutingFeatures authKeyParameters;
         extraUpFlags =
-          optional (cfg.loginServer != "") "--login-server=${cfg.loginServer}"
+          optional (cfg.controlPlane == "headscale-remote")
+            "--login-server=${cfg.loginServer}"
           ++ optional cfg.exitNode "--advertise-exit-node"
           ++ optionals (cfg.advertiseRoutes != [ ]) [
             "--advertise-routes=${concatStringsSep "," cfg.advertiseRoutes}"
+          ]
+          ++ optionals (cfg.tags != [ ]) [
+            "--advertise-tags=${concatStringsSep "," cfg.tags}"
           ]
           ++ optional (cfg.authKeyFile != null) "--authkey=file:${cfg.authKeyFile}";
       };
@@ -72,8 +107,8 @@ in
           message = "my.network.headscale.users must have at least one user for tailscale auto-join";
         }
         {
-          assertion = cfg.loginServer == "";
-          message = "my.network.tailscale.loginServer conflicts with local headscale auto-join (remove loginServer)";
+          assertion = hsCfg.enable;
+          message = "my.network.tailscale.controlPlane = \"headscale-local\" requires my.network.headscale.enable";
         }
       ];
 

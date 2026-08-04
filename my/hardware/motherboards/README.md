@@ -19,7 +19,7 @@ Machines/
 │       └── uefi-boot.nix                  # Boot configuration
 │
 └── lenovo-legion-16irx8h/
-    ├── default.nix                        # Main hardware config + nixos-hardware
+    ├── default.nix                        # Main hardware config
     └── drivers/
         ├── intel-13900hx-cpu.nix          # Intel CPU driver
         ├── nvidia-rtx4070.nix             # NVIDIA GPU driver
@@ -40,7 +40,6 @@ Machines/
 - Firmware updates
 - Hardware quirks/fixes (e.g., speaker unmute)
 - Power management for specific hardware
-- nixos-hardware module imports
 
 ### ❌ Exclude:
 - Application software

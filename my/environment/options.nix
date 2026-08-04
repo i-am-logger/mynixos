@@ -8,6 +8,7 @@
       options = {
         enable = lib.mkEnableOption "environment configuration (variables, XDG, locale)";
 
+
         editor = lib.mkOption {
           type = lib.types.nullOr lib.types.package;
           default = null;

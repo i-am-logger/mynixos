@@ -10,6 +10,14 @@ let
   pkgs = import inputs.nixpkgs {
     inherit system;
     config.allowUnfree = true;
+    # read-only.nix (loaded below) suppresses nixpkgs.overlays, so the module
+    # my/system/nixpkgs-fixes cannot reach this pkgs -- apply it here directly.
+    # Both fixes, matching my/system/nixpkgs-fixes/default.nix. Applying only
+    # one would test a different cava than every host actually builds.
+    overlays = [
+      (import ../my/system/nixpkgs-fixes/tree-sitter.nix)
+      (import ../my/system/nixpkgs-fixes/cava.nix)
+    ];
   };
 
   # Helper: evaluate a NixOS configuration with the mynixos module
@@ -126,10 +134,14 @@ in
         aliceAgg = config.my.system.persistence.aggregated.alice;
         bobAgg = config.my.system.persistence.aggregated.bob;
       in
-      # Alice has graphical, so she should have brave browser persistence
-      builtins.elem ".config/BraveSoftware" aliceAgg.directories
-      # Bob does NOT have graphical, so no brave persistence
-      && !(builtins.elem ".config/BraveSoftware" bobAgg.directories)
+      # Alice has graphical, so the graphical injector enables rclone for her and
+        # its persistedDirectories reach the aggregate. rclone rather than a browser
+        # because the primary browser is chosen through environment.BROWSER and so
+        # persists fleet-wide (see my/users/apps/browsers/brave), which would not
+        # exercise the per-user gating this test exists for.
+      builtins.elem ".config/rclone" aliceAgg.directories
+      # Bob does NOT have graphical, so no graphical-app persistence
+      && !(builtins.elem ".config/rclone" bobAgg.directories)
       # Both have terminal, so both should have bash history
       && builtins.elem ".bash_history" aliceAgg.files
       && builtins.elem ".bash_history" bobAgg.files;
@@ -380,7 +392,7 @@ in
       config.users.users.bareuser.isNormalUser
       # App-level defaults (mkAppOption default=true) still apply
       # but feature-gated opinionated defaults (from mynixos.nix) do NOT
-      && !config.my.users.bareuser.apps.graphical.browsers.brave.enable
+      && !config.my.users.bareuser.apps.graphical.utils.imagemagick.enable
       && !config.my.users.bareuser.apps.dev.tools.direnv.enable;
   };
 

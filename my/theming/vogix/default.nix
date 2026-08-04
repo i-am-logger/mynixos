@@ -58,6 +58,13 @@ in
               # to ~/.local/state/vogix/modes.log — required for keybinding ergonomics
               # analysis. Cheap (one socket, no polling), so always on.
               enableDaemon = true;
+              # Auto-SAVE stays on; auto-RESTORE does not. The daemon restores
+              # whatever the 'last' snapshot holds, however old, so a machine that
+              # has been off for a while comes back to a long-stale desktop with
+              # every window relaunched at once -- enough to reach the OOM killer.
+              # `vogix session restore` is the deliberate way to ask for it.
+              # mkDefault, so a host that wants the behaviour can still opt in.
+              autoRestoreSession = mkDefault false;
               appearance = {
                 scheme = userVogixCfg.scheme or "vogix16";
                 theme = userVogixCfg.theme or "yoga";

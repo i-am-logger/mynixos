@@ -1,10 +1,9 @@
 # Theming aggregation module
-# Imports all theme system implementations (stylix, vogix, etc.)
+# Imports all theme system implementations (vogix)
 { ... }:
 
 {
   imports = [
-    ./stylix
     ./vogix
     ./hypr-vogix
     ./openrgb

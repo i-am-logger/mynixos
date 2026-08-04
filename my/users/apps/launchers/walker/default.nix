@@ -1,9 +1,26 @@
+# Walker application launcher.
+#
+# Selected by `environment.launcher`, the same way brave/wezterm/helix/yazi are
+# selected by BROWSER/TERMINAL/EDITOR/FILE_MANAGER. There is deliberately no
+# apps.graphical.launchers.walker option: a second on/off switch beside the
+# selector is a second way to say one thing, and only one of them would be read.
 { activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
+let
+  isWalker = userCfg:
+    let l = userCfg.environment.launcher or null; in
+    l != null && l.enable && (l.package.pname or "") == "walker";
+in
 {
   config = {
+    # Persistence follows the selector rather than an app option. Note this is
+    # fleet-wide rather than per-user, unlike the app-option route: any user on a
+    # host where walker is selected gets the directory persisted.
+    my.system.persistence.features.userDirectories =
+      optionals (any isWalker (attrValues (activeUsers config.my.users))) [ ".config/walker" ];
+
     home-manager.users = mapAttrs
       (name: userCfg:
         let

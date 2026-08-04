@@ -61,13 +61,6 @@ let
   # Vogix behavior module (pure functions, no module system needed)
   behaviorModule = import "${vogix}/nix/modules/behavior" { inherit lib; };
 
-  # mynixos opinionated defaults for Hyprland input settings
-  # Note: browser/terminal come from environment API (userCfg.environment.BROWSER/TERMINAL)
-  defaults = {
-    leftHanded = false;
-    sensitivity = 0.0;
-  };
-
   # Bindings function - takes user hyprland config and environment-derived commands
   mkBindings =
     { browserCmd
@@ -283,27 +276,31 @@ let
   gestures = { };
 
   # Input function (takes user config as parameter)
-  mkInput = userHyprland: {
+  # Pointer preferences come from my.users.<n>.input, not from the window
+  # manager's own options: they belong to the person, and macOS consumes the same
+  # ones via my/users/input/darwin.nix. Everything else in this block is
+  # genuinely Hyprland behaviour with no counterpart elsewhere.
+  mkInput = userInput: {
     #kb_model =
     #kb_options = caps:escape
     #kb_rules =
     #repeat_rate = 30
     repeat_delay = 200;
-    left_handed = userHyprland.leftHanded or defaults.leftHanded;
+    left_handed = userInput.leftHanded;
     #follow_mouse = 2 # 0|1|2|3
     float_switch_override_focus = 2;
     numlock_by_default = "off";
-    natural_scroll = "yes";
+    natural_scroll = if userInput.naturalScroll then "yes" else "no";
 
     touchpad = {
-      natural_scroll = 1;
+      natural_scroll = if userInput.naturalScroll then 1 else 0;
       disable_while_typing = true;
       #clickfinger_behavior = true
       #middle_button_emulation = true
       scroll_factor = 0.3;
     };
 
-    sensitivity = userHyprland.sensitivity or defaults.sensitivity;
+    sensitivity = userInput.accelSpeed;
   };
 
   layouts = {
@@ -373,7 +370,7 @@ let
   ];
 in
 {
-  # Option is declared in flake.nix
+  # The per-user options are declared in ./options-user.nix, beside this file.
   config = mkIf anyUserGraphical {
     home-manager.users =
       mapAttrs
@@ -402,16 +399,19 @@ in
                   "wezterm";
             in
             mkIf (userCfg.graphical.enable && userHyprland.enable) {
-              # GTK configuration
-              # Stylix automatically sets gtk.theme.name and gtk.iconTheme.name
+              # GTK configuration. `theme`, `iconTheme` and `cursorTheme` are
+              # left unset, so GTK apps use their built-in defaults -- vogix
+              # themes terminal surfaces (alacritty, bat, btop, ripgrep, the
+              # console palette) and has no GTK template.
               gtk = {
                 enable = true;
               };
 
-              # Notification daemon with Stylix theming
+              # Notification daemon. Only geometry and behaviour are set: vogix
+              # has no mako template, so notification colours are mako's own
+              # defaults.
               services.mako = {
                 enable = true;
-                # Stylix handles colors automatically, we just set behavior
                 settings = {
                   # Behavior
                   default-timeout = 5000; # 5 seconds
@@ -570,7 +570,7 @@ in
                       general = {
                         inherit (generalCfg) gaps_in gaps_out border_size layout;
                       };
-                      input = mkInput userHyprland;
+                      input = mkInput userCfg.input;
                       inherit (layouts) dwindle master;
                       inherit misc group gestures;
                       animations = animationsCfg;

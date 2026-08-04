@@ -20,18 +20,36 @@ let
   # Build a check derivation that verifies evaluation with bad config fails.
   # NixOS evaluates options lazily, so we pass an accessor function that
   # reads the specific option expected to fail type validation.
-  mustReject = name: accessor: testConfig:
+  #
+  # The accessor is FIRST run against a valid config. Without that step any
+  # evaluation failure counts as a pass -- including "the option does not
+  # exist" -- so deleting an option would silently turn its rejection tests
+  # green instead of red. That is exactly the failure this suite must not have,
+  # because deleting options is what the refactors here keep doing.
+  # `controlConfig` is a VALID config of the same shape as the invalid one, used
+  # only to prove the accessor can read the option at all. It defaults to a bare
+  # host; tests whose option lives under a constructed user must pass one that
+  # constructs that user, or the control fails for the wrong reason.
+  mustReject' = controlConfig: name: accessor: testConfig:
     let
-      eval = evalWithConfig testConfig;
-      result = builtins.tryEval (builtins.deepSeq (accessor eval.config) "ok");
+      control = builtins.tryEval
+        (builtins.deepSeq (accessor (evalWithConfig controlConfig).config) "ok");
+      result = builtins.tryEval (builtins.deepSeq (accessor (evalWithConfig testConfig).config) "ok");
     in
     pkgs.runCommand "type-validation-${name}" { } (
-      if !result.success then ''
+      if !control.success then
+        builtins.throw
+          ("FAIL: ${name} cannot even read the option under a VALID config -- "
+            + "the option was probably renamed or deleted, so this check was passing for the wrong reason")
+      else if result.success then
+        builtins.throw "FAIL: should have rejected invalid config for ${name}"
+      else ''
         echo "PASS: correctly rejected invalid config for ${name}"
         touch $out
-      '' else
-        builtins.throw "FAIL: should have rejected invalid config for ${name}"
+      ''
     );
+
+  mustReject = mustReject' { networking.hostName = "control"; };
 
   # Build a check derivation that verifies evaluation with valid config succeeds.
   mustAccept = name: accessor: testConfig:
@@ -258,17 +276,29 @@ in
 
   # --- Persistence path validation (relativePath type) ---
 
-  persistence-rejects-absolute-path = mustReject "persistence-rejects-absolute-path"
-    (c: c.my.users.test.apps.terminal.shells.bash.persistedFiles)
-    {
-      networking.hostName = "test";
-      my.users.test.apps.terminal.shells.bash.persistedFiles = [ "/etc/passwd" ];
-    };
+  persistence-rejects-absolute-path =
+    mustReject'
+      {
+        networking.hostName = "control";
+        my.users.test.apps.terminal.shells.bash.persistedFiles = [ ".bash_history" ];
+      }
+      "persistence-rejects-absolute-path"
+      (c: c.my.users.test.apps.terminal.shells.bash.persistedFiles)
+      {
+        networking.hostName = "test";
+        my.users.test.apps.terminal.shells.bash.persistedFiles = [ "/etc/passwd" ];
+      };
 
-  persistence-rejects-dotdot = mustReject "persistence-rejects-dotdot"
-    (c: c.my.users.test.apps.terminal.shells.bash.persistedDirectories)
-    {
-      networking.hostName = "test";
-      my.users.test.apps.terminal.shells.bash.persistedDirectories = [ "../../etc" ];
-    };
+  persistence-rejects-dotdot =
+    mustReject'
+      {
+        networking.hostName = "control";
+        my.users.test.apps.terminal.shells.bash.persistedDirectories = [ ".bash_history" ];
+      }
+      "persistence-rejects-dotdot"
+      (c: c.my.users.test.apps.terminal.shells.bash.persistedDirectories)
+      {
+        networking.hostName = "test";
+        my.users.test.apps.terminal.shells.bash.persistedDirectories = [ "../../etc" ];
+      };
 }

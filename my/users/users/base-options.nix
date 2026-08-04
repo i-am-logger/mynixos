@@ -58,6 +58,22 @@
       description = "Per-user secrets configuration (managed via sops-nix)";
     };
 
+    persistedDirectories = lib.mkOption {
+      type = lib.types.listOf lib.types.nonEmptyStr;
+      default = [ ];
+      example = [ "Code" "Media" ];
+      description = ''
+        Folders in this user's home that survive a wipe on an impermanence host,
+        beyond what the software they use already declares for itself.
+
+        This is for a PERSON's own directories. Anything belonging to a piece of
+        software -- its config, its state, its cache -- is declared by that
+        software's module instead, so enabling the app is what persists it.
+
+        Relative to the home directory. Ignored on hosts without impermanence.
+      '';
+    };
+
     packages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [ ];

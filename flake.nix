@@ -25,12 +25,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Themes and styling
-    stylix = {
-      url = "github:danth/stylix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.nur.inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     # Runtime theme management
     vogix = {
@@ -64,9 +58,21 @@
     };
 
     # Hardware configurations
-    nixos-hardware = {
-      url = "github:i-am-logger/nixos-hardware";
+    # macOS system configuration. mkSystem dispatches to nix-darwin's
+    # darwinSystem when `platform = "darwin"`.
+    #
+    # nix-darwin and nixpkgs must agree on nixos-render-docs' CLI (the
+    # darwin-manual build passes flags that move between releases), so this
+    # follows our nixpkgs rather than pinning independently.
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Homebrew, installed and pinned declaratively. nix-darwin's `homebrew.*`
+    # module only writes a Brewfile and runs `brew bundle` — it does NOT install
+    # Homebrew, so this is what makes that module usable at all.
+    nix-homebrew.url = "github:zhaofengli/nix-homebrew";
 
     # Secrets management
     sops-nix = {
@@ -98,8 +104,20 @@
     let
       inherit (nixpkgs) lib;
 
+      # Systems whose CHECKS we can run. Linux only, and deliberately so: most
+      # of tests/ builds a real `lib.nixosSystem` for the given system, which is
+      # meaningless on darwin. Measured — with aarch64-darwin in this list,
+      # `checks.aarch64-darwin.real-system-pkgs` and the `smoke-*` tests fail to
+      # evaluate, while `module-eval-*` and `formatting` are fine. Rather than
+      # ship a half-broken `nix flake check`, checks stay Linux-only.
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = lib.genAttrs supportedSystems;
+
+      # Systems we can DEVELOP mynixos on. This repo is now edited from a Mac, so
+      # `nix fmt`, `nix develop` and `nix run` have to work there — none of which
+      # build a NixOS system, so none of them have the problem above.
+      devSystems = supportedSystems ++ [ "aarch64-darwin" ];
+      forAllDevSystems = lib.genAttrs devSystems;
 
       # mynixos library functions
       mynixosLib = import ./lib {
@@ -112,8 +130,26 @@
       };
 
       # treefmt configuration (shared between formatter and checks)
-      treefmtEval = forAllSystems (system:
+      treefmtEval = forAllDevSystems (system:
         treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix
+      );
+
+      # pre-commit hooks, defined over devSystems rather than supportedSystems.
+      # `checks` is Linux-only because its tests build real NixOS systems, but
+      # `nix develop` has to work on darwin and its shell needs these hooks, so
+      # devShells consumes this directly instead of reaching into checks.
+      preCommitCheck = forAllDevSystems (system:
+        git-hooks.lib.${system}.run {
+          src = self;
+          hooks = {
+            treefmt = {
+              enable = true;
+              package = treefmtEval.${system}.config.build.wrapper;
+            };
+            statix.enable = true;
+            deadnix.enable = true;
+          };
+        }
       );
 
       # Security key type constructors (exported in lib for use in configs)
@@ -151,6 +187,9 @@
           };
         };
         laptops = {
+          apple = {
+            macbook-pro-m5-max = ./my/hardware/laptops/apple/macbook-pro-m5-max;
+          };
           lenovo = {
             legion-16irx8h = ./my/hardware/laptops/lenovo/legion-16irx8h;
           };
@@ -158,7 +197,7 @@
         cooling = {
           nzxt = {
             kraken-elite-rgb = {
-              elite-240-rgb = ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb.nix;
+              elite-240-rgb = ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb;
             };
           };
         };
@@ -166,305 +205,36 @@
 
     in
     {
-      # Main NixOS module providing the `my.*` namespace
-      nixosModules.default =
-        { lib
-        , ...
-        }:
-        let
-          # Import options modules - args are passed through directly.
-          # Do NOT capture `pkgs` from module function args here, as that
-          # triggers _module.args.pkgs evaluation which depends on config.nixpkgs,
-          # causing infinite recursion when hardware modules set nixpkgs.hostPlatform.
-          mkOptionsModule = path: args: _:
-            { options.my = import path args; };
-        in
-        {
-          config = {
-            # Make helpers available to all modules.
-            # NOTE: mkApp is intentionally NOT delivered here. It is imported
-            # directly by each app module (lib/mk-app.nix). Routing it through
-            # _module.args caused infinite recursion: an app module's return
-            # value *is* `mkApp args {...}`, so mkApp is forced at module-structure
-            # time, and resolving _module.args.mkApp requires the full config —
-            # config -> imports -> config. activeUsers is safe because it is only
-            # forced lazily inside config bodies.
-            _module.args = {
-              inherit (mynixosLib) activeUsers;
-            };
-          };
+      # Main NixOS module providing the `my.*` namespace.
+      #
+      # The module set itself lives in ./platforms/ -- see platforms/common.nix
+      # for how platform reach is expressed (it is a matter of WHICH FILE imports
+      # a module, not of a `pkgs.stdenv.hostPlatform.isX` test).
+      #
+      # impermanence and lanzaboote are listed here rather than in
+      # platforms/linux.nix because they are flake input *values*, not paths.
+      nixosModules.default = {
+        imports = [
+          ./platforms/linux.nix
+          impermanence.nixosModules.impermanence
+          lanzaboote.nixosModules.lanzaboote
+        ];
+      };
 
-          imports =
-            # Option definitions (loaded first)
-            [
-              # Top-level options
-              (mkOptionsModule ./my/system/options.nix { inherit lib; })
-              (mkOptionsModule ./my/security/options.nix { inherit lib; })
-              (mkOptionsModule ./my/forensics/options.nix { inherit lib; })
-              (mkOptionsModule ./my/environment/options.nix { inherit lib; })
-              (mkOptionsModule ./my/performance/options.nix { inherit lib; })
-              (mkOptionsModule ./my/graphical/options.nix { inherit lib; })
-              (mkOptionsModule ./my/dev/development/options.nix { inherit lib; })
-              (mkOptionsModule ./my/streaming/options.nix { inherit lib; })
-              (mkOptionsModule ./my/ai/options.nix { inherit lib; })
-              (mkOptionsModule ./my/video/virtual/options.nix { inherit lib; })
-              (mkOptionsModule ./my/theming/options.nix { inherit lib; })
-
-              # Network options
-              (mkOptionsModule ./my/network/options.nix { inherit lib; })
-
-              # Category-level options
-              (mkOptionsModule ./my/infra/options.nix { inherit lib; })
-              (mkOptionsModule ./my/hardware/options.nix { inherit lib; })
-              (mkOptionsModule ./my/hardware/boot/options.nix { inherit lib; })
-              (mkOptionsModule ./my/storage/options.nix { inherit lib; })
-
-              # Cross-cutting options
-              (mkOptionsModule ./my/presets-options.nix { inherit lib; })
-              (mkOptionsModule ./my/filesystem-options.nix { inherit lib; })
-
-              # Users options
-              (mkOptionsModule ./my/users/users/options.nix { inherit lib; })
-
-              # Secrets (special - uses different pattern)
-              (import ./my/secrets/options.nix)
-            ]
-
-            # Users opinionated defaults (mynixos.nix files)
-            ++ [
-              ./my/users/terminal/mynixos.nix
-              ./my/users/graphical/mynixos.nix
-              ./my/users/dev/mynixos.nix
-              ./my/users/ai/mynixos.nix
-              ./my/users/environment/mynixos.nix
-              ./my/users/theming/vogix/mynixos.nix
-              ./my/theming/hypr-vogix/mynixos.nix
-            ]
-
-            # External modules
-            ++ [
-              impermanence.nixosModules.impermanence
-              lanzaboote.nixosModules.lanzaboote
-            ]
-
-            # Implementation modules (my/)
-            ++ [
-              # Top-level features
-              ./my/ai
-              ./my/ai/claude-code-proxy
-              ./my/ai/openclaw
-              ./my/audio
-              ./my/dev/development
-              ./my/environment
-              ./my/performance
-              ./my/secrets
-              ./my/streaming
-              ./my/video/virtual
-
-              # Graphical
-              ./my/graphical
-              ./my/graphical/hyprland
-
-              # Behavior (modes, kanata) handled by vogix.nixosModules.default
-
-              # Security
-              ./my/security
-              ./my/security/yubikey
-
-              # System
-              ./my/system/core
-              ./my/system/kernel
-              ./my/system/systemd
-              ./my/system/scripts
-              ./my/system/unfree
-
-              # Theming
-              ./my/theming
-
-              # Hardware - Bluetooth
-              ./my/hardware/bluetooth/realtek
-
-              # Hardware - Boot
-              ./my/hardware/boot/dual-boot
-              ./my/hardware/boot/uefi
-
-              # Hardware - Cooling
-              ./my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb
-
-              # Hardware - CPU
-              ./my/hardware/cpu/amd
-              ./my/hardware/cpu/intel
-
-              # Hardware - GPU
-              ./my/hardware/gpu/amd
-              ./my/hardware/gpu/nvidia
-
-              # Hardware - Laptops
-              ./my/hardware/laptops/lenovo/legion-16irx8h
-
-              # Hardware - Memory
-              ./my/hardware/memory/optimization
-
-              # Hardware - Motherboards
-              ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
-
-              # Hardware - Peripherals
-              ./my/hardware/peripherals/elgato
-              ./my/hardware/peripherals/keychron
-
-              # Hardware - Storage
-              ./my/hardware/storage/nvme
-              ./my/hardware/storage/sata
-              ./my/hardware/storage/ssd
-              ./my/hardware/storage/usb
-
-              # Hardware - USB
-              ./my/hardware/usb/hid
-              ./my/hardware/usb/thunderbolt
-              ./my/hardware/usb/xhci
-
-              # Presets
-              ./my/presets
-
-              # Network
-              ./my/network/openssh
-              ./my/network/headscale
-              ./my/network/tailscale
-              ./my/network/tor
-              ./my/network/monitoring
-              ./my/network/ipv6
-              ./my/network/unifi
-
-              # Infrastructure
-              ./my/infra/github-runner
-              ./my/infra/k3s
-
-              # Storage
-              ./my/storage/impermanence/aggregation.nix
-              ./my/storage/impermanence/feature-aggregation.nix
-              ./my/storage/impermanence/impermanence.nix
-
-              # Users - Core
-              ./my/users/defaults
-              ./my/users/environment-defaults
-              ./my/users/users
-
-              # Users - Features
-              ./my/users/graphical/media
-              ./my/users/terminal
-              ./my/users/webapps
-
-              # Users - Apps: AI
-              ./my/users/apps/ai/claude-code
-
-              # Users - Apps: Art
-              ./my/users/apps/art/mypaint
-
-              # Users - Apps: Browsers
-              ./my/users/apps/browsers/brave
-              ./my/users/apps/browsers/chromium
-              ./my/users/apps/browsers/firefox
-
-              # Users - Apps: Communication
-              ./my/users/apps/communication/element
-              ./my/users/apps/communication/signal
-              ./my/users/apps/communication/slack
-
-              # Users - Apps: Development
-              ./my/users/apps/dev/devenv
-              ./my/users/apps/dev/direnv
-              ./my/users/apps/dev/github-desktop
-              ./my/users/apps/dev/jq
-              ./my/users/apps/dev/kdiff3
-              ./my/users/apps/dev/vscode
-
-              # Users - Apps: Editors
-              ./my/users/apps/editors/helix
-              ./my/users/apps/editors/marktext
-
-              # Users - Apps: File Managers
-              ./my/users/apps/file-managers/mc
-              ./my/users/apps/file-managers/yazi
-
-              # Users - Apps: File Utils
-              ./my/users/apps/file-utils/lsd
-
-              # Users - Apps: Finance
-              ./my/users/apps/finance/cointop
-
-              # Users - Apps: Fun
-              ./my/users/apps/fun/pipes
-
-              # Users - Apps: Git/VCS
-              ./my/users/apps/git
-              ./my/users/apps/jujutsu
-
-              # Users - Apps: Launchers
-              ./my/users/apps/launchers/walker
-
-              # Users - Apps: Lockers
-              ./my/users/apps/lockers/hyprlock
-
-              # Users - Apps: Media
-              ./my/users/apps/media/audacious
-              ./my/users/apps/media/audio-utils
-              ./my/users/apps/media/musikcube
-              ./my/users/apps/media/pipewire-tools
-
-              # Users - Apps: Multiplexers
-              ./my/users/apps/multiplexers/tmux
-              ./my/users/apps/multiplexers/zellij
-
-              # Users - Apps: Network
-              ./my/users/apps/network/termscp
-
-              # Users - Apps: Prompts
-              ./my/users/apps/prompts/starship
-
-              # Users - Apps: Security
-              ./my/users/apps/security/1password
-
-              # Users - Apps: Shells
-              ./my/users/apps/shells/bash
-              ./my/users/apps/shells/fish
-
-              # Users - Apps: SSH
-              ./my/users/apps/ssh
-
-              # Users - Apps: Status bars
-              ./my/users/apps/status-bars/waybar
-
-              # Users - Apps: Sync
-              ./my/users/apps/sync/rclone
-
-              # Users - Apps: System Info
-              ./my/users/apps/system-info/btop
-              ./my/users/apps/system-info/fastfetch
-              ./my/users/apps/system-info/neofetch
-
-              # Users - Apps: Terminals
-              ./my/users/apps/terminals/alacritty
-              ./my/users/apps/terminals/ghostty
-              ./my/users/apps/terminals/kitty
-              ./my/users/apps/terminals/warp
-              ./my/users/apps/terminals/wezterm
-
-              # Users - Apps: Utilities
-              ./my/users/apps/utils/calculator
-              ./my/users/apps/utils/imagemagick
-
-              # Users - Apps: Viewers
-              ./my/users/apps/viewers/bat
-              ./my/users/apps/viewers/feh
-
-              # Users - Apps: Visualizers
-              ./my/users/apps/visualizers/bespec
-              ./my/users/apps/visualizers/cava
-
-              # Users - Apps: XDG
-              ./my/users/apps/xdg
-            ];
-        };
+      # Main nix-darwin module providing the `my.*` namespace.
+      #
+      # nix-homebrew is listed here, not in platforms/darwin.nix, for the same
+      # reason impermanence and lanzaboote are listed above: it is a flake input
+      # *value* rather than a path. my/system/homebrew writes `nix-homebrew.*`,
+      # which only exists once this module is loaded — nix-darwin's own
+      # `homebrew.*` module writes a Brewfile and runs `brew bundle`, but does
+      # not install Homebrew itself.
+      darwinModules.default = {
+        imports = [
+          ./platforms/darwin.nix
+          inputs.nix-homebrew.darwinModules.nix-homebrew
+        ];
+      };
 
       # Export library functions
       lib = mynixosLib // {
@@ -472,7 +242,7 @@
       };
 
       # Formatter (treefmt: nix + shell + yaml)
-      formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
+      formatter = forAllDevSystems (system: treefmtEval.${system}.config.build.wrapper);
 
       # Checks (run via `nix flake check`)
       checks = forAllSystems (system:
@@ -494,26 +264,36 @@
           realPkgsTest = import ./tests/real-system-pkgs.nix {
             inherit lib nixpkgs system self inputs;
           };
+          # Asserts which my.users options each platform declares. Pure eval, so
+          # a Linux runner enumerates the darwin module set without building it.
+          userOptionReachTest = import ./tests/user-option-reach.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
+          # mkSystem itself: platform dispatch, argument rejection, `my` layering
+          # and the per-user linux/darwin tiers.
+          mkSystemTests = import ./tests/mksystem.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
+          # The darwin module set, evaluated from a Linux runner. Only `config`
+          # is read, so no aarch64-darwin builder is needed.
+          darwinSmokeTests = import ./tests/darwin-smoke.nix {
+            inherit lib nixpkgs system self inputs;
+          };
         in
         {
           formatting = treefmtEval.${system}.config.build.check self;
 
-          pre-commit = git-hooks.lib.${system}.run {
-            src = self;
-            hooks = {
-              treefmt = {
-                enable = true;
-                package = treefmtEval.${system}.config.build.wrapper;
-              };
-              statix.enable = true;
-              deadnix.enable = true;
-            };
-          };
+          pre-commit = preCommitCheck.${system};
         } // lib.mapAttrs' (name: value: lib.nameValuePair "module-eval-${name}" value) moduleEvalTests
         // lib.mapAttrs' (name: value: lib.nameValuePair name value) typeValidationTests
         // smokeTests
         // edgeCaseTests
         // realPkgsTest
+        // userOptionReachTest
+        // mkSystemTests
+        // darwinSmokeTests
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
@@ -526,10 +306,10 @@
       });
 
       # Dev shell with pre-commit hooks installed
-      devShells = forAllSystems (system:
+      devShells = forAllDevSystems (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          inherit (self.checks.${system}) pre-commit;
+          pre-commit = preCommitCheck.${system};
         in
         {
           default = pkgs.mkShell {
@@ -545,7 +325,11 @@
         }
       );
 
-      # Runnable demos and utilities
+      # Runnable demos and utilities.
+      #
+      # forAllSystems, not forAllDevSystems: the only app records a Hyprland
+      # session with wf-recorder, and neither it nor hypr-vogix builds on darwin.
+      # Exposing it there made `nix flake check` fail on this flake's own output.
       apps = forAllSystems (system:
         let
           pkgs = import nixpkgs {

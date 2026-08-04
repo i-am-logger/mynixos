@@ -12,11 +12,26 @@
 # Spec fields:
 #   path   : dotted path under `userCfg.apps` to the app submodule. The submodule
 #            must expose `.enable`. e.g. "graphical.terminals.alacritty".
+#   option : optional mkAppOption spec ({ name, description, default ? false,
+#            persistedDirectories ? [], persistedFiles ? [], extraOptions ? {} }).
+#            When present, the app DECLARES its own option at `path` instead of
+#            relying on a central options file.
 #   home   : function producing the per-user home-manager config. It receives the
 #            full module-args set extended with { cfg, userCfg, name } where `cfg`
 #            is the app submodule located at `path`. Defaults to producing {}.
 #   unfree : optional list of package names added to
 #            `my.system.allowedUnfreePackages` when ANY user enables the app.
+#
+# `option` is what makes platform reach enforceable. Declaration and
+# implementation come from the same file, so the `platforms/*.nix` that imports
+# it decides both at once: an app absent from a platform has no option there, and
+# setting it is the module system's own "does not exist" error rather than a
+# silent no-op. It also makes a path typo unrepresentable — the declaration and
+# the read are built from the same `path` string.
+#
+# The declaration is built from `lib` ALONE. Capturing `pkgs` in an options
+# module would pull `_module.args.pkgs` -> `config.nixpkgs` and recurse, which is
+# why `pkgs` below stays inside the lazily-forced `home` path.
 #
 # App modules import this file directly (relative path) and call it with their
 # module args: `(import .../lib/mk-app.nix).mkApp args { ... }`. It is deliberately
@@ -59,8 +74,18 @@
       anyEnabled = any
         (userCfg: (getCfg userCfg).enable or false)
         (attrValues config.my.users);
+      # Declared per-user, so it merges with the other `my.users` submodule
+      # declarations rather than redeclaring the attribute.
+      optionModule = lib.optionalAttrs (spec ? option) {
+        options.my.users = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule {
+            options = lib.setAttrByPath ([ "apps" ] ++ pathList)
+              ((import ./app-options.nix { inherit lib; }).mkAppOption spec.option);
+          });
+        };
+      };
     in
-    {
+    optionModule // {
       config =
         if unfree == [ ] then {
           home-manager.users = perUser;

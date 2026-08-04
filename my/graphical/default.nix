@@ -16,7 +16,7 @@ in
 {
   config = mkMerge [
     # Set read-only system flag
-    { my.graphical.enable = anyUserGraphical; }
+    { my.graphical.enable = mkDefault anyUserGraphical; }
 
     # Feature configuration
     (mkIf config.my.graphical.enable (mkMerge [

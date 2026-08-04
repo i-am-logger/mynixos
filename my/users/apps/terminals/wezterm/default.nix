@@ -4,6 +4,7 @@ with lib;
 
 {
   config = {
+
     home-manager.users = mapAttrs
       (_name: userCfg:
         let
@@ -54,10 +55,23 @@ with lib;
 
                 -- Selection behavior
                 config.selection_word_boundary = ' \t\n{}"\'`,;:'
-
-                -- Keybindings injected by vogix before return
               '';
             }
+
+            # wezterm.lua must end in `return config` or wezterm reports
+            # "Cannot convert `Null` to `Config`" and falls back to defaults.
+            #
+            # When vogix manages this user it appends its keybindings AND that
+            # return through its own `mkAfter`, so emitting one here too would put
+            # a statement after a `return` -- a Lua syntax error. When vogix is not
+            # in play (any darwin host, or a Linux host with theming.vogix off)
+            # nothing closes the file, so this does.
+            (mkIf (!(userCfg.theming.vogix.enable or false)) {
+              extraConfig = mkAfter ''
+
+                return config
+              '';
+            })
             # Merge settings if provided
             weztermSettings
           ];

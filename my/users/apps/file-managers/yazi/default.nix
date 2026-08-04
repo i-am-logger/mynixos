@@ -4,6 +4,7 @@ with lib;
 
 {
   config = {
+
     home-manager.users = mapAttrs
       (_name: userCfg:
         let

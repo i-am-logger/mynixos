@@ -12,7 +12,7 @@ in
 {
   config = mkMerge [
     # Set system flag
-    { my.dev.enable = anyUserDev; }
+    { my.dev.enable = mkDefault anyUserDev; }
 
     # Base development groups
     (mkIf config.my.dev.enable {

@@ -13,6 +13,12 @@ in
       "nvidia-settings"
       "nvidia-persistenced"
       "cudatoolkit"
+      # The single derivation nixpkgs' cuda-modules now merges the redistributable
+      # components into. Referencing `cudatoolkit` anywhere -- my/streaming adds it
+      # to OpenCV's nativeBuildInputs so OBS gets CUDA -- pulls this in, and it
+      # carries its own "CUDA EULA" license, so the component names below do not
+      # cover it.
+      "cuda-merged"
       "cuda_cccl"
       "cuda_cudart"
       "cuda_cuobjdump"

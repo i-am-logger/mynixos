@@ -80,6 +80,14 @@ in
 
       # System directories - core NixOS infrastructure
       # Additional system directories are declared by feature modules
+      # /etc/nixos is hardcoded deliberately. This module is Linux-only
+      # (platforms/linux.nix), /etc/nixos is the NixOS convention, and both hosts
+      # use it. It is NOT wired to my.system.flakeDir: that option exists so the
+      # rebuild-system scripts can FIND the flake at runtime on darwin, where no
+      # convention exists. Coupling them would mean a scripts-convenience setting
+      # silently changes what a tmpfs-root host persists — and pointing it at a
+      # /home path would put a user path in the SYSTEM persistence list. Data loss
+      # is not worth the tidiness.
       directories = [
         "/etc/nixos"
         "/var/lib/nixos"
@@ -97,10 +105,10 @@ in
               # Base directories are declared by their respective feature modules
               # (environment, secrets, dev, etc.)
               directories =
-                (optionals cfg.persistUserData [
-                  "Media"
-                  "Code"
-                ])
+                # This person's own folders. Software declares its own state
+                # separately (below); this is only for directories that belong to
+                # the human -- Code, Media and the like.
+                (config.my.users.${userName}.persistedDirectories or [ ])
                 # App-specific directories from aggregation
                 ++ (getUserAppDirectories userName)
                 # Feature-declared user directories

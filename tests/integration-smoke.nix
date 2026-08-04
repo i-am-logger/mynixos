@@ -14,6 +14,14 @@ let
   pkgs = import inputs.nixpkgs {
     inherit system;
     config.allowUnfree = true;
+    # read-only.nix (loaded below) suppresses nixpkgs.overlays, so the module
+    # my/system/nixpkgs-fixes cannot reach this pkgs -- apply it here directly.
+    # Both fixes, matching my/system/nixpkgs-fixes/default.nix. Applying only
+    # one would test a different cava than every host actually builds.
+    overlays = [
+      (import ../my/system/nixpkgs-fixes/tree-sitter.nix)
+      (import ../my/system/nixpkgs-fixes/cava.nix)
+    ];
   };
 
   # Helper: evaluate a NixOS configuration with the mynixos module
@@ -113,6 +121,92 @@ in
       && !config.my.graphical.enable;
   };
 
+  # Regression: hosting headscale and JOINING a tailnet are independent.
+  # `controlPlane` states which tailnet to join explicitly, so a machine that
+  # hosts headscale can still join a different one. Inferring the tailnet from an
+  # empty loginServer would make that combination unexpressible.
+  smoke-tailscale-hosts-headscale-joins-saas = mkSmokeTest {
+    name = "test-ts-headscale-host-joins-saas";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-ts-headscale-host-joins-saas";
+      network.headscale = {
+        enable = true;
+        users = [ "logger" ];
+      };
+      network.tailscale = {
+        enable = true;
+        controlPlane = "tailscale";
+      };
+    };
+    assertions = config:
+      # joins Tailscale SaaS: no --login-server passed ...
+      !(builtins.any (f: lib.hasPrefix "--login-server" f)
+        config.services.tailscale.extraUpFlags)
+      # ... and no auto-join to the headscale it happens to be hosting
+      && !(config.systemd.services ? tailscale-autojoin)
+      # ... while headscale itself is still running here
+      && config.services.headscale.enable;
+  };
+
+  # The local auto-join path still works when asked for explicitly.
+  smoke-tailscale-joins-local-headscale = mkSmokeTest {
+    name = "test-ts-joins-local-headscale";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-ts-joins-local-headscale";
+      network.headscale = {
+        enable = true;
+        users = [ "logger" ];
+      };
+      network.tailscale = {
+        enable = true;
+        controlPlane = "headscale-local";
+      };
+    };
+    assertions = config: config.systemd.services ? tailscale-autojoin;
+  };
+
+  # A remote headscale gets --login-server.
+  smoke-tailscale-joins-remote-headscale = mkSmokeTest {
+    name = "test-ts-joins-remote-headscale";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-ts-joins-remote-headscale";
+      network.tailscale = {
+        enable = true;
+        controlPlane = "headscale-remote";
+        loginServer = "http://abc.onion:8090";
+      };
+    };
+    assertions = config:
+      builtins.elem "--login-server=http://abc.onion:8090"
+        config.services.tailscale.extraUpFlags;
+  };
+
+  # Unattended join with an OAuth client secret: tags must be advertised and
+  # the registration parameters must reach tailscale up.
+  smoke-tailscale-oauth-join = mkSmokeTest {
+    name = "test-ts-oauth-join";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-ts-oauth-join";
+      network.tailscale = {
+        enable = true;
+        controlPlane = "tailscale";
+        authKeyFile = "/run/secrets/tailscale-authkey";
+        authKeyParameters.preauthorized = true;
+        tags = [ "tag:server" ];
+      };
+    };
+    assertions = config:
+      builtins.elem "--advertise-tags=tag:server"
+        config.services.tailscale.extraUpFlags
+      && builtins.elem "--authkey=file:/run/secrets/tailscale-authkey"
+        config.services.tailscale.extraUpFlags
+      && config.services.tailscale.authKeyParameters.preauthorized == true;
+  };
+
   # Test 2: Desktop workstation
   # Graphical + dev + terminal features enabled for a single user
   smoke-desktop-workstation = mkSmokeTest {
@@ -173,10 +267,13 @@ in
       && config.users.users.developer.isNormalUser
       # System graphical should be enabled (admin has it)
       && config.my.graphical.enable
-      # Admin should have graphical apps via opinionated defaults
-      && config.my.users.admin.apps.graphical.browsers.brave.enable
+      # Admin should have graphical apps via opinionated defaults. imagemagick
+      # is the probe because it is a plain toggle the graphical injector sets:
+      # the primary browser/terminal/file-manager come from the environment.*
+      # selectors instead, and have no app option to read.
+      && config.my.users.admin.apps.graphical.utils.imagemagick.enable
       # Developer should NOT have graphical defaults
-      && !config.my.users.developer.apps.graphical.browsers.brave.enable
+      && !config.my.users.developer.apps.graphical.utils.imagemagick.enable
       # Both should have dev defaults
       && config.my.users.admin.apps.dev.tools.direnv.enable
       && config.my.users.developer.apps.dev.tools.direnv.enable;
@@ -232,7 +329,6 @@ in
         terminal.enable = true;
         # Explicitly enable unfree apps not in opinionated defaults
         apps = {
-          dev.tools.vscode.enable = true;
           security.passwords.onePassword.enable = true;
           communication.messaging.slack.enable = true;
         };
@@ -246,8 +342,10 @@ in
       builtins.elem "claude-code" allowed
       # github-copilot-cli (unfree) - enabled by helix (graphical default editor)
       && builtins.elem "github-copilot-cli" allowed
-      # vscode (unfree) - explicitly enabled
-      && builtins.elem "vscode" allowed
+      # brave's widevine (unfree) - pulled in by the graphical webapps module,
+      # which the graphical injector turns on. A second, independently-reached
+      # entry, so the check covers more than one path into the allowlist.
+      && builtins.elem "widevine-cdm" allowed
       # 1password (unfree) - explicitly enabled
       && builtins.elem "1password" allowed
       # slack (unfree) - explicitly enabled

@@ -1,18 +1,36 @@
 # Waybar - Wayland status bar
-# Enabled automatically when user has graphical.enable = true
+#
+# Keys off its own option, which my/users/graphical/mynixos.nix defaults to true
+# under graphical.enable. Reading graphical.enable directly would leave
+# apps.graphical.statusbars.waybar declared, settable, and ignored.
 { activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
 let
-  # Auto-enable when any user has graphical.enable = true
-  anyUserGraphical = any (userCfg: userCfg.graphical.enable) (attrValues config.my.users);
+  appLib = import ../../../../../lib/app-options.nix { inherit lib; };
+
+  enabled = userCfg: userCfg.apps.graphical.statusbars.waybar.enable;
+  anyUserWaybar = any enabled (attrValues config.my.users);
 in
 {
-  config = mkIf anyUserGraphical {
+  # Declared here rather than centrally, so the option exists only where the
+  # implementation does: platforms/linux.nix imports this file, platforms/darwin.nix
+  # does not, and a darwin host setting it gets "does not exist" instead of silence.
+  options.my.users = mkOption {
+    type = types.attrsOf (types.submodule {
+      options.apps.graphical.statusbars.waybar = appLib.mkAppOption {
+        name = "waybar";
+        default = false;
+        description = "Waybar status bar";
+      };
+    });
+  };
+
+  config = mkIf anyUserWaybar {
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf userCfg.graphical.enable {
+        mkIf (enabled userCfg) {
           programs.waybar = {
             enable = true;
 
@@ -237,7 +255,9 @@ in
               }
             ];
 
-            # Waybar styling - minimal base, Stylix handles colors
+            # Waybar styling: geometry and layout only. Colours come from the
+            # stylesheet below, not from a theme engine -- vogix has no waybar
+            # template.
             style = ''
               * {
                 font-family: "FiraCode Nerd Font", "Font Awesome 6 Free", monospace;
