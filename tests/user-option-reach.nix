@@ -108,6 +108,7 @@ let
     "apps.art.editing.gimp" = "gimp: no aarch64-darwin build in nixpkgs.";
     "apps.media.editors.kdenlive" = "kdenlive: no aarch64-darwin build in nixpkgs.";
     "apps.media.players.audacious" = "audacious: no aarch64-darwin build in nixpkgs.";
+    "apps.media.players.qobine" = "packages/qobine builds against alsa-lib; upstream's own macOS build is not packaged here.";
     "input.accelSpeed" = "libinput's acceleration scale and com.apple.mouse.scaling have no common ground.";
 
     # The per-user flags that DRIVE the one-sided apps above. graphical.enable

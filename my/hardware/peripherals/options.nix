@@ -16,6 +16,29 @@
     type = lib.types.submodule {
       options = {
         peripherals = {
+          apple = {
+            dfu = {
+              enable = lib.mkEnableOption ''
+                Apple iOS/iPadOS devices in DFU, Recovery, or WTF mode.
+
+                Provides udev rules (uaccess) so a device enumerating in
+                DFU/Recovery/WTF mode, or checkra1n/pongoOS DFU mode, is
+                usable by a non-root user -- e.g. libirecovery/irecovery,
+                idevicerestore, or dfu-probe.
+
+                Vendor: Apple (05ac)
+                Product IDs: WTF/DFU/Recovery 1222, 1227, 1280-1283
+                Product ID: checkra1n/pongoOS DFU 1338
+              '';
+
+              udev = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
+              };
+            };
+          };
+
           elgato = {
             streamdeck = {
               enable = lib.mkOption {
@@ -50,6 +73,29 @@
                 type = lib.types.bool;
                 default = true;
                 description = "Enable udev rules for this device. Gated by my.hardware.udev.enable unless set with mkForce.";
+              };
+            };
+          };
+
+          sipeed = {
+            tangPrimer25k = {
+              enable = lib.mkEnableOption ''
+                Sipeed Tang Primer 25K FPGA board's onboard USB-JTAG/UART dock.
+
+                Provides udev rules (uaccess) so openFPGALoader and other
+                tools can talk to the dock's FTDI FT2232 interface without
+                root -- nixpkgs' openFPGALoader package ships no udev rules
+                of its own. Also covers other FT2232-based FPGA programmers
+                since the chip/USB ID isn't Sipeed-specific.
+
+                Vendor: FTDI (0403)
+                Product: FT2232C/D/H (6010)
+              '';
+
+              udev = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
               };
             };
           };

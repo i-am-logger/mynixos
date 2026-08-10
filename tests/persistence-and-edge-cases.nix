@@ -193,6 +193,28 @@ in
       && !(builtins.any (a: lib.hasSuffix "bash" a) agg.apps);
   };
 
+  # Test: An opt-in app (off by default) contributes its persistence once enabled
+  smoke-persistence-opt-in-app = mkSmokeTest {
+    name = "test-persistence-opt-in-app";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-persistence-opt-in-app";
+      users.testuser = {
+        fullName = "Test User";
+        description = "Test User";
+        email = "test@example.com";
+        apps.media.players.qobine.enable = true;
+      };
+    };
+    assertions = config:
+      let
+        agg = config.my.system.persistence.aggregated.testuser;
+      in
+      # qobine keeps its credentials and queue database here
+      builtins.elem ".local/share/qobine" agg.directories
+      && builtins.any (a: lib.hasSuffix "qobine" a) agg.apps;
+  };
+
   # --- Partial User Tests ---
 
   # Test: User without fullName is NOT created as NixOS user
