@@ -100,5 +100,11 @@ in
     # 1Password: the .app bundle. The Linux side uses programs._1password{,-gui},
     # which nix-darwin does not declare.
     ../my/users/apps/security/1password/darwin.nix
+
+    # Discord: a Homebrew cask here, the nixpkgs derivation on Linux. nixpkgs
+    # stages native modules inside the signed bundle, which breaks the code
+    # signature and makes macOS refuse to launch it -- see the file for the
+    # codesign output.
+    ../my/users/apps/communication/discord/darwin.nix
   ];
 }

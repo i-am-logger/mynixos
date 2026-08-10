@@ -211,6 +211,11 @@ in
     ../my/users/apps/terminals/wezterm/linux.nix
     ../my/users/apps/file-managers/yazi/linux.nix
     ../my/users/apps/multiplexers/zellij/linux.nix
+    ../my/users/apps/multiplexers/herdr/linux.nix
+    # Discord: the nixpkgs derivation. macOS gets a Homebrew cask instead,
+    # because nixpkgs breaks the bundle's code signature -- the darwin half of
+    # this app explains why at length
+    ../my/users/apps/communication/discord
     ../my/secrets/linux.nix
     ../my/users/apps/art/krita
     ../my/users/apps/art/gimp

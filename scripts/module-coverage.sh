@@ -19,10 +19,19 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # the handful of hardware-profile paths it exports as lib.hardware, so scraping
 # it here reports near-zero coverage.
 extract_imported_modules() {
+  # Comments are stripped FIRST. The pattern matches any `../my/...` text, so a
+  # comment naming a module path -- ordinary, since that is how one module points
+  # at its counterpart on the other platform -- was read as an import. Worse, `.`
+  # is in the character class, so a path ending a sentence captured the full stop
+  # too and yielded a module directory that does not exist, which `find` then
+  # failed on under `set -e`.
+  #
   # -E rather than -P: the pattern needs no PCRE, and BSD grep (macOS, now a
   # supported platform) has no -P.
-  grep -ohE '\.\./my/[a-zA-Z0-9_./-]+' "$REPO_ROOT"/platforms/*.nix |
+  sed 's/#.*//' "$REPO_ROOT"/platforms/*.nix |
+    grep -ohE '\.\./my/[a-zA-Z0-9_./-]+' |
     sed 's|^\.\./||' |
+    sed 's|\.$||' |
     sort -u
 }
 
