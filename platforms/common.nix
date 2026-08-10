@@ -170,6 +170,7 @@ in
       ../my/users/apps/multiplexers/herdr
 
       # Network
+      ../my/users/apps/network/rustdesk
       ../my/users/apps/network/termscp
 
       # Prompts
