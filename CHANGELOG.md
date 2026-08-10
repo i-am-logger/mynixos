@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.15.1...mynixos-v0.16.0) (2026-08-10)
+
+
+### Features
+
+* **apps:** herdr as the default multiplexer, discord per platform ([#141](https://github.com/i-am-logger/mynixos/issues/141)) ([912a0e3](https://github.com/i-am-logger/mynixos/commit/912a0e346e9ce798bba27634ac84a76dee3ffa48))
+
 ## [0.15.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.15.0...mynixos-v0.15.1) (2026-08-04)
 
 
