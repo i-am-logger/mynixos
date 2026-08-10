@@ -76,6 +76,29 @@
               };
             };
           };
+
+          sipeed = {
+            tangPrimer25k = {
+              enable = lib.mkEnableOption ''
+                Sipeed Tang Primer 25K FPGA board's onboard USB-JTAG/UART dock.
+
+                Provides udev rules (uaccess) so openFPGALoader and other
+                tools can talk to the dock's FTDI FT2232 interface without
+                root -- nixpkgs' openFPGALoader package ships no udev rules
+                of its own. Also covers other FT2232-based FPGA programmers
+                since the chip/USB ID isn't Sipeed-specific.
+
+                Vendor: FTDI (0403)
+                Product: FT2232C/D/H (6010)
+              '';
+
+              udev = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
+              };
+            };
+          };
         };
       };
     };

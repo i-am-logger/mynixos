@@ -155,6 +155,7 @@ in
     ../my/hardware/peripherals/apple
     ../my/hardware/peripherals/elgato
     ../my/hardware/peripherals/keychron
+    ../my/hardware/peripherals/sipeed
 
     ../my/hardware/storage/nvme
     ../my/hardware/storage/sata
