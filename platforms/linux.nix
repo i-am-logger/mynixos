@@ -225,6 +225,7 @@ in
     ../my/users/apps/art/mypaint
     ../my/users/apps/media/audacious
     ../my/users/apps/media/audio-utils
+    ../my/users/apps/media/qobine # alsa-lib; packages/qobine is Linux-only
     ../my/users/apps/security/1password # programs._1password{,-gui}
     ../my/users/apps/status-bars/waybar # programs.waybar.systemd.enable
     ../my/users/apps/viewers/feh # X11
