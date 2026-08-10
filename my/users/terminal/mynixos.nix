@@ -50,7 +50,12 @@
           # Fun/Eye candy
           fun.pipes.enable = lib.mkDefault false;
 
-          # Note: Multiplexers (zellij, tmux) are controlled by terminal.multiplexer setting, not as apps
+          # Note: Multiplexers (herdr, zellij, tmux) are controlled by the
+          # terminal.multiplexer setting, not as apps. Each one contributes its
+          # own name to that enum from my/users/apps/multiplexers/*/options.nix,
+          # and herdr's declaration also carries the enum's default -- so the
+          # default deliberately does NOT live in this file, which is gated on
+          # terminal.enable.
         };
       };
     }));

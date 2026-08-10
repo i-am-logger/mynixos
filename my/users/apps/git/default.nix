@@ -2,6 +2,29 @@
 
 with lib;
 
+let
+  # See ./options.nix. "ssh" rewrites forge URLs to their SSH form; "https"
+  # leaves them alone and hands authentication to the forge CLI, which already
+  # holds a token. The two are exclusive — a host does one or the other.
+  transport = userCfg:
+    if userCfg.apps.dev.tools.git.protocol == "ssh" then {
+      # The same three hosts my/users/apps/ssh gives a Host block to. The https
+      # branch covers only two: bitbucket has no packaged CLI holding a token,
+      # so there is nothing to install as a helper -- see ./options.nix.
+      #
+      # One `url` attrset rather than three `url.<x>` lines: statix's
+      # repeated_keys fires at three, and the pre-commit statix hook CHECKS
+      # rather than fixes, so treefmt cannot paper over it.
+      url = {
+        "git@github.com:".insteadOf = "https://github.com/";
+        "git@gitlab.com:".insteadOf = "https://gitlab.com/";
+        "git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
+      };
+    } else {
+      credential."https://github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
+      credential."https://gitlab.com".helper = "!${pkgs.glab}/bin/glab auth git-credential";
+    };
+in
 {
   config = {
     home-manager.users = mapAttrs
@@ -40,10 +63,8 @@ with lib;
             merge.conflictstyle = "zdiff3"; # show the common ancestor in conflicts
             diff.colorMoved = "default"; # distinguish moved lines from added/removed
 
-            url."git@github.com:".insteadOf = "https://github.com/";
-            url."git@gitlab.com:".insteadOf = "https://gitlab.com/";
             core.editor = "hx";
-          };
+          } // transport userCfg;
 
           # Opinionated ignores
           ignores = [

@@ -128,6 +128,21 @@ in
       (c.home-manager.users.smoke.launchd.agents ? keepingyouawake)
       "keepingyouawake should register a launchd user agent";
 
+  # Discord is the one app whose darwin half deliberately is NOT a derivation:
+  # nixpkgs stages native modules inside the signed bundle, which breaks the code
+  # signature and makes macOS refuse to launch it. Assert both halves of that
+  # decision -- the cask IS declared, and no nix discord sneaks in -- because a
+  # well-meaning "just put pkgs.discord back" is exactly the regression here.
+  darwin-smoke-discord =
+    let c = darwinConfig { users.smoke.apps.communication.messaging.discord.enable = true; };
+    in
+    check "discord"
+      (builtins.elem "discord" c.my.homebrew.casks
+        && !(builtins.any (p: (p.pname or "") == "discord") c.environment.systemPackages)
+        && !(builtins.any (p: (p.pname or "") == "discord")
+        c.home-manager.users.smoke.home.packages))
+      "discord on darwin should be a homebrew cask and never a nix package";
+
   # 1Password's darwin half installs the .app and the CLI.
   darwin-smoke-1password =
     let c = darwinConfig { users.smoke.apps.security.passwords.onePassword.enable = true; };

@@ -150,6 +150,44 @@ in
       let hm = config.home-manager.users.muxuser; in
       hm.programs.tmux.enable && !hm.programs.zellij.enable);
 
+  # herdr has no home-manager module, so its own module is what puts the package
+  # on PATH and writes the config -- assert both, not just mutual exclusion.
+  multiplexer-herdr = evalAssert "multiplexer-herdr"
+    {
+      networking.hostName = "test-mux-herdr";
+      my.users.muxuser = {
+        fullName = "Mux User";
+        description = "mux";
+        email = "mux@example.com";
+        terminal = { enable = true; multiplexer = "herdr"; };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.muxuser; in
+      builtins.any (p: (p.pname or "") == "herdr") hm.home.packages
+      && hm.xdg.configFile ? "herdr/config.toml"
+      && !hm.programs.zellij.enable
+      && !hm.programs.tmux.enable);
+
+  # The point of the whole arrangement: terminal.multiplexer is declared in four
+  # files (my/users/terminal/options.nix plus one per multiplexer), and only
+  # herdr's carries a default. State no multiplexer at all and herdr must be
+  # what comes out -- if the enum declarations ever stop merging, this is the
+  # case that catches it.
+  multiplexer-default = evalAssert "multiplexer-default"
+    {
+      networking.hostName = "test-mux-default";
+      my.users.muxuser = {
+        fullName = "Mux User";
+        description = "mux";
+        email = "mux@example.com";
+        terminal.enable = true;
+      };
+    }
+    (config:
+      let user = config.my.users.muxuser; in
+      user.terminal.multiplexer == "herdr");
+
   user-features = evalTest "user-features" {
     networking.hostName = "test-user-features";
     my.users.testuser = {

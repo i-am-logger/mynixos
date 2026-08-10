@@ -58,6 +58,15 @@ in
       # are not mkApp modules (so they cannot carry the option in their spec).
       ../my/users/apps/security/1password/options.nix
       ../my/users/apps/ai/claude-code/options.nix
+      ../my/users/apps/git/options.nix
+      ../my/users/apps/communication/discord/options.nix
+
+      # Each multiplexer contributes its own name to the terminal.multiplexer
+      # enum (lib.types.enum merges across declarations), so importing one here
+      # is what makes it selectable. herdr's also carries the enum's default.
+      ../my/users/apps/multiplexers/tmux/options.nix
+      ../my/users/apps/multiplexers/zellij/options.nix
+      ../my/users/apps/multiplexers/herdr/options.nix
 
       (mkOptionsModule ../my/fonts/options.nix { inherit lib; })
 
@@ -158,6 +167,7 @@ in
       # Multiplexers
       ../my/users/apps/multiplexers/tmux
       ../my/users/apps/multiplexers/zellij
+      ../my/users/apps/multiplexers/herdr
 
       # Network
       ../my/users/apps/network/termscp

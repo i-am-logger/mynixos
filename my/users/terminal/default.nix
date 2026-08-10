@@ -50,6 +50,7 @@ in
 
               btm = "btop";
               zj = "zellij";
+              hr = "herdr";
               cvp = "cava-peaks";
               t = "tree -C";
 

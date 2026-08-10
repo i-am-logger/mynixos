@@ -45,17 +45,18 @@ in
                 -- Terminal settings
                 config.enable_wayland = true
 
-                config.window_background_opacity = 0.70
-
                 -- Transparency is only legible when something blurs what shows
-                -- through. On Linux the compositor does that pass, so opacity
-                -- alone is enough; macOS has no equivalent, and the same 0.70
-                -- reads as plain see-through over whatever is behind the window.
+                -- through. On Linux the compositor does that pass, so 0.70 reads
+                -- as depth rather than as see-through.
                 --
-                -- wezterm draws its own surface with wgpu and adopts no AppKit
-                -- materials, so the system Liquid Glass look is not available to
-                -- it. This is the native blur it does expose.
-                ${optionalString isDarwin "config.macos_window_background_blur = 30"}
+                -- macOS has no equivalent. wezterm draws its own surface with
+                -- wgpu and adopts no AppKit materials, so the system Liquid Glass
+                -- look is not available to it, and macos_window_background_blur
+                -- -- the only native blur it exposes -- was not enough at any
+                -- setting: 0.70 still read as plain see-through over whatever
+                -- happened to be behind the window. Opaque there instead. A
+                -- legible terminal beats a transparent one.
+                config.window_background_opacity = ${if isDarwin then "1.0" else "0.70"}
                 config.hide_tab_bar_if_only_one_tab = true
                 config.default_cursor_style = 'BlinkingBlock'
                 config.cursor_blink_rate = 200
@@ -83,8 +84,15 @@ in
                   -- keeps this correct for root and for any shell, not just an
                   -- interactive login one. Linux needs none of this: the system
                   -- profile aggregates terminfo and the lookup already succeeds.
+                  -- weztermPackage, not pkgs.wezterm: `terminal.package` decides
+                  -- which wezterm is INSTALLED, and terminfo that describes a
+                  -- different build is the exact mismatch this block exists to
+                  -- prevent. `.terminfo` is a passthru and survives override /
+                  -- overrideAttrs; a package without one fails evaluation here,
+                  -- which is louder and better than silently pointing at the
+                  -- wrong build.
                   config.set_environment_variables = {
-                    TERMINFO_DIRS = '${pkgs.wezterm.terminfo}/share/terminfo:/usr/share/terminfo',
+                    TERMINFO_DIRS = '${weztermPackage.terminfo}/share/terminfo:/usr/share/terminfo',
                   }
                 ''}
                 config.check_for_updates = false
