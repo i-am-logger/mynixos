@@ -152,6 +152,7 @@ in
 
     ../my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
 
+    ../my/hardware/peripherals/apple
     ../my/hardware/peripherals/elgato
     ../my/hardware/peripherals/keychron
 

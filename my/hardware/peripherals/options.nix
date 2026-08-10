@@ -16,6 +16,29 @@
     type = lib.types.submodule {
       options = {
         peripherals = {
+          apple = {
+            dfu = {
+              enable = lib.mkEnableOption ''
+                Apple iOS/iPadOS devices in DFU, Recovery, or WTF mode.
+
+                Provides udev rules (uaccess) so a device enumerating in
+                DFU/Recovery/WTF mode, or checkra1n/pongoOS DFU mode, is
+                usable by a non-root user -- e.g. libirecovery/irecovery,
+                idevicerestore, or dfu-probe.
+
+                Vendor: Apple (05ac)
+                Product IDs: WTF/DFU/Recovery 1222, 1227, 1280-1283
+                Product ID: checkra1n/pongoOS DFU 1338
+              '';
+
+              udev = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
+              };
+            };
+          };
+
           elgato = {
             streamdeck = {
               enable = lib.mkOption {
