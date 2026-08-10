@@ -21,6 +21,17 @@ rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-FVyWhQNgMCQXa/JqV9S8V6cVwHFCvQ0DE5eQ7vzwetI=";
 
+  patches = [
+    # A track's CMAF segment count is held in a u8 all the way from the API
+    # model down through the FLAC segment downloader, so any track with more
+    # than 255 segments fails to deserialize with "invalid value: integer `N`,
+    # expected u8", and the segment table length silently wraps on the way in.
+    # Segments run about 10 seconds, so this bites above roughly 42 minutes.
+    # Widen the count and the segment indices to u32. Sent upstream as
+    # SofusA/qobine#473; drop this patch once it lands in a release.
+    ./widen-segment-count.patch
+  ];
+
   # The workspace also carries the GTK, web, RFID and Qobuz Connect front-ends.
   # Building only the terminal player keeps gtk4/libadwaita/webkitgtk, the
   # embedded web assets and the Raspberry Pi GPIO stack out of the closure.
