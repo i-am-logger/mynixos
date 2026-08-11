@@ -88,6 +88,10 @@ in
     # application firewall (`alf`) has no interface or address concept, so it
     # cannot express this.
     ../my/network/ssh-firewall
+
+    # Authorized keys + sshd hardening for Remote Login; pairs with the pf
+    # scoping above so what little sshd is reachable is also pubkey-only.
+    ../my/network/openssh/darwin.nix
   ]
 
   # -----------------------------------------------------------------------

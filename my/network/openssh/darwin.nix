@@ -15,8 +15,10 @@
 # nix-darwin's own services.openssh.extraConfig writes 100-nix-darwin.conf,
 # which sorts after Apple's file and loses -- that is why it is not used here.
 #
-# Gated on services.openssh.enable: a Mac that has not turned on Remote Login
-# gets neither keys nor config. Imported only by platforms/darwin.nix.
+# Gated on services.openssh.enable == true: nix-darwin types that option as
+# nullOr bool, where null means "leave Remote Login alone" -- a Mac that has
+# not turned it on gets neither keys nor config. Imported only by
+# platforms/darwin.nix.
 { config, lib, ... }:
 
 with lib;
@@ -30,7 +32,7 @@ let
     filter (k: k != "") (map (yk: yk.sshPublicKey) userCfg.yubikeys);
 in
 {
-  config = mkIf config.services.openssh.enable {
+  config = mkIf (config.services.openssh.enable == true) {
     environment.etc =
       {
         "ssh/sshd_config.d/010-mynixos.conf".text = ''
