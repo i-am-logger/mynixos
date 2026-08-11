@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.17.1...mynixos-v0.18.0) (2026-08-11)
+
+
+### Features
+
+* **network:** Tailscale SSH on Linux, Remote Login keys and hardening on darwin ([#147](https://github.com/i-am-logger/mynixos/issues/147)) ([77ff4fb](https://github.com/i-am-logger/mynixos/commit/77ff4fbe9af7b68615a6803fb9d86ceef2572deb))
+
 ## [0.17.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.17.0...mynixos-v0.17.1) (2026-08-10)
 
 
