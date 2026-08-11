@@ -182,6 +182,25 @@
             description = "Enable routing features (client, server, both, or none)";
           };
 
+          ssh = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = ''
+              Run the Tailscale SSH server: inbound ssh over the tailnet is
+              authenticated by tailnet identity and the tailnet policy's `ssh`
+              rules instead of authorized_keys, so clients without local key
+              material (a phone, a machine with no security token) can log in.
+
+              Enforced with `tailscale set --ssh=true` rather than an `up`
+              flag: `tailscale up` RESETS every preference not named on its
+              command line, so a later hand-run `up` would silently switch the
+              SSH server off. `tailscale set` changes only what it names.
+
+              The classic sshd keeps running unchanged; tailscaled intercepts
+              port 22 on the tailscale interface only.
+            '';
+          };
+
           allowedTCPPorts = lib.mkOption {
             type = lib.types.listOf lib.types.port;
             default = [ ];
