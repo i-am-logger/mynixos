@@ -97,6 +97,44 @@ in
       my.system.persistence.features.systemDirectories = [
         "/var/lib/tailscale"
       ];
+
+      # Keep the Tailscale SSH server on. `tailscale set` is what makes the
+      # option durable: it changes only the preference it names, while a
+      # hand-run `tailscale up` resets every preference absent from its
+      # command line and would silently disable SSH. Waits for the backend
+      # because `set` needs a running, logged-in tailscaled; when the node is
+      # logged out this exits cleanly and the preference is applied on the
+      # next activation after login.
+      systemd.services.tailscale-ssh-server = mkIf cfg.ssh {
+        description = "Enable the Tailscale SSH server preference";
+        wantedBy = [ "multi-user.target" ];
+        # Ordered after tailscale-autojoin: its `tailscale up` is itself a
+        # preference reset, so running `set` before it would be undone on the
+        # boot that joins. systemd ignores ordering against units that do not
+        # exist, so this is inert unless controlPlane = "headscale-local".
+        after = [ "tailscaled.service" "tailscale-autojoin.service" ];
+        wants = [ "tailscaled.service" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+
+        path = [ config.services.tailscale.package pkgs.jq ];
+
+        script = ''
+          for i in $(seq 1 30); do
+            state=$(tailscale status --json 2>/dev/null | jq -r .BackendState 2>/dev/null || true)
+            case "$state" in
+              Running) tailscale set --ssh=true; exit 0 ;;
+              NeedsLogin|Stopped) echo "tailscaled is $state; SSH preference will apply after login"; exit 0 ;;
+            esac
+            sleep 1
+          done
+          echo "tailscaled backend not ready after 30s; SSH preference not applied" >&2
+          exit 0
+        '';
+      };
     }
 
     # Auto-join when headscale is on the same machine
@@ -164,6 +202,7 @@ in
             ${tailscale} up \
               --login-server=${localLoginServer} \
               --authkey=file:${keyFile} \
+              ${optionalString cfg.ssh "--ssh"} \
               ${optionalString cfg.exitNode "--advertise-exit-node"} \
               ${optionalString (cfg.advertiseRoutes != []) "--advertise-routes=${concatStringsSep "," cfg.advertiseRoutes}"}
 
