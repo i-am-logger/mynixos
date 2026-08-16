@@ -38,16 +38,49 @@ let
   # -- the latter simply builds from flake.lock. That is what makes this safe to
   # state once in a profile every host shares.
   #
-  # Announced every time. An overridden build is by definition not the build
-  # flake.lock describes, and discovering that from a puzzling rebuild result is
-  # far worse than reading one line.
+  # A checkout that is CLEAN and at exactly the locked revision is not
+  # overridden at all: the override would produce the identical build while
+  # making nix warn "not writing modified lock file" on every rebuild, and
+  # making the announcement below false. The override -- and the announcement
+  # -- fire only when the local checkout actually diverges from the lock.
+  # Discovering an overridden build from a puzzling rebuild result is far
+  # worse than reading one line.
+  #
+  # The locked revision is resolved by walking flake.lock's node graph from
+  # the root along the "/"-separated input path, following `follows` entries
+  # (which appear as arrays re-rooted at the top).
+  lockedRevFor = ''
+    locked_rev_for() {
+      ${pkgs.jq}/bin/jq -r --arg path "$1" '
+        def step($node; $rest):
+          if ($rest | length) == 0 then $node
+          else .nodes[$node].inputs[$rest[0]] as $next
+            | if $next == null then empty
+              elif ($next | type) == "array" then step(.root; $next + $rest[1:])
+              else step($next; $rest[1:])
+              end
+          end;
+        step(.root; $path | split("/")) as $node
+        | .nodes[$node].locked.rev // empty
+      ' "$FLAKE_DIR/flake.lock" 2>/dev/null
+    }
+  '';
+
   overrideInputs = ''
+    ${lockedRevFor}
     OVERRIDES=()
     ${concatStringsSep "\n" (mapAttrsToList
       (name: path: ''
         if [ -d ${escapeShellArg path} ]; then
-          OVERRIDES+=(--override-input ${escapeShellArg name} ${escapeShellArg path})
-          echo "  local input: ${name} -> ${path}" >&2
+          _locked=$(locked_rev_for ${escapeShellArg name})
+          _local=$(${pkgs.git}/bin/git -C ${escapeShellArg path} rev-parse HEAD 2>/dev/null || true)
+          if [ -n "$_locked" ] && [ "$_locked" = "$_local" ] \
+            && ${pkgs.git}/bin/git -C ${escapeShellArg path} diff-index --quiet HEAD -- 2>/dev/null; then
+            echo "  local input: ${name} matches flake.lock (''${_locked:0:8}), no override" >&2
+          else
+            OVERRIDES+=(--override-input ${escapeShellArg name} ${escapeShellArg path})
+            echo "  local input: ${name} -> ${path}" >&2
+          fi
         fi
       '')
       cfg.localInputs)}
