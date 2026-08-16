@@ -23,10 +23,14 @@ args:
       # makes the widgets usable in a repo.
       defaultCommand = "fd --type f --hidden --follow --exclude .git";
       defaultOptions = [ "--height 40%" "--layout=reverse" "--border" "--info=inline" ];
-      fileWidgetCommand = "fd --type f --hidden --follow --exclude .git";
-      fileWidgetOptions = [ "--preview 'bat -n --color=always --line-range :300 {}'" ];
-      changeDirWidgetCommand = "fd --type d --hidden --follow --exclude .git";
-      changeDirWidgetOptions = [ "--preview 'lsd --tree --depth 1 --color=always {}'" ];
+      fileWidget = {
+        command = "fd --type f --hidden --follow --exclude .git";
+        options = [ "--preview 'bat -n --color=always --line-range :300 {}'" ];
+      };
+      changeDirWidget = {
+        command = "fd --type d --hidden --follow --exclude .git";
+        options = [ "--preview 'lsd --tree --depth 1 --color=always {}'" ];
+      };
     };
   };
 }
