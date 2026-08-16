@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.1...mynixos-v0.18.2) (2026-08-16)
+
+
+### Miscellaneous
+
+* **deps:** vogix 0.8.4 ([#151](https://github.com/i-am-logger/mynixos/issues/151)) ([2566c2a](https://github.com/i-am-logger/mynixos/commit/2566c2a6bcba9339feb4e503799f4e9f5f9c3a9e))
+
 ## [0.18.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.0...mynixos-v0.18.1) (2026-08-15)
 
 
