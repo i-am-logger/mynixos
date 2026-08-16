@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.2...mynixos-v0.18.3) (2026-08-16)
+
+
+### Bug Fixes
+
+* **system:** skip the localInputs override when the checkout matches the lock ([#153](https://github.com/i-am-logger/mynixos/issues/153)) ([ebc6563](https://github.com/i-am-logger/mynixos/commit/ebc65630e1306a6b779d288a315c7b09cd606b0b))
+
 ## [0.18.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.1...mynixos-v0.18.2) (2026-08-16)
 
 
