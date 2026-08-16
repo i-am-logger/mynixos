@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.3...mynixos-v0.18.4) (2026-08-16)
+
+
+### Bug Fixes
+
+* zero-warning evaluations — HM rebase, rust-overlay bump, fzf API ([#155](https://github.com/i-am-logger/mynixos/issues/155)) ([f7e5237](https://github.com/i-am-logger/mynixos/commit/f7e5237406f3e5b63ddb05e521b0bea30aa50895))
+
 ## [0.18.3](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.2...mynixos-v0.18.3) (2026-08-16)
 
 
