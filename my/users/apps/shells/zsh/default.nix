@@ -5,7 +5,7 @@
   option = {
     name = "Zsh";
     default = false;
-    description = "Zsh shell (the macOS default login shell)";
+    description = "Zsh shell (the default login shell)";
     persistedFiles = [ ".zsh_history" ];
     extraOptions = {
       historySize = lib.mkOption {

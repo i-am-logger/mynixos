@@ -1,7 +1,7 @@
 # mynixos Opinionated Defaults: Terminal Apps, Linux
 #
-# bash is the login shell on Linux, so zsh is an extra rather than the norm and
-# stays off unless asked for.
+# zsh is the login shell (my/users/users/mynixos-linux.nix), so its
+# home-manager config is on by default.
 #
 # bespec builds only on x86_64-linux (packages/bespec/default.nix declares
 # `platforms = [ "x86_64-linux" ]`): alsa, dbus and pipewire at build time, and a
@@ -16,7 +16,7 @@
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
       config = lib.mkIf (config.terminal.enable or false) {
         apps.terminal = {
-          shells.zsh.enable = lib.mkDefault false;
+          shells.zsh.enable = lib.mkDefault true;
           visualizers.bespec.enable = lib.mkDefault true;
         };
       };
