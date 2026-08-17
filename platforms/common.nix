@@ -176,8 +176,7 @@ in
       # Prompts
       ../my/users/apps/prompts/starship
 
-      # Shells. zsh is inert on Linux: my/users/terminal/mynixos.nix sets
-      # `zsh.enable = mkDefault isDarwin`.
+      # Shells. zsh is the default login shell on both platforms.
       ../my/users/apps/shells/bash
       ../my/users/apps/shells/fish
       ../my/users/apps/shells/zsh
