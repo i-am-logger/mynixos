@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.4...mynixos-v0.19.0) (2026-08-17)
+
+
+### Features
+
+* **users:** zsh is the default login shell on every platform ([#157](https://github.com/i-am-logger/mynixos/issues/157)) ([c728107](https://github.com/i-am-logger/mynixos/commit/c7281076ab9d3475be79d0e7ebbcf0390442e7ef))
+
 ## [0.18.4](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.3...mynixos-v0.18.4) (2026-08-16)
 
 
