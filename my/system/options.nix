@@ -61,6 +61,56 @@
           '';
         };
 
+        update = lib.mkOption {
+          description = "How `rebuild-system update` refreshes this host before building";
+          default = { };
+          type = lib.types.submodule {
+            options = {
+              scripts = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                example = [ "scripts/update-claude-code.sh" ];
+                description = ''
+                  Scripts that re-pin this host's overlays, run in order after the
+                  flake inputs are updated and before anything is built. Paths are
+                  relative to the flake directory.
+
+                  Listed one by one rather than discovered by glob. A glob over
+                  something like scripts/update-*.sh reads as the obvious
+                  convention right up until it matches a script that was never
+                  meant for it -- update-master-from-old-commit.sh, say, whose
+                  work is `git branch -f master`. Naming them is the difference
+                  between a list that is audited and a directory that is trusted.
+
+                  Each is expected to be idempotent and to exit 0 when there is
+                  nothing to do, because it runs on every update.
+                '';
+              };
+
+              inputs = lib.mkOption {
+                type = lib.types.nullOr (lib.types.listOf lib.types.str);
+                default = null;
+                example = [ "mynixos" ];
+                description = ''
+                  Flake inputs to update, or null to work them out from
+                  flake.lock.
+
+                  Deriving them is the default because the thing that must be
+                  excluded is discoverable: `nix flake update` re-FETCHES every
+                  input even though it evaluates no outputs, so an input locked
+                  to a path or a git+file:// URL that exists on one machine fails
+                  the update on every other. Those are exactly the entries the
+                  lock marks type "path" or type "git" with a file:// URL, so
+                  they are skipped without anyone maintaining a list that rots
+                  the next time an input is added.
+
+                  Name them explicitly only to update FEWER than that.
+                '';
+              };
+            };
+          };
+        };
+
         enable = lib.mkEnableOption "core system utilities (console, nix, boot configuration, plymouth)";
 
 

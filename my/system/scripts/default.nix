@@ -89,6 +89,78 @@ let
     fi
   '';
 
+  # Which inputs `nix flake update` may touch.
+  #
+  # A bare `nix flake update` re-FETCHES every input even though it evaluates
+  # no outputs, so one input locked to a path -- or a git+file:// URL -- that
+  # exists only on the machine that made it fails the update everywhere else.
+  # Those entries are self-identifying in the lock, so the set is derived
+  # rather than maintained: nothing to forget when an input is added.
+  #
+  # my.system.update.inputs overrides the derivation when a host wants fewer.
+  updatableInputs = ''
+    updatable_inputs() {
+      ${optionalString (cfg.update.inputs != null) ''
+        printf '%s\n' ${concatStringsSep " " (map escapeShellArg (cfg.update.inputs or []))}
+        return 0
+      ''}
+      ${pkgs.jq}/bin/jq -r '
+        . as $lock
+        | $lock.nodes.root.inputs
+        | to_entries[]
+        | select((.value | type) == "string")
+        | .key as $name
+        | ($lock.nodes[.value].locked // {}) as $l
+        | select(($l.type != "path")
+                 and (($l.type != "git") or (($l.url // "") | startswith("file://") | not)))
+        | $name
+      ' "$FLAKE_DIR/flake.lock"
+    }
+  '';
+
+  # Stages 1 and 2 WRITE to the flake directory, which the plain rebuild
+  # scripts never do. Say so before touching anything rather than leaving a
+  # half-updated tree: on a host where the checkout is root-owned this is the
+  # difference between one clear line and a lock file nobody meant to change.
+  updateStages = ''
+    ${updatableInputs}
+
+    if [ ! -w "$FLAKE_DIR" ] || [ ! -w "$FLAKE_DIR/flake.lock" ]; then
+      echo "Error: $FLAKE_DIR is not writable by $(id -un)." >&2
+      echo "       Updating rewrites flake.lock and the generated overlays, so" >&2
+      echo "       this cannot run here. Build without 'update' instead." >&2
+      exit 1
+    fi
+
+    cd "$FLAKE_DIR"
+
+    INPUTS=()
+    while IFS= read -r _i; do
+      [ -n "$_i" ] && INPUTS+=("$_i")
+    done <<EOF
+    $(updatable_inputs)
+    EOF
+
+    if [ ''${#INPUTS[@]} -eq 0 ]; then
+      echo "Error: no updatable inputs found in $FLAKE_DIR/flake.lock" >&2
+      exit 1
+    fi
+
+    echo "Updating flake inputs: ''${INPUTS[*]}" >&2
+    nix flake update "''${INPUTS[@]}"
+
+    ${optionalString (cfg.update.scripts != [ ]) (concatStringsSep "\n" (map
+      (script: ''
+        if [ ! -x ${escapeShellArg script} ]; then
+          echo "Error: ${script} is missing or not executable in $FLAKE_DIR" >&2
+          exit 1
+        fi
+        echo "Running ${script}..." >&2
+        ${escapeShellArg script}
+      '')
+      cfg.update.scripts))}
+  '';
+
   # darwin-rebuild's actions are: edit | switch | activate | build | check |
   # changelog. There is NO `test`, so `nixos-rebuild test` maps to `check`, the
   # nearest equivalent -- it builds and runs the activation sanity checks. It is
@@ -117,11 +189,29 @@ let
     fi
   '';
 
+  # `<script> update` refreshes the flake first: inputs, then the overlay
+  # updaters, then the build. Anything else is rejected rather than ignored --
+  # the previous version passed no arguments through at all, so `rebuild-system
+  # update` silently did a plain switch and looked like it had worked.
   mkRebuildScript = { name, action, description }:
     pkgs.writeShellScriptBin name ''
       # ${description}
+      DO_UPDATE=0
+      case "''${1-}" in
+        update) DO_UPDATE=1 ;;
+        "") ;;
+        *)
+          echo "Usage: ${name} [update]" >&2
+          exit 2
+          ;;
+      esac
+
       ${rebuildPreamble action}
       ${findFlakeDir}
+
+      if [ "$DO_UPDATE" = 1 ]; then
+        ${updateStages}
+      fi
 
       echo "${description} from $FLAKE_DIR..."
       ${overrideInputs}
@@ -133,19 +223,16 @@ in
   config = mkIf cfg.enable {
     # System utility scripts available to all users
     environment.systemPackages = [
-      # Update system flake inputs.
+      # Refresh the flake without building: the same two stages
+      # `rebuild-system update` runs, stopping before the rebuild.
       #
-      # `nix flake update` does not evaluate outputs, but it does re-FETCH every
-      # input, so a host whose flake has an input it cannot resolve -- a path
-      # input pointing somewhere that exists only on another machine -- fails
-      # here exactly as it would under `nix flake check`. The way past it is to
-      # name the inputs that can be fetched: `nix flake update <input>...`.
+      # It names the inputs rather than updating all of them, because a bare
+      # `nix flake update` re-FETCHES every input even though it evaluates no
+      # outputs -- so an input locked to a path that exists on one machine
+      # fails this command on every other. See updatableInputs above.
       (pkgs.writeShellScriptBin "update-system" ''
         ${findFlakeDir}
-
-        echo "Updating flake inputs in $FLAKE_DIR..."
-        cd "$FLAKE_DIR"
-        nix flake update
+        ${updateStages}
       '')
 
       (mkRebuildScript {
