@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.19.0...mynixos-v0.20.0) (2026-08-20)
+
+
+### Features
+
+* **system:** rebuild-system update, and stop shipping an update that cannot run ([e050fdb](https://github.com/i-am-logger/mynixos/commit/e050fdb29967a6031507cfdf1415e6642dc4b03d))
+
 ## [0.19.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.18.4...mynixos-v0.19.0) (2026-08-17)
 
 
