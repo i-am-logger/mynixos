@@ -203,7 +203,8 @@ let
       };
     in
     pkgs.symlinkJoin {
-      name = "claude-code-accounts-${pkgs.claude-code.version}";
+      # Named like upstream so the claude-code unfree allowance covers it.
+      name = "claude-code-${pkgs.claude-code.version}";
       inherit (pkgs.claude-code) version meta;
       paths = [ pkgs.claude-code ];
       postBuild = ''
