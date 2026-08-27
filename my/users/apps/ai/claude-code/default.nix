@@ -24,10 +24,16 @@ let
   # the working directory, then the default account. A CLAUDE_CONFIG_DIR that
   # is already set and no CLAUDE_ACCOUNT means the caller chose a directory
   # itself; the wrapper leaves it alone.
-  mkAccountsWrapper = cfg:
+  mkAccountsWrapper = cfg: home:
     let
+      # "~/x" is the user's home; resolved here so the script carries only
+      # absolute paths.
+      absolute = dir:
+        if dir == "~" then home
+        else if hasPrefix "~/" dir then "${home}/${removePrefix "~/" dir}"
+        else dir;
       routeLines = concatLists (mapAttrsToList
-        (alias: acct: map (dir: "${dir}\t${alias}") acct.directories)
+        (alias: acct: map (dir: "${absolute dir}\t${alias}") acct.directories)
         cfg.accounts);
       emailLines = mapAttrsToList (alias: acct: "${alias}\t${acct.email}") cfg.accounts;
 
@@ -38,16 +44,8 @@ let
 
         # alias<TAB>email
         emails=${escapeShellArg (concatStringsSep "\n" emailLines)}
-        # directory<TAB>alias; ~/ is the home directory
+        # directory<TAB>alias
         routes=${escapeShellArg (concatStringsSep "\n" routeLines)}
-
-        expand_home() {
-          case "$1" in
-            "~") printf '%s' "$HOME" ;;
-            "~/"*) printf '%s' "$HOME/''${1#\~/}" ;;
-            *) printf '%s' "$1" ;;
-          esac
-        }
 
         email_of() {
           printf '%s\n' "$emails" | while IFS=$'\t' read -r alias email; do
@@ -73,7 +71,6 @@ let
           cwd=$(pwd -P)
           while IFS=$'\t' read -r dir alias; do
             [ -n "$dir" ] || continue
-            dir=$(expand_home "$dir")
             case "$cwd" in
               "$dir" | "$dir"/*)
                 if [ "''${#dir}" -gt "$best_len" ]; then
@@ -185,9 +182,9 @@ let
   # The installed package: upstream claude-code with bin/claude replaced by
   # the routing wrapper, plus claude-as and claude-accounts beside it. Keeps
   # upstream's version and meta so home-manager's version gates still apply.
-  mkAccountsPackage = cfg:
+  mkAccountsPackage = cfg: home:
     let
-      w = mkAccountsWrapper cfg;
+      w = mkAccountsWrapper cfg home;
       claudeAs = pkgs.writeShellApplication {
         name = "claude-as";
         text = ''
@@ -228,9 +225,10 @@ in
         (
           name: userCfg:
             # Use module function to access home-manager's lib (provides lib.hm.dag)
-            { lib, ... }:
+            { lib, ... }@hm:
             let
               cfg = userCfg.apps.ai.tools.claude-code;
+              home = hm.config.home.homeDirectory;
               multiAccount = cfg.accounts != { };
             in
             lib.mkIf cfg.enable (lib.mkMerge [
@@ -244,7 +242,7 @@ in
 
                 programs.claude-code = {
                   enable = true;
-                  package = if multiAccount then mkAccountsPackage cfg else pkgs.claude-code;
+                  package = if multiAccount then mkAccountsPackage cfg home else pkgs.claude-code;
                 };
 
                 home.sessionVariables = {
