@@ -26,21 +26,26 @@ let
     fill_shape=false
   '';
 
-  # Hyprland configuration modules
+  # Hyprland configuration modules. The legacy bezier/animation strings are
+  # the single source; the Lua renderer parses the same strings into
+  # hl.curve/hl.animation shapes (vogix's hypr-lua projection helpers).
+  animationBezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
+  animationRules = [
+    "windows, 1, 2, myBezier"
+    "windowsIn, 1, 2, myBezier, slide"
+    "windowsOut, 1, 2, myBezier, slide"
+    "windowsMove, 1, 2, myBezier"
+    "border, 1, 2, default"
+    "borderangle, 1, 2, default"
+    "fade, 1, 2, default"
+    "workspaces, 1, 2, default"
+    "specialWorkspace, 1, 3, myBezier, slidefadevert top"
+  ];
+
   mkAnimations = userHyprland: {
     enabled = userHyprland.animations_enabled;
-    bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
-    animation = [
-      "windows, 1, 2, myBezier"
-      "windowsIn, 1, 2, myBezier, slide"
-      "windowsOut, 1, 2, myBezier, slide"
-      "windowsMove, 1, 2, myBezier"
-      "border, 1, 2, default"
-      "borderangle, 1, 2, default"
-      "fade, 1, 2, default"
-      "workspaces, 1, 2, default"
-      "specialWorkspace, 1, 3, myBezier, slidefadevert top"
-    ];
+    bezier = animationBezier;
+    animation = animationRules;
   };
 
   autostart = [
@@ -61,15 +66,32 @@ let
   # Vogix behavior module (pure functions, no module system needed)
   behaviorModule = import "${vogix}/nix/modules/behavior" { inherit lib; };
 
-  # Bindings function - takes user hyprland config and environment-derived commands
-  mkBindings =
+  # Vogix's legacy→Lua projection helpers (dispatcher table, bind-line and
+  # bezier/animation parsers) — the same table the vogix runtime uses, so the
+  # two renderings cannot drift apart.
+  luaLib = import "${vogix}/nix/modules/lib/hypr-lua.nix" { inherit lib; };
+  inherit (lib.generators) mkLuaInline;
+
+  # One catalog of fallback binds (used when vogix theming is off), rendered
+  # to hyprlang strings or Lua bind elements depending on the config engine.
+  # The two gap binds are the only engine-specific entries: raw `hyprctl
+  # keyword` does not exist on the Lua engine, so that path speaks `eval`.
+  mkBindLists =
     { browserCmd
     , terminalCmd
+    , isLua
     }:
+    let
+      gapsOn =
+        if isLua
+        then "exec, hyprctl eval 'hl.config({ [\"general.gaps_out\"] = 5, [\"general.gaps_in\"] = 6 })'"
+        else "exec, hyprctl --batch \"keyword general:gaps_out 5;keyword general:gaps_in 6\"";
+      gapsOff =
+        if isLua
+        then "exec, hyprctl eval 'hl.config({ [\"general.gaps_out\"] = 0, [\"general.gaps_in\"] = 0 })'"
+        else "exec, hyprctl --batch \"keyword general:gaps_out 0;keyword general:gaps_in 0\"";
+    in
     {
-      # MAINMOD
-      "$mainMod" = "SUPER";
-
       # quickly launch program
       bind = [
         "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
@@ -107,8 +129,8 @@ let
         "$mainMod, bracketright, changegroupactive, b"
 
         # change gap
-        "$mainMod SHIFT, G, exec, hyprctl --batch \"keyword general:gaps_out 5;keyword general:gaps_in 6\""
-        "$mainMod, G, exec, hyprctl --batch \"keyword general:gaps_out 0;keyword general:gaps_in 0\""
+        "$mainMod SHIFT, G, ${gapsOn}"
+        "$mainMod, G, ${gapsOff}"
 
         # Move focus with mainMod + arrow keys
         "$mainMod, left, movefocus, l"
@@ -129,9 +151,6 @@ let
         "$mainMod SHIFT, l, swapwindow, r"
         "$mainMod SHIFT, k, swapwindow, u"
         "$mainMod SHIFT, j, swapwindow, d"
-
-        # resize window
-        "ALT, R, submap, resize"
 
         # Switch workspaces with mainMod + [0-9]
         "$mainMod, 1, workspace, 1"
@@ -213,6 +232,17 @@ let
         "CTRL SHIFT, k, resizeactive, 0 -30"
         "CTRL SHIFT, j, resizeactive, 0 30"
       ];
+    };
+
+  # Hyprlang rendering of the fallback binds.
+  mkBindings = args:
+    let lists = mkBindLists (args // { isLua = false; });
+    in
+    {
+      # MAINMOD
+      "$mainMod" = "SUPER";
+
+      inherit (lists) bind binde;
 
       bindm = [
         "$mainMod, mouse:272, movewindow"
@@ -225,6 +255,20 @@ let
         allow_workspace_cycles = false;
       };
     };
+
+  # Lua rendering of the same fallback binds: every legacy line goes through
+  # vogix's dispatcher translation; `binde` becomes the `repeating` opt; the
+  # mouse binds become the drag/resize dispatchers (the legacy `bindm` flag
+  # has no Lua form). `binds` moves into `hl.config` at the call site.
+  mkLuaBinds = args:
+    let lists = mkBindLists (args // { isLua = true; });
+    in
+    map (luaLib.legacyBindToLua { }) lists.bind
+    ++ map (luaLib.legacyBindToLua { repeating = true; }) lists.binde
+    ++ [
+      { _args = [ "SUPER + mouse:272" (mkLuaInline "hl.dsp.window.drag()") ]; }
+      { _args = [ "SUPER + mouse:273" (mkLuaInline "hl.dsp.window.resize()") ]; }
+    ];
 
   # Decoration settings for Hyprland 0.51+
   # blur must be nested under decoration, not at top level
@@ -271,8 +315,6 @@ let
     };
   };
 
-  layerrule = [ ];
-
   gestures = { };
 
   # Input function (takes user config as parameter)
@@ -302,6 +344,19 @@ let
 
     sensitivity = userInput.accelSpeed;
   };
+
+  # The same input block for the Lua engine: real booleans — the Lua bool
+  # parser hard-rejects hyprlang's "yes"/"no"/"on"/"off" strings.
+  mkInputLua = userInput:
+    mkInput userInput // {
+      numlock_by_default = false;
+      natural_scroll = userInput.naturalScroll;
+      touchpad = {
+        natural_scroll = userInput.naturalScroll;
+        disable_while_typing = true;
+        scroll_factor = 0.3;
+      };
+    };
 
   layouts = {
     dwindle = {
@@ -367,6 +422,109 @@ let
 
     # Slack - Handle context menus and dropdowns
     "match:class ^(Slack)$, match:title ^(Context Menu)$, float true, no_focus true, size 0 0"
+  ];
+
+  # The same rules as hl.window_rule tables (the Lua engine). Every rule is
+  # named: named rules deduplicate across reloads and get a handle. Field
+  # names verified against the 0.56.2 effect table (float/tile/center/pin/
+  # no_focus/no_initial_focus/no_blur/stay_focused are bools; size/move take
+  # the legacy string form; suppress_event is a string).
+  windowRulesLua = [
+    # Walker - Application launcher overlay
+    {
+      name = "walker-overlay";
+      match.class = "^(walker)$";
+      float = true;
+      stay_focused = true;
+      pin = true;
+      no_blur = true;
+    }
+
+    # 1Password: centered floating window
+    {
+      name = "1password-center";
+      match.class = "^(1Password)$";
+      float = true;
+      center = true;
+      size = "60% 70%";
+    }
+
+    # PulseAudio Volume Control
+    {
+      name = "pavucontrol-center";
+      match.class = "^(org.pulseaudio.pavucontrol)$";
+      float = true;
+      center = true;
+      size = "50% 60%";
+    }
+
+    # Bluetooth Manager
+    {
+      name = "blueman-center";
+      match.class = "^(.blueman-manager-wrapped)$";
+      float = true;
+      center = true;
+      size = "40% 50%";
+    }
+
+    # Network Manager
+    {
+      name = "nm-editor-center";
+      match.class = "^(nm-connection-editor)$";
+      float = true;
+      center = true;
+      size = "40% 50%";
+    }
+
+    # GTK Portal
+    {
+      name = "gtk-portal-center";
+      match.class = "^(xdg-desktop-portal-gtk)$";
+      float = true;
+      center = true;
+      size = "40% 50%";
+    }
+
+    # Brave Save Dialog
+    {
+      name = "brave-save-dialog";
+      match = { class = "^(brave)$"; title = "^(Save File)$"; };
+      float = true;
+      center = true;
+      size = "50% 60%";
+    }
+
+    # Slack - Main window rules (tile and suppress maximize)
+    {
+      name = "slack-tile";
+      match = { class = "^(Slack)$"; title = "^(.*)$"; };
+      tile = true;
+    }
+    {
+      name = "slack-suppress-maximize";
+      match.class = "^(Slack)$";
+      suppress_event = "maximize";
+    }
+
+    # Slack - Hide/suppress menu windows and popups (empty title)
+    {
+      name = "slack-menus";
+      match = { class = "^(Slack)$"; title = "^$"; };
+      no_focus = true;
+      no_initial_focus = true;
+      float = true;
+      size = "0 0";
+      move = "-1000 -1000";
+    }
+
+    # Slack - Handle context menus and dropdowns
+    {
+      name = "slack-context-menus";
+      match = { class = "^(Slack)$"; title = "^(Context Menu)$"; };
+      float = true;
+      no_focus = true;
+      size = "0 0";
+    }
   ];
 in
 {
@@ -526,36 +684,70 @@ in
               wayland.windowManager.hyprland =
                 let
                   modesEnabled = config.my.theming.vogix.enable or false;
+                  configType = userHyprland.configType or "hyprlang";
+                  isLua = configType == "lua";
 
                   # Call vogix's behavior generator directly so we can access its
-                  # generated windowrule list and concatenate it with our own app
-                  # rules below. Plain assignment of `infraSettings.windowrule` would
-                  # otherwise clobber vogix's rules entirely — module-system priority
-                  # markers (mkDefault / mkAfter) don't survive being nested inside a
+                  # generated window-rule list and concatenate it with our own app
+                  # rules below. Plain assignment of the rules key would otherwise
+                  # clobber vogix's rules entirely — module-system priority markers
+                  # (mkDefault / mkAfter) don't survive being nested inside a
                   # parent attrset assignment here, so list concatenation has to be
                   # explicit at this layer. `{}` as the behavior config = "use
                   # defaults" (see vogix/nix/modules/behavior/default.nix mergeOr).
                   vogixBehaviorOutput =
-                    if modesEnabled
-                    then behaviorModule.mkHyprlandConfig { }
-                    else { settings = { }; };
+                    if !modesEnabled then { settings = { }; }
+                    else if isLua then behaviorModule.mkHyprlandLuaConfig { }
+                    else behaviorModule.mkHyprlandConfig { };
                   vogixWindowrules = vogixBehaviorOutput.settings.windowrule or [ ];
+                  vogixWindowRulesLua = vogixBehaviorOutput.settings.window_rule or [ ];
 
-                  # Infrastructure settings (always applied, overrides vogix defaults
-                  # except for `windowrule`, where both lists are concatenated so
-                  # vogix-generated rules — e.g. the vogix-console floating overlay —
-                  # aren't silently dropped).
-                  infraSettings = {
-                    inherit (environment) monitor;
-                    env = [
-                      "TERMINAL,${terminalCmd}"
-                      "BROWSER,${browserCmd}"
-                      "COLORTERM,truecolor"
-                    ];
-                    exec-once = autostart;
-                    windowrule = vogixWindowrules ++ windowRules;
-                    inherit layerrule;
-                  };
+                  # exec-once commands for the Lua start hook: hl.exec_cmd
+                  # spawns detached already, so shell `&` suffixes are stripped.
+                  luaStartupCommands = map (c: trim (removeSuffix "&" (trim c))) autostart;
+
+                  # Infrastructure settings (always applied, overrides vogix
+                  # defaults except for the window rules, where both lists are
+                  # concatenated so vogix-generated rules — e.g. the
+                  # vogix-console floating overlay — aren't silently dropped).
+                  # The Lua branch carries the HM Lua shapes: hl.monitor /
+                  # hl.env tables, exec-once as an hl.on("hyprland.start")
+                  # closure, hl.window_rule tables.
+                  infraSettings =
+                    if isLua then {
+                      # hl.monitor's `scale` is a STRING-typed field ("1",
+                      # "1.5", "auto" — Hyprland 0.56.2 MONITOR_FIELDS,
+                      # LuaBindingsConfigRules.cpp); a bare number only passes
+                      # via lua_isstring coercion, so keep the quoted form.
+                      monitor = [{ output = ""; mode = "highres"; position = "auto"; scale = "1"; }];
+                      env = [
+                        { _args = [ "TERMINAL" terminalCmd ]; }
+                        { _args = [ "BROWSER" browserCmd ]; }
+                        { _args = [ "COLORTERM" "truecolor" ]; }
+                      ];
+                      on = [
+                        {
+                          _args = [
+                            "hyprland.start"
+                            (mkLuaInline (
+                              "function()\n"
+                              + concatMapStrings (c: "  hl.exec_cmd(${luaLib.luaStr c})\n") luaStartupCommands
+                              + "end"
+                            ))
+                          ];
+                        }
+                      ];
+                      window_rule = vogixWindowRulesLua ++ windowRulesLua;
+                    } else {
+                      inherit (environment) monitor;
+                      env = [
+                        "TERMINAL,${terminalCmd}"
+                        "BROWSER,${browserCmd}"
+                        "COLORTERM,truecolor"
+                      ];
+                      exec-once = autostart;
+                      windowrule = vogixWindowrules ++ windowRules;
+                    };
 
                   # Fallback: when vogix is disabled, use legacy hardcoded config
                   fallbackSettings = lib.optionalAttrs (!modesEnabled) (
@@ -564,28 +756,49 @@ in
                       decorationsCfg = mkDecorations userHyprland;
                       blurCfg = mkDecorationBlur userHyprland;
                       animationsCfg = mkAnimations userHyprland;
-                    in
-                    (mkBindings { inherit browserCmd terminalCmd; })
-                    // {
-                      general = {
-                        inherit (generalCfg) gaps_in gaps_out border_size layout;
-                      };
-                      input = mkInput userCfg.input;
-                      inherit (layouts) dwindle master;
-                      inherit misc group gestures;
-                      animations = animationsCfg;
-                      decoration = {
+                      decorationSettings = {
                         inherit (decorationsCfg) active_opacity inactive_opacity fullscreen_opacity rounding dim_inactive dim_strength;
                         blur = { inherit (blurCfg) enabled brightness size; };
                       };
-                    }
+                    in
+                    if isLua then {
+                      bind = mkLuaBinds { inherit browserCmd terminalCmd; };
+                      curve = [ (luaLib.parseBezier animationBezier) ];
+                      animation = map luaLib.parseAnimationRule animationRules;
+                      config = {
+                        animations.enabled = userHyprland.animations_enabled;
+                        binds = {
+                          workspace_back_and_forth = false;
+                          allow_workspace_cycles = false;
+                        };
+                        general = {
+                          inherit (generalCfg) gaps_in gaps_out border_size layout;
+                        };
+                        input = mkInputLua userCfg.input;
+                        inherit (layouts) dwindle master;
+                        inherit misc group;
+                        decoration = decorationSettings;
+                      };
+                    } else
+                      (mkBindings { inherit browserCmd terminalCmd; })
+                      // {
+                        general = {
+                          inherit (generalCfg) gaps_in gaps_out border_size layout;
+                        };
+                        input = mkInput userCfg.input;
+                        inherit (layouts) dwindle master;
+                        inherit misc group gestures;
+                        animations = animationsCfg;
+                        decoration = decorationSettings;
+                      }
                   );
                 in
                 {
                   enable = true;
                   xwayland.enable = true;
-                  # Keep the hyprlang config format (HM 26.11 changed the default to "lua").
-                  configType = "hyprlang";
+                  # The engine follows the per-user option; "hyprlang" until a
+                  # host flips to the Lua config (Hyprland 0.57 removes hyprlang).
+                  inherit configType;
                   settings = lib.recursiveUpdate
                     (infraSettings // fallbackSettings)
                     (userHyprland.extraSettings or { });

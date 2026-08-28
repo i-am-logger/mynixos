@@ -23,6 +23,17 @@ in
         persistedDirectories = [ ".config/hypr" ];
         extraOptions = {
 
+          # Config engine. Hyprland 0.57 removes hyprlang configs and the
+          # legacy keyword/dispatch IPC (hyprwm/Hyprland#15539); "lua" renders
+          # the whole tree (mynixos infra + the vogix modules) through
+          # home-manager's Lua shapes instead. Flipped per host during the
+          # migration; "hyprlang" remains the default until the fleet is over.
+          configType = lib.mkOption {
+            type = lib.types.enum [ "hyprlang" "lua" ];
+            default = "hyprlang";
+            description = "Hyprland config dialect (hyprlang until 0.57, lua from 0.55)";
+          };
+
           # General settings
           gaps_in = lib.mkOption {
             type = lib.types.ints.unsigned;

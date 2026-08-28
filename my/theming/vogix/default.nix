@@ -72,6 +72,16 @@ in
               };
               # Pass hardware theme apply commands from NixOS to home-manager
               themeApply = config.vogix.hardware.themeApply;
+
+              # Pointer preferences belong to the person (my.users.<name>.input),
+              # not to the theme system: route them into vogix's Hyprland
+              # generation, whose own defaults are neutral. Without this the
+              # per-user options were silently ignored whenever vogix owned the
+              # Hyprland config.
+              behavior.input = {
+                inherit (userCfg.input) leftHanded naturalScroll;
+                sensitivity = userCfg.input.accelSpeed;
+              };
             };
           }
       )
