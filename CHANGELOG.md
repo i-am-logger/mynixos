@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.21.0...mynixos-v0.21.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **ai:** guard ollama state dir against DynamicUser EXDEV migration ([ee25313](https://github.com/i-am-logger/mynixos/commit/ee25313a4e068ef11055680bb7d021f51e6ed4ac))
+
 ## [0.21.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.20.0...mynixos-v0.21.0) (2026-08-29)
 
 
