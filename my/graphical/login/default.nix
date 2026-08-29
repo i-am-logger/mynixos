@@ -50,6 +50,11 @@ in
       # greetd is the one backend with no X11 anywhere; the others keep
       # xserver on (nixpkgs' own modules lean on it).
       services.xserver.enable = mkDefault (cfg.backend != "greetd");
+
+      # The intended session is the DEFAULT everywhere, not only under
+      # autologin — a greeter picking a stale remembered session must still
+      # start from the right one.
+      services.displayManager.defaultSession = mkDefault cfg.session;
     }
 
     (mkIf (cfg.backend == "greetd") {
@@ -71,6 +76,50 @@ in
         enable = true;
         wayland.enable = true;
       };
+
+      # nixpkgs' SDDM PAM delegates auth to `substack login`, which drags
+      # the fleet's INTERACTIVE pam_u2f (login.u2fAuth, "press the key,
+      # then ENTER") into the greeter — a conversation SDDM's helper cannot
+      # answer, wedging every login. The per-service `sddm.u2fAuth = false`
+      # flag cannot help: the module never consults it, it substacks login
+      # wholesale. Replace ONLY the auth section (account/password/session
+      # keep the login delegation):
+      #
+      # - pam_unix first, sufficient: a typed password logs in instantly.
+      # - pam_u2f second, sufficient, NON-interactive with cue (`cue
+      #   authfile=…`, no `interactive`) — the shape that makes hardware
+      #   keys work under prompt-less PAM helpers. Touch-to-login: submit
+      #   an empty password, the cue shows on the card, one touch
+      #   authenticates. The YubiKey is the PRIMARY login; the password is
+      #   the backup.
+      security.pam.services.sddm.rules.auth = lib.mkForce (
+        {
+          unix = {
+            control = "sufficient";
+            modulePath = "${pkgs.pam}/lib/security/pam_unix.so";
+            order = 10900;
+            settings = {
+              likeauth = true;
+              nullok = true;
+              try_first_pass = true;
+            };
+          };
+          deny = {
+            control = "required";
+            modulePath = "${pkgs.pam}/lib/security/pam_deny.so";
+            order = 12500;
+          };
+        } // lib.optionalAttrs config.security.pam.u2f.enable {
+          u2f = {
+            control = config.security.pam.u2f.control;
+            modulePath = "${pkgs.pam_u2f}/lib/security/pam_u2f.so";
+            order = 11700;
+            settings = config.security.pam.u2f.settings // {
+              interactive = false;
+            };
+          };
+        }
+      );
     })
 
     (mkIf (cfg.backend == "gdm") {
@@ -87,8 +136,6 @@ in
           enable = true;
           inherit (cfg.autologin) user;
         };
-        # nixpkgs requires a default session for autologin.
-        defaultSession = cfg.session;
       };
       # Autologin skips the authenticate step — and with it any configured
       # security key. A silent skip of that morphism is a decision the host

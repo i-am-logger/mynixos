@@ -29,7 +29,8 @@
             # launcher stay selectable), and the vogix theming module
             # contributes "vogix" and owns the default. There is deliberately
             # no waybar value and no parallel apps.* switch: the fleet's shell
-            # IS the vogix desktop (the omarchy-parity surface set), and two
+            # IS the vogix desktop (the full surface set: bar, panels,
+            # notifications, lock, launcher, backgrounds), and two
             # switches for one bar is how options rot.
             shell = lib.mkOption {
               type = lib.types.enum [ "none" ];

@@ -436,10 +436,49 @@ in
       && hm.programs.vogix.greeter.sync
       && hm.programs.vogix.themeApply ? greeter
       && !config.security.pam.services.sddm.u2fAuth
+      # nixpkgs' `substack login` is replaced with a direct auth stack:
+      # unix present, no substack. Without the yubico module there is no
+      # u2f rule at all (this host carries none).
+      && config.security.pam.services.sddm.rules.auth ? unix
+      && !(config.security.pam.services.sddm.rules.auth ? login)
+      && !(config.security.pam.services.sddm.rules.auth ? u2f)
       # The boot splash follows the palette: the vogix plymouth theme is
       # selected and its package staged.
       && config.boot.plymouth.theme == "vogix"
       && lib.any (p: lib.hasInfix "vogix-plymouth" p.name) config.boot.plymouth.themePackages);
+
+  # With a security key on the host, the greeter's auth stack must carry
+  # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
+  # interactive "press ENTER" conversation), ordered AFTER unix so a typed
+  # password logs in without waiting out the touch timeout — while the TTY
+  # login stack keeps the fleet's interactive prompt.
+  login-sddm-u2f-touch = evalAssert "login-sddm-u2f-touch"
+    {
+      networking.hostName = "test-sddm-u2f";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        hardware.securityKeys.yubico.enable = true;
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let auth = config.security.pam.services.sddm.rules.auth; in
+      (auth ? u2f)
+      && auth.u2f.settings.interactive == false
+      && auth.u2f.settings.cue == true
+      && (auth ? unix)
+      && auth.unix.order < auth.u2f.order
+      && !(auth ? login)
+      # The TTY stack is untouched: interactive stays the fleet default.
+      && config.security.pam.u2f.settings.interactive == true);
 
   graphical-shell-none = evalAssert "graphical-shell-none"
     {

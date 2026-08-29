@@ -30,6 +30,22 @@ in
           xwayland.enable = true;
         };
 
+        # The hyprland package ships TWO session files, and programs.hyprland
+        # registers both — including hyprland-uwsm.desktop, whose `uwsm
+        # start` dies instantly on this fleet (uwsm is not configured; the
+        # session opened and closed within a second, bouncing the login
+        # straight back to the greeter). Register ONLY the plain Hyprland
+        # session so a greeter can never pick the broken one.
+        services.displayManager.sessionPackages = mkForce [
+          (pkgs.runCommand "hyprland-session-only"
+            { passthru.providedSessions = [ "hyprland" ]; }
+            ''
+              mkdir -p $out/share/wayland-sessions
+              ln -s ${config.programs.hyprland.package}/share/wayland-sessions/hyprland.desktop \
+                $out/share/wayland-sessions/hyprland.desktop
+            '')
+        ];
+
         # The login itself (display manager, greeter look, autologin) is
         # my.environment.login — implemented in ./login, beside this file.
       }
