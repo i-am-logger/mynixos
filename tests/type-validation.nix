@@ -260,19 +260,23 @@ in
     (c: c.my.hardware.bluetooth.enable)
     { networking.hostName = "test"; my.hardware.bluetooth.enable = false; };
 
-  # --- Enum: my.environment.displayManager.type ---
+  # --- Enum: my.environment.login (backend + look) ---
 
-  display-manager-rejects-invalid = mustReject "display-manager-rejects-invalid"
-    (c: c.my.environment.displayManager.type)
-    { networking.hostName = "test"; my.environment.displayManager.type = "startx"; };
+  login-backend-rejects-invalid = mustReject "login-backend-rejects-invalid"
+    (c: c.my.environment.login.backend)
+    { networking.hostName = "test"; my.environment.login.backend = "startx"; };
 
-  display-manager-accepts-greetd = mustAccept "display-manager-accepts-greetd"
-    (c: c.my.environment.displayManager.type)
-    { networking.hostName = "test"; my.environment.displayManager.type = "greetd"; };
+  login-backend-accepts-greetd = mustAccept "login-backend-accepts-greetd"
+    (c: c.my.environment.login.backend)
+    { networking.hostName = "test"; my.environment.login.backend = "greetd"; };
 
-  display-manager-accepts-sddm = mustAccept "display-manager-accepts-sddm"
-    (c: c.my.environment.displayManager.type)
-    { networking.hostName = "test"; my.environment.displayManager.type = "sddm"; };
+  login-backend-accepts-sddm = mustAccept "login-backend-accepts-sddm"
+    (c: c.my.environment.login.backend)
+    { networking.hostName = "test"; my.environment.login.backend = "sddm"; };
+
+  login-look-rejects-invalid = mustReject "login-look-rejects-invalid"
+    (c: c.my.environment.login.look)
+    { networking.hostName = "test"; my.environment.login.look = "regreet"; };
 
   # --- Persistence path validation (relativePath type) ---
 
@@ -301,4 +305,69 @@ in
         networking.hostName = "test";
         my.users.test.apps.terminal.shells.bash.persistedDirectories = [ "../../etc" ];
       };
+
+  # --- Distributed enum: my.users.<n>.graphical.shell ---
+  # Two declarations merge (base "none"; the vogix theming module contributes
+  # "vogix" and owns the gate-computed default). Anything outside the union is
+  # a type error — including "waybar", whose module is deleted: the fleet's
+  # shell is the vogix desktop.
+  graphical-shell-rejects-unknown = mustReject'
+    {
+      networking.hostName = "control";
+      my.users.test.graphical.shell = "none";
+    }
+    "graphical-shell-rejects-unknown"
+    (c: c.my.users.test.graphical.shell)
+    {
+      networking.hostName = "test";
+      my.users.test.graphical.shell = "gnome";
+    };
+
+  graphical-shell-rejects-waybar = mustReject'
+    {
+      networking.hostName = "control";
+      my.users.test.graphical.shell = "none";
+    }
+    "graphical-shell-rejects-waybar"
+    (c: c.my.users.test.graphical.shell)
+    {
+      networking.hostName = "test";
+      my.users.test.graphical.shell = "waybar";
+    };
+
+  graphical-shell-accepts-none = mustAccept "graphical-shell-accepts-none"
+    (c: c.my.users.test.graphical.shell)
+    {
+      networking.hostName = "test";
+      my.users.test.graphical.shell = "none";
+    };
+
+  # The gate-computed default: a plain graphical user under the default
+  # theming state (system theming on, the per-user injector defaulting
+  # theming.vogix on) lands on the vogix shell; with the system gates off,
+  # the same user lands on "none" — never on a missing renderer.
+  graphical-shell-defaults-to-vogix = mustAccept "graphical-shell-defaults-to-vogix"
+    (c:
+      assert c.my.users.test.graphical.shell == "vogix";
+      c.my.users.test.graphical.shell)
+    {
+      networking.hostName = "test";
+      my.users.test = {
+        fullName = "Test User";
+        graphical.enable = true;
+      };
+    };
+
+  graphical-shell-defaults-to-none-without-theming = mustAccept "graphical-shell-defaults-to-none-without-theming"
+    (c:
+      assert c.my.users.test.graphical.shell == "none";
+      c.my.users.test.graphical.shell)
+    {
+      networking.hostName = "test";
+      my.theming.enable = false;
+      my.users.test = {
+        fullName = "Test User";
+        graphical.enable = true;
+      };
+    };
 }

@@ -268,31 +268,39 @@ in
       && !(config.users.users ? mountuser);
   };
 
-  # --- Display Manager Tests ---
+  # --- Login Tests ---
 
-  # Test: Display manager enum accepts valid values
-  smoke-display-manager-greetd = mkSmokeTest {
-    name = "test-dm-greetd";
+  # The intent reaches the REAL services, not just the option round-trip:
+  # greetd runs tuigreet, sddm enables nixpkgs' SDDM module. (These smoke
+  # users are theming-off, so the default is greetd+stock and the sddm case
+  # exercises an explicit backend with the stock look.)
+  smoke-login-greetd = mkSmokeTest {
+    name = "test-login-greetd";
     myConfig = {
       system.enable = true;
-      system.hostname = "test-dm-greetd";
+      system.hostname = "test-login-greetd";
+      graphical.enable = true;
       environment.enable = true;
-      environment.displayManager.type = "greetd";
+      environment.login.backend = "greetd";
     };
     assertions = config:
-      config.my.environment.displayManager.type == "greetd";
+      config.services.greetd.enable
+      && lib.hasInfix "tuigreet" config.services.greetd.settings.default_session.command
+      && !config.services.xserver.enable;
   };
 
-  smoke-display-manager-gdm = mkSmokeTest {
-    name = "test-dm-gdm";
+  smoke-login-sddm = mkSmokeTest {
+    name = "test-login-sddm";
     myConfig = {
       system.enable = true;
-      system.hostname = "test-dm-gdm";
+      system.hostname = "test-login-sddm";
+      graphical.enable = true;
       environment.enable = true;
-      environment.displayManager.type = "gdm";
+      environment.login.backend = "sddm";
     };
     assertions = config:
-      config.my.environment.displayManager.type == "gdm";
+      config.services.displayManager.sddm.enable
+      && config.services.displayManager.sddm.wayland.enable;
   };
 
   # --- Network Defense Tests ---

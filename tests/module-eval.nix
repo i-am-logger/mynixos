@@ -353,4 +353,115 @@ in
       # mynixos infra rules ride beside the vogix-generated ones
       && lib.hasInfix ''["name"] = "slack-menus"'' text
       && lib.hasInfix ''hl.env("TERMINAL"'' text);
+
+  # The graphical.shell selection. waybar is DELETED — the fleet's shell is
+  # the vogix desktop — so what these pin is: the default resolves through
+  # the theming gates to vogix (bar unit present, contract generated), "none"
+  # really means no shell, and nothing anywhere still configures waybar.
+  graphical-shell-default-is-vogix = evalAssert "graphical-shell-default-is-vogix"
+    {
+      networking.hostName = "test-shell-default";
+      my.users.shelluser = {
+        fullName = "Shell User";
+        description = "shell";
+        email = "shell@example.com";
+        graphical.enable = true;
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.shelluser; in
+      config.my.users.shelluser.graphical.shell == "vogix"
+      && hm.programs.vogix.desktop.enable
+      && (hm.systemd.user.services ? vogix-desktop)
+      && !(hm.programs.waybar.enable or false));
+
+  graphical-shell-vogix = evalAssert "graphical-shell-vogix"
+    {
+      networking.hostName = "test-shell-vogix";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical = {
+            enable = true;
+            shell = "vogix";
+          };
+        };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.shelluser; in
+      hm.programs.vogix.desktop.enable
+      && !(hm.programs.waybar.enable or false)
+      && (hm.systemd.user.services ? vogix-desktop)
+      && hm.programs.vogix."vogix-desktop".enable
+      # The lock surface: the person's idle policy reaches the shell, the
+      # lock hook binds into lock.target/sleep.target, PAM + the logind
+      # bridge come from vogix's NixOS module, and $LOCKER resolves to the
+      # shell's own locker through getExe (wrapper packages have no pname).
+      && hm.programs.vogix.desktop.idle.lock == 600
+      && (hm.systemd.user.services ? vogix-lock)
+      && config.security.pam.services ? vogix-lock
+      && config.services.systemd-lock-handler.enable
+      && lib.hasSuffix "/bin/vogix-lock" hm.home.sessionVariables.LOCKER
+      # The launcher surface: $LAUNCHER resolves to the shell's launcher
+      # (walker/elephant are deleted; no elephant backend unit remains).
+      && hm.programs.vogix.desktop.launcher.enable
+      && hm.programs.vogix.desktop.power.enable
+      && lib.hasSuffix "/bin/vogix-launcher" hm.home.sessionVariables.LAUNCHER
+      && !(hm.systemd.user.services ? elephant)
+      && !(hm.systemd.user.services ? walker)
+      # The greeter surface: with theming on, the login defaults to the
+      # vogix SDDM greeter under the Hyprland Lua compositor config; the
+      # runtime-follow drop zone exists and this user's theme switches
+      # sync into it; U2F stays off at the greeter (SDDM cannot answer the
+      # interactive pam_u2f prompt).
+      && config.my.environment.login.backend == "sddm"
+      && config.my.environment.login.look == "vogix"
+      && config.services.displayManager.sddm.enable
+      && config.services.displayManager.sddm.wayland.enable
+      && config.services.displayManager.sddm.theme == "vogix"
+      && lib.hasInfix "/etc/vogix/greeter/hyprland.lua"
+        config.services.displayManager.sddm.wayland.compositorCommand
+      && (config.environment.etc ? "vogix/greeter/hyprland.lua")
+      && lib.hasInfix "disable_hyprland_logo"
+        config.environment.etc."vogix/greeter/hyprland.lua".text
+      && builtins.elem "d /var/lib/vogix/greeter 2775 root vogix -"
+        config.systemd.tmpfiles.rules
+      && hm.programs.vogix.greeter.sync
+      && hm.programs.vogix.themeApply ? greeter
+      && !config.security.pam.services.sddm.u2fAuth
+      # The boot splash follows the palette: the vogix plymouth theme is
+      # selected and its package staged.
+      && config.boot.plymouth.theme == "vogix"
+      && lib.any (p: lib.hasInfix "vogix-plymouth" p.name) config.boot.plymouth.themePackages);
+
+  graphical-shell-none = evalAssert "graphical-shell-none"
+    {
+      networking.hostName = "test-shell-none";
+      my = {
+        theming = {
+          enable = false;
+          vogix.enable = false;
+        };
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical = {
+            enable = true;
+            shell = "none";
+          };
+        };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.shelluser; in
+      !(hm.programs.waybar.enable or false)
+      && !(hm.systemd.user.services ? vogix-desktop));
 }

@@ -92,10 +92,11 @@ let
         else "exec, hyprctl --batch \"keyword general:gaps_out 0;keyword general:gaps_in 0\"";
     in
     {
-      # quickly launch program
+      # quickly launch program. $LAUNCHER is the environment selector —
+      # walker is gone from the fleet (its walker-flag mode binds went with
+      # it; a selected launcher brings its own modes).
       bind = [
-        "$mainMod, Space, exec, walker -p 'Start…' -w 1000 -h 700"
-        "$mainMod SHIFT, Space, exec, walker --modules ssh -w 1000 -h 700"
+        "$mainMod, Space, exec, $LAUNCHER"
         "$mainMod, E, exec, ${browserCmd}"
         "$mainMod SHIFT, E, exec, chromium"
         "SHIFT, Print, exec, grimblast save area - | swappy -f -"
@@ -107,12 +108,6 @@ let
         # SHOW KEYS (for screencasting)
         "$mainMod SHIFT, S, exec, pkill wshowkeys || wshowkeys -a bottom -F 'Source Code Pro 24' -t 2 -m 50"
 
-        "$mainMod SHIFT, X, exec, hyprlock"
-
-        # Walker additional modes (Omarchy style)
-        "$mainMod, period, exec, walker -p 'Find files… (type . then filename)' -w 1000 -h 700 -q '.'"
-        "$mainMod, equal, exec, walker -p 'Calculator… (type = then expression)' -w 1000 -h 700 -q '='"
-        "$mainMod, semicolon, exec, walker -p 'Emojis… (type : then emoji name)' -w 1000 -h 700 -q ':'"
 
         # general bindings
         "$mainMod, T, exec, ${terminalCmd}"
@@ -216,10 +211,6 @@ let
         ", XF86AudioNext, exec, playerctl next"
         ", XF86AudioPrev, exec, playerctl previous"
 
-        # Notification controls
-        "$mainMod, N, exec, makoctl dismiss"
-        "$mainMod SHIFT, N, exec, makoctl dismiss --all"
-        "$mainMod CTRL, N, exec, ~/.local/bin/toggle-dnd"
       ];
 
       binde = [
@@ -390,9 +381,6 @@ let
   # Match props: class, title, initial_class, initial_title, float, tag, xwayland, fullscreen, pin, focus, group, modal, workspace
   # Effects: float, tile, fullscreen, maximize, move, size, center, pin, no_focus, no_blur, no_shadow, opacity, stay_focused, etc.
   windowRules = [
-    # Walker - Application launcher overlay
-    "match:class ^(walker)$, float true, stay_focused true, pin true, no_blur true"
-
     # 1Password: centered floating window
     "match:class ^(1Password)$, float true, center true, size 60% 70%"
 
@@ -430,16 +418,6 @@ let
   # no_focus/no_initial_focus/no_blur/stay_focused are bools; size/move take
   # the legacy string form; suppress_event is a string).
   windowRulesLua = [
-    # Walker - Application launcher overlay
-    {
-      name = "walker-overlay";
-      match.class = "^(walker)$";
-      float = true;
-      stay_focused = true;
-      pin = true;
-      no_blur = true;
-    }
-
     # 1Password: centered floating window
     {
       name = "1password-center";
@@ -565,92 +543,6 @@ in
                 enable = true;
               };
 
-              # Notification daemon. Only geometry and behaviour are set: vogix
-              # has no mako template, so notification colours are mako's own
-              # defaults.
-              services.mako = {
-                enable = true;
-                settings = {
-                  # Behavior
-                  default-timeout = 5000; # 5 seconds
-                  ignore-timeout = true; # Don't auto-dismiss critical notifications (like GPG/YubiKey)
-                  layer = "overlay";
-
-                  # Position and sizing - adjusted for better readability
-                  anchor = "top-center";
-                  width = 800; # Much wider for big text
-                  height = 200; # A bit taller too
-                  margin = "60,20,10,20"; # top,right,bottom,left - lower and more centered
-                  padding = "20";
-                  border-size = 2;
-                  border-radius = 8;
-
-                  # Behavior
-                  max-visible = 5;
-                  sort = "+time"; # Newest on top
-
-                  # Note: Mako doesn't support animations
-                  # For smooth animations, consider using swaync or dunst instead
-                };
-
-                # GPG/YubiKey specific - don't timeout critical notifications
-                extraConfig = ''
-                  [urgency=critical]
-                  ignore-timeout=1
-                  default-timeout=0
-
-                  [app-name="yubikey-touch-detector"]
-                  ignore-timeout=1
-                  default-timeout=15000
-                  border-color=#f38ba8
-
-                  # Do-not-disturb mode - still show critical notifications (like YubiKey)
-                  [mode=do-not-disturb]
-                  invisible=1
-
-                  [mode=do-not-disturb urgency=critical]
-                  invisible=0
-
-                  [mode=do-not-disturb app-name="yubikey-touch-detector"]
-                  invisible=0
-                '';
-
-                # Note: Key bindings are handled via Hyprland keybindings and makoctl
-                # Super+N = dismiss newest notification
-                # Super+Shift+N = dismiss all notifications
-                # Super+Ctrl+N = toggle do-not-disturb mode
-              };
-
-              # DND toggle script
-              home.file.".local/bin/toggle-dnd" = {
-                text = ''
-                  #!/usr/bin/env bash
-
-                  # Toggle mako do-not-disturb mode and show notification feedback
-
-                  # Get current mode
-                  current_mode=$(makoctl mode)
-
-                  # Toggle the mode
-                  makoctl mode -t do-not-disturb
-
-                  # Get new mode
-                  new_mode=$(makoctl mode)
-
-                  # Show appropriate notification
-                  if [[ "$new_mode" == "do-not-disturb" ]]; then
-                      # Temporarily disable DND to show the notification, then re-enable it after delay
-                      makoctl mode -r do-not-disturb
-                      notify-send "🔕 Do Not Disturb" "Notifications are now hidden (except critical)" --urgency=normal --expire-time=2500 &
-                      sleep 2.8  # Wait long enough for notification to be visible
-                      makoctl mode -s do-not-disturb
-                  else
-                      notify-send "🔔 Notifications Enabled" "All notifications are now visible" --urgency=normal --expire-time=3000
-                  fi
-                '';
-                executable = true;
-              };
-
               # Swappy config for screenshots
               xdg.configFile."swappy/config".text = swappyConfig;
 
@@ -659,9 +551,11 @@ in
                 # XDG portals are provided by programs.hyprland.enable in graphical.nix
                 # Don't add xdg-desktop-portal-hyprland here to avoid conflicts
                 brightnessctl
-                awww # formerly `swww` (renamed upstream)
-                waypaper
-                swaybg
+                # Wallpapers are the vogix shell's background layer (awww,
+                # waypaper and swaybg went the way of waybar/mako/hyprlock).
+                # The shell's weather widget and night light spawn these:
+                wttrbar
+                hyprsunset
                 grimblast
                 slurp
                 swappy
@@ -670,7 +564,8 @@ in
                 udiskie
                 vlc
                 hyprpicker
-                wlogout
+                # wlogout is gone: the power menu is the vogix shell's
+                # (`vogix desktop power`, Super+Escape).
                 networkmanagerapplet
                 pavucontrol
                 pamixer

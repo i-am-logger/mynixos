@@ -36,7 +36,7 @@ in
   # These options are the "default/preferred app of a kind" SELECTORS. Setting one
   # installs that app, exports its environment variable (BROWSER/TERMINAL/EDITOR/
   # LAUNCHER/LOCKER) and wires xdg defaults. The matching app implementations
-  # (brave/firefox/wezterm/yazi/walker/hyprlock) install based on this selection.
+  # (brave/firefox/wezterm/yazi/vogix-launcher/vogix-lock) install based on this selection.
   options.environment = lib.mkOption {
     description = "User environment configuration (default/preferred applications)";
     default = { };
@@ -70,13 +70,13 @@ in
         launcher = lib.mkOption {
           type = lib.types.nullOr coercedAppType;
           default = null;
-          description = "Application launcher. Exported as $LAUNCHER (mynixos convention) for consumers like vogix's Super+Space. Opinionated default: walker when graphical.enable = true";
+          description = "Application launcher. Exported as $LAUNCHER (mynixos convention) for consumers like vogix's Super+Space. Opinionated default: the vogix shell's launcher when graphical.shell = \"vogix\"";
         };
 
         locker = lib.mkOption {
           type = lib.types.nullOr coercedAppType;
           default = null;
-          description = "Screen locker. Exported as $LOCKER (mynixos convention) for consumers like vogix's Super+Shift+X. Opinionated default: hyprlock when graphical.enable = true";
+          description = "Screen locker. Exported as $LOCKER (mynixos convention) for consumers like vogix's Super+Shift+X. Opinionated default: the vogix shell's own lock (pkgs.vogix-lock) when graphical.shell = \"vogix\" — a shell = \"none\" user picks a locker explicitly";
         };
       };
     };

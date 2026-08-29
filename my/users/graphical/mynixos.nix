@@ -4,7 +4,7 @@
 # apps.{app}.enable = false.
 #
 # Only apps that exist on every platform live here. Wayland/X11-only ones —
-# hyprland, waybar, feh — are in ./mynixos-linux.nix, so darwin never defaults
+# hyprland and feh — are in ./mynixos-linux.nix, so darwin never defaults
 # on something it cannot run.
 
 { lib, ... }:

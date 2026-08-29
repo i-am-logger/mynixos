@@ -13,9 +13,10 @@
   options.my.users = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
       config = lib.mkIf (config.graphical.enable or false) {
+        # The bar comes from `graphical.shell` (a selection, not an app
+        # switch), so nothing defaults a status-bar app on here.
         apps.graphical = {
           windowManagers.hyprland.enable = lib.mkDefault true;
-          statusbars.waybar.enable = lib.mkDefault true;
           viewers.feh.enable = lib.mkDefault true;
         };
       };
