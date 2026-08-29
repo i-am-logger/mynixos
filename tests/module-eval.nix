@@ -233,4 +233,124 @@ in
       graphical.enable = true;
     };
   };
+
+  # Hyprland config engines. One user config, two renderings: the default
+  # hyprlang text and the Lua projection (`configType = "lua"`, the shape
+  # Hyprland ≥0.55 accepts and 0.57 requires). Both run with theming off, so
+  # what is asserted is mynixos's own fallback + infrastructure config — the
+  # vogix-generated variant is covered by vogix's VM tests.
+  hyprland-engine-hyprlang = evalAssert "hyprland-engine-hyprlang"
+    {
+      networking.hostName = "test-hypr-hyprlang";
+      my = {
+        theming = {
+          enable = false;
+          vogix.enable = false;
+        };
+        users.hypruser = {
+          fullName = "Hypr User";
+          description = "hypr";
+          email = "hypr@example.com";
+          graphical.enable = true;
+          apps.graphical.windowManagers.hyprland.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.hypruser;
+        text = hm.xdg.configFile."hypr/hyprland.conf".text;
+      in
+      hm.wayland.windowManager.hyprland.configType == "hyprlang"
+      && lib.hasInfix "natural_scroll=yes" text
+      && lib.hasInfix "hyprctl --batch" text
+      && !(hm.xdg.configFile ? "hypr/hyprland.lua"));
+
+  hyprland-engine-lua = evalAssert "hyprland-engine-lua"
+    {
+      networking.hostName = "test-hypr-lua";
+      my = {
+        theming = {
+          enable = false;
+          vogix.enable = false;
+        };
+        users.hypruser = {
+          fullName = "Hypr User";
+          description = "hypr";
+          email = "hypr@example.com";
+          graphical.enable = true;
+          apps.graphical.windowManagers.hyprland = {
+            enable = true;
+            configType = "lua";
+          };
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.hypruser;
+        text = hm.xdg.configFile."hypr/hyprland.lua".text;
+      in
+      hm.wayland.windowManager.hyprland.configType == "lua"
+      # one hl.config carrying real booleans, not hyprlang "yes"/"no"
+      && lib.hasInfix "hl.config({" text
+      && lib.hasInfix ''["natural_scroll"] = true'' text
+      && !lib.hasInfix "\"yes\"" text
+      # binds go through the dispatcher translation; mouse binds are drag/resize
+      && lib.hasInfix ''hl.bind("SUPER + T", (hl.dsp.exec_cmd('' text
+      && lib.hasInfix "hl.dsp.window.drag()" text
+      # the gap binds speak `eval`, never the legacy keyword IPC
+      && lib.hasInfix "hyprctl eval" text
+      && !lib.hasInfix "hyprctl --batch" text
+      # curves precede animations; infra renders as hl.monitor/hl.env/
+      # hl.window_rule; exec-once is the start hook with `&` stripped
+      && lib.hasInfix ''hl.curve("myBezier"'' text
+      && lib.hasInfix "hl.monitor({" text
+      && lib.hasInfix ''hl.env("TERMINAL"'' text
+      && lib.hasInfix ''["name"] = "slack-menus"'' text
+      && lib.hasInfix ''hl.exec_cmd("1password --silent")'' text
+      && !(hm.xdg.configFile ? "hypr/hyprland.conf"));
+
+  # The vogix-generated variant of the Lua projection: with theming on, the
+  # binds come from vogix's behavior overlay (rendered through its Lua
+  # generator) and mynixos contributes only infrastructure — whose window
+  # rules must still be concatenated with vogix's, not clobber them.
+  hyprland-engine-lua-vogix = evalAssert "hyprland-engine-lua-vogix"
+    {
+      networking.hostName = "test-hypr-lua-vogix";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.hypruser = {
+          fullName = "Hypr User";
+          description = "hypr";
+          email = "hypr@example.com";
+          graphical.enable = true;
+          apps.graphical.windowManagers.hyprland = {
+            enable = true;
+            configType = "lua";
+          };
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.hypruser;
+        text = hm.xdg.configFile."hypr/hyprland.lua".text;
+      in
+      hm.wayland.windowManager.hyprland.configType == "lua"
+      # vogix overlay binds render through the dispatcher translation
+      && lib.hasInfix ''hl.bind("SUPER + return", (hl.dsp.exec_cmd("$TERMINAL"'' text
+      && lib.hasInfix "hl.dsp.window.drag()" text
+      # the gap binds are vogix's dialect-aware CLI, not raw hyprctl keyword
+      && lib.hasInfix "vogix hypr keyword" text
+      && !lib.hasInfix "hyprctl --batch" text
+      # one hl.config with real booleans
+      && lib.hasInfix "hl.config({" text
+      && lib.hasInfix ''["natural_scroll"] = true'' text
+      # mynixos infra rules ride beside the vogix-generated ones
+      && lib.hasInfix ''["name"] = "slack-menus"'' text
+      && lib.hasInfix ''hl.env("TERMINAL"'' text);
 }
