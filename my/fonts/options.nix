@@ -10,7 +10,7 @@
           example = lib.literalExpression "[ pkgs.nerd-fonts.jetbrains-mono ]";
           description = ''
             Fonts installed system-wide. Empty means "use the mynixos default",
-            which is a Nerd Font: waybar, starship and the shell prompts all draw
+            which is a Nerd Font: the vogix bar, starship and the shell prompts all draw
             glyphs from the Nerd Font private-use range and render boxes without
             one. Setting this REPLACES the default rather than adding to it.
           '';

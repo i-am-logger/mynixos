@@ -83,8 +83,8 @@ in
   # Opinionated defaults that only make sense on Linux
   # -----------------------------------------------------------------------
   ++ [
-    # launcher (walker) / locker (hyprlock) selectors -- these name the package
-    # in the option value, so they must not be declared on darwin.
+    # launcher/locker selectors (the vogix shell's own tools) -- these name
+    # the package in the option value, so they must not be declared on darwin.
     ../my/users/environment/mynixos-linux.nix
     ../my/users/users/mynixos-linux.nix
     ../my/users/graphical/mynixos-linux.nix
@@ -110,6 +110,7 @@ in
 
     # Graphical
     ../my/graphical
+    ../my/graphical/login
     ../my/graphical/hyprland
 
     # Behavior (modes, kanata) handled by vogix.nixosModules.default
@@ -206,8 +207,6 @@ in
   # packages, HM systemd.user services, or NixOS-only options.
   # -----------------------------------------------------------------------
   ++ [
-    ../my/users/apps/launchers/walker # systemd.user.services.{elephant,walker}
-    ../my/users/apps/lockers/hyprlock # Wayland-only
     ../my/users/apps/media/pipewire-tools # PipeWire
     ../my/users/apps/browsers/brave/linux.nix
     ../my/users/apps/terminals/wezterm/linux.nix
@@ -227,7 +226,6 @@ in
     ../my/users/apps/media/audio-utils
     ../my/users/apps/media/qobine # alsa-lib; packages/qobine is Linux-only
     ../my/users/apps/security/1password # programs._1password{,-gui}
-    ../my/users/apps/status-bars/waybar # programs.waybar.systemd.enable
     ../my/users/apps/viewers/feh # X11
     ../my/users/apps/visualizers/bespec # packages/bespec: platforms = [ "x86_64-linux" ]
   ];

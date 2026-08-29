@@ -303,6 +303,12 @@
         vm-system = import ./tests/vm-system.nix {
           inherit self inputs system lib nixpkgs;
         };
+        # The graphical login end to end (SDDM + the vogix greeter), with the
+        # vogix overlay arriving through my/theming/vogix like on a real host:
+        #   nix build .#tests.<system>.vm-login -L
+        vm-login = import ./tests/vm-login.nix {
+          inherit self inputs system lib nixpkgs;
+        };
       });
 
       # Dev shell with pre-commit hooks installed

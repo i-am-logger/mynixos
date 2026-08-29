@@ -21,91 +21,52 @@
           description = "Default web browser package (mynixos default: brave). Null means use the mynixos default.";
         };
 
-        displayManager = lib.mkOption {
-          description = "Display manager configuration for graphical login";
+        # Graphical login as INTENT (mechanism vs look, typed) — the
+        # my.environment.displayManager tree is hard-removed (repo policy:
+        # no renames, no stubs). `backend` picks the display manager;
+        # `look` picks the greeter surface: "vogix" = the vogix-themed SDDM
+        # QML greeter under a Hyprland Lua compositor, and is SDDM-only
+        # (asserted — there is no themed greetd greeter); "stock" = each
+        # backend's own greeter (tuigreet for greetd). The vogix theming
+        # module defaults backend/look to sddm/vogix when the theme system
+        # is on; without it the default is greetd+stock (tuigreet — text,
+        # minimal, never depends on the theme overlay).
+        login = lib.mkOption {
+          description = "Graphical login: which backend runs it, and how it looks";
           default = { };
           type = lib.types.submodule {
             options = {
-              type = lib.mkOption {
-                type = lib.types.enum [ "greetd" "gdm" "sddm" "lightdm" ];
-                default = "gdm";
-                description = "Which display manager to use (mynixos default: gdm)";
+              backend = lib.mkOption {
+                type = lib.types.enum [ "sddm" "greetd" "gdm" "lightdm" ];
+                default = "greetd";
+                description = "Display manager running the login (mynixos default: greetd; the vogix theming module defaults it to sddm)";
               };
 
-              greetd = lib.mkOption {
-                description = "greetd display manager configuration";
-                default = { };
-                type = lib.types.submodule {
-                  options = {
-                    settings = lib.mkOption {
-                      type = lib.types.submodule {
-                        options = {
-                          default_session = lib.mkOption {
-                            type = lib.types.submodule {
-                              options = {
-                                command = lib.mkOption {
-                                  type = lib.types.str;
-                                  default = "start-hyprland";
-                                  description = ''
-                                    Command the greeter runs for the default session.
-                                    Defaults to `start-hyprland` (Hyprland's official
-                                    watchdog wrapper) rather than the bare `Hyprland`
-                                    binary — launching Hyprland directly triggers its
-                                    "launched without start-hyprland, highly advised
-                                    against" warning (main.cpp:261) and skips the
-                                    watchdog + proper Nix session-env setup. Needs
-                                    os-release NAME="NixOS" (set in my/system/core).
-                                  '';
-                                };
-                                user = lib.mkOption {
-                                  type = lib.types.str;
-                                  default = "greeter";
-                                  description = "User to run the greeter as";
-                                };
-                              };
-                            };
-                            default = { };
-                            description = "Default session configuration";
-                          };
-                        };
-                      };
-                      default = { };
-                      description = "greetd settings (mynixos default: tuigreet with Hyprland)";
-                    };
-                  };
+              look = lib.mkOption {
+                type = lib.types.enum [ "vogix" "stock" ];
+                default = "stock";
+                description = "Greeter surface: vogix-themed (requires my.theming.vogix) or the backend's stock greeter";
+              };
+
+              session = lib.mkOption {
+                type = lib.types.str;
+                default = "hyprland";
+                description = "Session name used for autologin's default session";
+              };
+
+              autologin = {
+                enable = lib.mkEnableOption "automatic login (skips authentication — and any configured U2F key — at boot)";
+                user = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = "User logged in automatically";
                 };
               };
 
-              sddm = lib.mkOption {
-                description = "SDDM display manager configuration";
-                default = { };
-                type = lib.types.submodule {
-                  options = {
-                    wayland = {
-                      enable = lib.mkOption {
-                        type = lib.types.bool;
-                        default = true;
-                        description = "Enable Wayland support (mynixos default: true)";
-                      };
-                    };
-                  };
-                };
-              };
-
-              lightdm = lib.mkOption {
-                description = "LightDM display manager configuration";
-                default = { };
-                type = lib.types.submodule {
-                  options = {
-                    greeters = {
-                      gtk = lib.mkOption {
-                        type = lib.types.bool;
-                        default = true;
-                        description = "Use GTK greeter (mynixos default: true)";
-                      };
-                    };
-                  };
-                };
+              compositor = lib.mkOption {
+                type = lib.types.enum [ "hyprland" "weston" ];
+                default = "hyprland";
+                description = "Compositor hosting SDDM's greeter (weston exists for VM tests; Hyprland needs GL)";
               };
             };
           };

@@ -12,8 +12,8 @@
 #     A terminal-only host -- a headless Linux box, or macOS -- needs helix and
 #     yazi, and gating them on `graphical.enable` would drop both silently.
 #   * TERMINAL and BROWSER are GUI apps, and both build on darwin.
-#   * launcher and locker are Hyprland-specific and name `pkgs.walker` /
-#     `pkgs.hyprlock` in the option VALUE, so they live in ./mynixos-linux.nix
+#   * launcher and locker are Hyprland-specific and name the vogix shell's
+#     packages in the option VALUE, so they live in ./mynixos-linux.nix
 #     rather than being guarded here.
 #
 # Users can override any of these by setting environment.BROWSER = pkgs.firefox;

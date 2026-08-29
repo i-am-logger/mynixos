@@ -10,8 +10,6 @@ with lib;
 let
   # Auto-enable graphical when any user has graphical.enable = true
   anyUserGraphical = any (userCfg: userCfg.graphical.enable or false) (attrValues config.my.users);
-  dmCfg = config.my.environment.displayManager;
-  dmType = dmCfg.type;
 in
 {
   config = mkMerge [
@@ -32,41 +30,9 @@ in
           xwayland.enable = true;
         };
 
-        services.xserver = {
-          enable = true;
-        };
+        # The login itself (display manager, greeter look, autologin) is
+        # my.environment.login — implemented in ./login, beside this file.
       }
-
-      # Display manager configuration (auto-enabled based on my.environment.displayManager.type)
-      (mkIf (dmType == "greetd") {
-        services.greetd = {
-          enable = true;
-          settings = {
-            default_session = {
-              command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${dmCfg.greetd.settings.default_session.command}";
-              inherit (dmCfg.greetd.settings.default_session) user;
-            };
-          };
-        };
-      })
-
-      (mkIf (dmType == "gdm") {
-        services.displayManager.gdm.enable = true;
-      })
-
-      (mkIf (dmType == "sddm") {
-        services.displayManager.sddm = {
-          enable = true;
-          wayland.enable = dmCfg.sddm.wayland.enable;
-        };
-      })
-
-      (mkIf (dmType == "lightdm") {
-        services.xserver.displayManager.lightdm = {
-          enable = true;
-          greeters.gtk.enable = dmCfg.lightdm.greeters.gtk;
-        };
-      })
 
       # XDG portal configuration (for Wayland/Hyprland)
       (mkIf config.my.environment.xdg.enable {
@@ -129,9 +95,8 @@ in
 
       # Common graphical configuration
       {
-        environment.systemPackages = with pkgs; [
-          mako # notification daemon
-        ];
+        # Notifications are the vogix shell's own server (mako is gone from
+        # the fleet — the shell replaced it, per surface, like waybar).
 
         # Add users to graphical-related groups
         users.users = mapAttrs

@@ -94,7 +94,8 @@ let
   # prefix: it and everything under it may be one-sided.
   linuxOnly = {
     "apps.graphical.windowManagers.hyprland" = "Wayland compositor; macOS owns its own window server.";
-    "apps.graphical.statusbars.waybar" = "Wayland layer-shell bar.";
+    "graphical.shell" = "The desktop-shell selection (vogix/none); the vogix shell is a Wayland layer-shell surface set.";
+    "graphical.idle" = "Idle staging for the shell's ext-idle-notify monitors; macOS owns its own idle/sleep policy.";
     "apps.graphical.viewers.feh" = "X11 image viewer.";
     "apps.terminal.visualizers.bespec" = "x86_64-linux only: alsa/dbus/pipewire at build, Wayland/Vulkan at run time.";
     "apps.media.tools.pipewireTools" = "PipeWire CLI; macOS uses CoreAudio.";
@@ -130,7 +131,7 @@ let
   topLinuxOnly = {
     "ai" = "Ollama with ROCm; no macOS equivalent wired up.";
     "boot" = "systemd-boot / lanzaboote; macOS owns its own boot chain.";
-    "environment" = "XDG dirs, motd and the display manager -- a Linux desktop's furniture.";
+    "environment" = "XDG dirs, motd and the graphical login (my.environment.login) -- a Linux desktop's furniture.";
     "filesystem" = "disko; macOS owns the disk and APFS is not disko-managed.";
     "forensics" = "Linux-specific acquisition and analysis tooling.";
     "graphical" = "the Hyprland/greetd stack.";

@@ -50,12 +50,15 @@ with lib;
           # consumers — vogix's Super+Space / Super+Shift+X, the Hyprland binds —
           # use the chosen launcher/locker instead of hardcoding one. Appearance
           # lives in each tool's own config, so the command is just the binary.
+          # lib.getExe, not "${pkg}/bin/${pkg.pname}": wrapper packages
+          # (pkgs.vogix-lock is a writeShellApplication) carry mainProgram
+          # but no pname, and the old pattern would resolve to bin/locker.
           (mkIf (preferredLauncher != null) {
-            home.sessionVariables.LAUNCHER = mkDefault "${preferredLauncher}/bin/${preferredLauncher.pname or "launcher"}";
+            home.sessionVariables.LAUNCHER = mkDefault (lib.getExe preferredLauncher);
           })
 
           (mkIf (preferredLocker != null) {
-            home.sessionVariables.LOCKER = mkDefault "${preferredLocker}/bin/${preferredLocker.pname or "locker"}";
+            home.sessionVariables.LOCKER = mkDefault (lib.getExe preferredLocker);
           })
 
           # Set XDG MIME defaults for preferred apps

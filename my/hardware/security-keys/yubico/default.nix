@@ -133,6 +133,12 @@ in
             u2fAuth = true;
             enableGnomeKeyring = false;
           };
+          # SDDM's helper cannot answer the fleet's INTERACTIVE pam_u2f
+          # prompt ("insert your key, then press ENTER") — its theme API is
+          # sddm.login(user, password, session), with PAM info messages
+          # surfacing only as text. Password login at the greeter; the key
+          # stays required for sudo, TTY login and the session lock.
+          sddm.u2fAuth = lib.mkDefault false;
           login.enableGnomeKeyring = false;
         };
         u2f = {

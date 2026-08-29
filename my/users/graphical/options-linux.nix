@@ -23,6 +23,51 @@
       options.graphical = lib.mkOption {
         type = lib.types.submodule {
           options = {
+            # The desktop SHELL — bar, notifications, OSD — as a distributed
+            # enum, exactly like terminal.multiplexer: this base declaration
+            # carries only "none" (no bar, no shell surfaces; locker and
+            # launcher stay selectable), and the vogix theming module
+            # contributes "vogix" and owns the default. There is deliberately
+            # no waybar value and no parallel apps.* switch: the fleet's shell
+            # IS the vogix desktop (the omarchy-parity surface set), and two
+            # switches for one bar is how options rot.
+            shell = lib.mkOption {
+              type = lib.types.enum [ "none" ];
+              description = "Which desktop shell renders this user's bar and desktop surfaces.";
+            };
+
+            # Idle staging, rendered into the shell's idle service (seconds;
+            # null disables a stage). Declared here — the person's idle
+            # policy, not the theme system's — and wired into
+            # programs.vogix.desktop.idle by the vogix theming module.
+            idle = {
+              screensaver = lib.mkOption {
+                type = lib.types.nullOr lib.types.ints.positive;
+                default = null;
+                description = "Seconds of idle before the screensaver overlay (null = never; the dim stage is the default idle cue).";
+              };
+              dim = lib.mkOption {
+                type = lib.types.nullOr lib.types.ints.positive;
+                default = 300;
+                description = "Seconds of idle before the screens dim (null = never).";
+              };
+              lock = lib.mkOption {
+                type = lib.types.nullOr lib.types.ints.positive;
+                default = 600;
+                description = "Seconds of idle before the session locks (null = never).";
+              };
+              screenOff = lib.mkOption {
+                type = lib.types.nullOr lib.types.ints.positive;
+                default = 660;
+                description = "Seconds of idle before displays power off (null = never).";
+              };
+              suspend = lib.mkOption {
+                type = lib.types.nullOr lib.types.ints.positive;
+                default = null;
+                description = "Seconds of idle before the machine suspends (null = never).";
+              };
+            };
+
             streaming = lib.mkOption {
               description = "Streaming tools configuration";
               default = { };
