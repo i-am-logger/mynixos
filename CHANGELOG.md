@@ -5,6 +5,20 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.20.0...mynixos-v0.21.0) (2026-08-29)
+
+
+### Features
+
+* **claude-code:** route claude to an account by working directory ([cd305f2](https://github.com/i-am-logger/mynixos/commit/cd305f2861ed038296bb0621017ef495c9f1935a))
+* **graphical:** render Hyprland's Lua config dialect ([#161](https://github.com/i-am-logger/mynixos/issues/161)) ([ceedfc8](https://github.com/i-am-logger/mynixos/commit/ceedfc86de7bc438351a31ecc47d44f5495b98e0))
+
+
+### Bug Fixes
+
+* **claude-code:** name the wrapped package like upstream ([bb7e104](https://github.com/i-am-logger/mynixos/commit/bb7e104d469956d10e55effdbeada49b6cda71c1))
+* **claude-code:** resolve ~ in account directories at eval time ([ac48ca2](https://github.com/i-am-logger/mynixos/commit/ac48ca26f6d997200b81bffbe8c80790fa763935))
+
 ## [0.20.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.19.0...mynixos-v0.20.0) (2026-08-20)
 
 
