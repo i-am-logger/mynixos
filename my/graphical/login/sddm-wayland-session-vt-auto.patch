@@ -1,0 +1,23 @@
+Backport of https://github.com/sddm/sddm/pull/2204 (unmerged) to v0.21.0.
+
+For a Wayland user session the compositor takes VT/DRM control via
+logind, so the helper child must not stay VT_PROCESS owner of the
+target VT across its execve: execve resets the SIGRTMAX release-signal
+handler installed by handleVtSwitches(), and any VT switch arriving
+before the compositor is up kills the session with the default
+RT-signal disposition. Passing vt_auto=true keeps the VT in VT_AUTO
+mode, matching the X11 path. Also prevents the kernel's 30s
+VT_RELDISP stall on greeter handoff (sddm/sddm#2129).
+
+diff --git a/src/helper/UserSession.cpp b/src/helper/UserSession.cpp
+--- a/src/helper/UserSession.cpp
++++ b/src/helper/UserSession.cpp
+@@ -228,7 +228,7 @@
+                 }
+             }
+
+-            VirtualTerminal::jumpToVt(vtNumber, x11UserSession);
++            VirtualTerminal::jumpToVt(vtNumber, x11UserSession || waylandUserSession);
+         }
+
+ #ifdef Q_OS_LINUX

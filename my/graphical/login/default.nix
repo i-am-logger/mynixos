@@ -75,6 +75,17 @@ in
       services.displayManager.sddm = {
         enable = true;
         wayland.enable = true;
+        # SDDM ≤0.21.0 arms VT_PROCESS (release signal SIGRTMAX) on the
+        # session child and then execve()s it, which resets the handler
+        # while the kernel still holds the child as VT owner — a VT switch
+        # during greeter teardown kills the Wayland session before the
+        # compositor starts. Upstream fix is unmerged (sddm/sddm#2204);
+        # drop the patch when it lands in the packaged release.
+        package = pkgs.kdePackages.sddm.override (prev: {
+          sddm-unwrapped = prev.sddm-unwrapped.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./sddm-wayland-session-vt-auto.patch ];
+          });
+        });
       };
 
       # nixpkgs' SDDM PAM delegates auth to `substack login`, which drags
