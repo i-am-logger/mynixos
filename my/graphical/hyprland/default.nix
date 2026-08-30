@@ -48,6 +48,16 @@ let
     animation = animationRules;
   };
 
+  # Secrets never reach clipboard history: password managers mark their
+  # copies with x-kde-passwordManagerHint, and this store step drops those
+  # offers entirely — a 1Password copy must not sit in cliphist verbatim.
+  cliphistStoreGuarded = pkgs.writeShellScript "cliphist-store-guarded" ''
+    if ${pkgs.wl-clipboard}/bin/wl-paste --list-types | ${pkgs.gnugrep}/bin/grep -qx 'x-kde-passwordManagerHint'; then
+      exit 0
+    fi
+    exec ${pkgs.cliphist}/bin/cliphist store
+  '';
+
   autostart = [
     # NOTE: the Wayland/Hyprland session environment import lives in home-manager's
     # Hyprland systemd integration (it emits the complete
@@ -60,7 +70,7 @@ let
     # DISPLAY, raced the real import, and muddied diagnosis. Removed: the HM
     # integration is the single canonical importer.
     "1password --silent &"
-    "wl-paste --watch cliphist store"
+    "wl-paste --watch ${cliphistStoreGuarded}"
   ];
 
   # Vogix behavior module (pure functions, no module system needed)

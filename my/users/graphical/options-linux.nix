@@ -37,6 +37,16 @@
               description = "Which desktop shell renders this user's bar and desktop surfaces.";
             };
 
+            # The one number the whole HUD type scale derives from: every
+            # shell font size is a multiplicative token off this root.
+            # Null = the shell's own default.
+            fontSize = lib.mkOption {
+              type = lib.types.nullOr lib.types.ints.positive;
+              default = null;
+              example = 18;
+              description = "Base shell font size in logical px (null = the vogix desktop default).";
+            };
+
             # Idle staging, rendered into the shell's idle service (seconds;
             # null disables a stage). Declared here — the person's idle
             # policy, not the theme system's — and wired into

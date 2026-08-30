@@ -146,24 +146,34 @@ in
                 behavior.input = {
                   inherit (userCfg.input) leftHanded naturalScroll;
                   sensitivity = userCfg.input.accelSpeed;
+                  # The person's XKB layouts, comma-joined into Hyprland's
+                  # input:kb_layout — the layout chip cycles this list.
+                  kbLayout = concatStringsSep "," userCfg.input.keyboardLayouts;
                 };
 
-                # The desktop shell follows the user's `graphical.shell`
-                # selection: the bar, its theme.json contract, desktop.json and
-                # the vogix-desktop unit exist exactly when this user chose the
-                # vogix shell. mkDefault so a host can force the contract on
-                # without the shell (or off with it).
-                desktop.enable = mkDefault
-                  ((userCfg.graphical.enable or false) && userCfg.graphical.shell == "vogix");
+                desktop = {
+                  # The desktop shell follows the user's `graphical.shell`
+                  # selection: the bar, its theme.json contract, desktop.json
+                  # and the vogix-desktop unit exist exactly when this user
+                  # chose the vogix shell. mkDefault so a host can force the
+                  # contract on without the shell (or off with it).
+                  enable = mkDefault
+                    ((userCfg.graphical.enable or false) && userCfg.graphical.shell == "vogix");
 
-                # Idle staging is the PERSON's policy
-                # (my.users.<n>.graphical.idle); the shell just renders it.
-                desktop.idle = {
-                  screensaver = mkDefault userCfg.graphical.idle.screensaver;
-                  dim = mkDefault userCfg.graphical.idle.dim;
-                  lock = mkDefault userCfg.graphical.idle.lock;
-                  screenOff = mkDefault userCfg.graphical.idle.screenOff;
-                  suspend = mkDefault userCfg.graphical.idle.suspend;
+                  # The HUD type-scale root follows the person, when set.
+                  font = mkIf (userCfg.graphical.fontSize or null != null) {
+                    size = mkDefault userCfg.graphical.fontSize;
+                  };
+
+                  # Idle staging is the PERSON's policy
+                  # (my.users.<n>.graphical.idle); the shell just renders it.
+                  idle = {
+                    screensaver = mkDefault userCfg.graphical.idle.screensaver;
+                    dim = mkDefault userCfg.graphical.idle.dim;
+                    lock = mkDefault userCfg.graphical.idle.lock;
+                    screenOff = mkDefault userCfg.graphical.idle.screenOff;
+                    suspend = mkDefault userCfg.graphical.idle.suspend;
+                  };
                 };
 
                 # Runtime follow for the greeter: with the vogix greeter on,

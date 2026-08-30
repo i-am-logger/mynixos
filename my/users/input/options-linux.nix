@@ -45,6 +45,21 @@
                 and is not exposed here.
               '';
             };
+
+            keyboardLayouts = lib.mkOption {
+              type = lib.types.nonEmptyListOf lib.types.str;
+              default = [ "us" ];
+              example = [ "us" "il" ];
+              description = ''
+                XKB layouts for this person, in order — rendered as Hyprland's
+                `input:kb_layout`, and what the shell's layout chip (EN/HE)
+                cycles through with `switchxkblayout` on the input engine's
+                re-emit device.
+
+                Linux-only: macOS input sources are not XKB layouts and cannot
+                be driven from this list.
+              '';
+            };
           };
         };
       };

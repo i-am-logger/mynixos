@@ -95,6 +95,7 @@ let
   linuxOnly = {
     "apps.graphical.windowManagers.hyprland" = "Wayland compositor; macOS owns its own window server.";
     "graphical.shell" = "The desktop-shell selection (vogix/none); the vogix shell is a Wayland layer-shell surface set.";
+    "graphical.fontSize" = "The vogix HUD's type-scale root; the shell is Linux-only, and macOS type scaling is the OS's.";
     "graphical.idle" = "Idle staging for the shell's ext-idle-notify monitors; macOS owns its own idle/sleep policy.";
     "apps.graphical.viewers.feh" = "X11 image viewer.";
     "apps.terminal.visualizers.bespec" = "x86_64-linux only: alsa/dbus/pipewire at build, Wayland/Vulkan at run time.";
@@ -111,6 +112,7 @@ let
     "apps.media.players.audacious" = "audacious: no aarch64-darwin build in nixpkgs.";
     "apps.media.players.qobine" = "packages/qobine builds against alsa-lib; upstream's own macOS build is not packaged here.";
     "input.accelSpeed" = "libinput's acceleration scale and com.apple.mouse.scaling have no common ground.";
+    "input.keyboardLayouts" = "XKB layout list rendered into Hyprland's kb_layout; macOS input sources are not XKB.";
 
     # The per-user flags that DRIVE the one-sided apps above. graphical.enable
     # is deliberately NOT here -- it means the same thing on both platforms and
