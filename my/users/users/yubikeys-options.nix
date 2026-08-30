@@ -14,6 +14,15 @@
           description = "GPG key ID (short form)";
         };
 
+        # gpg.conf's default-key is single-valued (with several, gpg silently
+        # uses the last), so a multi-key user must name exactly one fallback
+        # identity. Card-aware selection stays with the gpg-smart wrapper.
+        primary = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Use this key as the static GPG default-key (at most one per user; defaults to the first key when none is marked)";
+        };
+
         fingerprint = lib.mkOption {
           type = lib.types.str;
           description = "Full GPG key fingerprint";

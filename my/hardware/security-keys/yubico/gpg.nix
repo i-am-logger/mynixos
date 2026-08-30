@@ -266,8 +266,15 @@ in
                 use-agent = true;
                 verify-options = "show-uid-validity";
                 with-fingerprint = true;
-                # Set all YubiKey keys as default keys - GPG will try them in order
-                default-key = map (yk: yk.keyId) userCfg.yubikeys;
+                # default-key is single-valued (with several lines gpg silently
+                # uses the last), so emit exactly one: the key marked primary,
+                # else the first. Card-aware key selection is gpg-smart's job.
+                default-key =
+                  let primaries = filter (yk: yk.primary) userCfg.yubikeys;
+                  in
+                  assert assertMsg (length primaries <= 1)
+                    "my.users.${name}.yubikeys: more than one key marked primary";
+                  (if primaries == [ ] then head userCfg.yubikeys else head primaries).keyId;
                 default-recipient-self = true;
                 auto-key-locate = "local";
                 keyid-format = "long";
