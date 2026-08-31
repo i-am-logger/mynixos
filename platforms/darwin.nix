@@ -37,6 +37,10 @@ in
 
     # Touch ID / Watch ID. Merges into the cross-platform my.hardware submodule.
     (mkOptionsModule ../my/hardware/biometrics/options.nix { inherit lib; })
+
+    # my.dev.builderHost: accepting remote nix builds is a nix-darwin account
+    # plus a nix.conf drop-in, so the option exists here only.
+    (mkOptionsModule ../my/dev/remote-builders/options-darwin.nix { inherit lib; })
   ]
 
   # -----------------------------------------------------------------------
@@ -77,6 +81,11 @@ in
     # Docker via Colima -- the macOS counterpart to my/dev/development's
     # `virtualisation.docker`. Reads the same `dev.docker.enable` option.
     ../my/dev/docker
+
+    # Accept remote nix builds (my.dev.builderHost): the locked-down account
+    # + forced-command key + nix.custom.conf trust. The client half
+    # (my.dev.remoteBuilders) is Linux-only.
+    ../my/dev/remote-builders/darwin.nix
 
     # Hardware. The model profile flips the generic category options below it,
     # mirroring how the Linux laptop/motherboard profiles compose.

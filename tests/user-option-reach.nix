@@ -121,6 +121,7 @@ let
     "graphical.webapps" = "browser .desktop generation, which macOS has no counterpart for.";
     "graphical.streaming" = "OBS plus the v4l2loopback virtual camera.";
     "theming" = "vogix, which is NixOS + Hyprland.";
+    "apps.dev.tools.radicle.node" = "the user radicle daemon is a home-manager systemd user service; the CLI itself is cross-platform.";
   };
 
   darwinOnly = {
@@ -146,7 +147,8 @@ let
     "hardware.securityKeys" = "pcscd + udev; see docs/yubikey-on-darwin.md for the deliberate omission.";
     "hardware.storage" = "Linux block-device tuning.";
     "hardware.usb" = "Linux USB/Thunderbolt stack.";
-    "infra" = "k3s and the self-hosted GitHub runner.";
+    "infra" = "k3s, the self-hosted GitHub runner, and the Radicle forge (node/CI/mirror are systemd-bound).";
+    "dev.remoteBuilders" = "nix.buildMachines; darwin fleet members are builders, not clients.";
     "network.headscale" = "self-hosted control server, run on the Linux boxes.";
     "network.ipv6" = "sysctl-driven privacy extensions.";
     "network.monitoring" = "Linux service monitoring.";
@@ -174,6 +176,7 @@ let
     "hardware.laptops.apple" = "Apple Silicon laptop profiles.";
     "homebrew" = "Mac App Store apps and the one cask Nix cannot package.";
     "network.sshFirewall" = "pf, because sshd_config's ListenAddress does nothing when launchd owns the socket.";
+    "dev.builderHost" = "a nix-darwin account plus an /etc/nix/nix.custom.conf drop-in; NixOS hosts are the clients.";
     "nixGc" = "launchd GC daemons; nix-darwin's own GC asserts nix.enable, which is false here.";
   };
 

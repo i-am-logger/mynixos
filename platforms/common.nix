@@ -139,6 +139,7 @@ in
       ../my/users/apps/dev/github-desktop
       ../my/users/apps/dev/jq
       ../my/users/apps/dev/kdiff3
+      ../my/users/apps/dev/radicle
 
       # Editors
       ../my/users/apps/editors/helix

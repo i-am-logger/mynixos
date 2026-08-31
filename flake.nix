@@ -309,6 +309,12 @@
         vm-login = import ./tests/vm-login.nix {
           inherit self inputs system lib nixpkgs;
         };
+        # The Radicle forge end to end: two VMs on an isolated net (a private
+        # network by construction), seed + CI + a workstation profile pushing:
+        #   nix build .#tests.<system>.vm-radicle -L
+        vm-radicle = import ./tests/vm-radicle.nix {
+          inherit self inputs system lib nixpkgs;
+        };
       });
 
       # Dev shell with pre-commit hooks installed

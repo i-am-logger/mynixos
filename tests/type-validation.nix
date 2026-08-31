@@ -370,4 +370,68 @@ in
         graphical.enable = true;
       };
     };
+
+  # -------------------------------------------------------------------------
+  # my.infra.radicle
+  # -------------------------------------------------------------------------
+
+  radicle-rejects-bad-seeding-policy = mustReject "radicle-rejects-bad-seeding-policy"
+    (c: c.my.infra.radicle.node.defaultSeedingPolicy)
+    {
+      networking.hostName = "test";
+      my.infra.radicle.node.defaultSeedingPolicy = "sometimes";
+    };
+
+  radicle-rejects-nonlist-connect = mustReject "radicle-rejects-nonlist-connect"
+    (c: c.my.infra.radicle.node.connect)
+    {
+      networking.hostName = "test";
+      my.infra.radicle.node.connect = "z6Mk@host:8776";
+    };
+
+  # mustReject' with a control that defines a VALID one-element list: the
+  # default control leaves the list EMPTY, so `map (r: r.rid) []` would never
+  # touch `rid` and a renamed sub-option would still look "rejected".
+  radicle-rejects-mirror-repo-missing-rid = mustReject'
+    {
+      networking.hostName = "control";
+      my.infra.radicle.mirror.repos = [{ rid = "rad:z2y"; githubRepo = "a/b"; }];
+    }
+    "radicle-rejects-mirror-repo-missing-rid"
+    (c: map (r: r.rid) c.my.infra.radicle.mirror.repos)
+    {
+      networking.hostName = "test";
+      my.infra.radicle.mirror.repos = [{ githubRepo = "a/b"; }];
+    };
+
+  radicle-rejects-bad-seed-scope = mustReject'
+    {
+      networking.hostName = "control";
+      my.infra.radicle.seedRepositories = [{ rid = "rad:z2y"; scope = "all"; }];
+    }
+    "radicle-rejects-bad-seed-scope"
+    (c: map (r: r.scope) c.my.infra.radicle.seedRepositories)
+    {
+      networking.hostName = "test";
+      my.infra.radicle.seedRepositories = [{ rid = "rad:z2y"; scope = "everything"; }];
+    };
+
+  remote-builders-rejects-missing-hostkey = mustReject'
+    {
+      networking.hostName = "control";
+      my.dev.remoteBuilders = [{
+        hostName = "mac.example.ts.net";
+        systems = [ "aarch64-darwin" ];
+        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQQo=";
+      }];
+    }
+    "remote-builders-rejects-missing-hostkey"
+    (c: map (b: b.publicHostKey) c.my.dev.remoteBuilders)
+    {
+      networking.hostName = "test";
+      my.dev.remoteBuilders = [{
+        hostName = "mac.example.ts.net";
+        systems = [ "aarch64-darwin" ];
+      }];
+    };
 }

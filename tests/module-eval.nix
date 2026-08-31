@@ -503,4 +503,174 @@ in
       let hm = config.home-manager.users.shelluser; in
       !(hm.programs.waybar.enable or false)
       && !(hm.systemd.user.services ? vogix-desktop));
+
+  # Radicle forge: the full seed-host shape (node + httpd + CI + mirror).
+  # Everything the dossier calls a trap is asserted here, because each one
+  # fails silently on a real host: openFirewall would open 8776 on the WAN,
+  # preferredSeeds would leak iris/rosa into a private net, a dropped Node
+  # filter would let anyone's patch run shell on the seed, and a missing nix
+  # in the adapter PATH means every recipe's `nix build` dies at runtime.
+  radicle-seed = evalAssert "radicle-seed"
+    {
+      networking.hostName = "test-radicle";
+      my = {
+        secrets.enable = true;
+        network.tailscale.enable = true;
+        dev.remoteBuilders = [{
+          hostName = "mac.example.ts.net";
+          systems = [ "aarch64-darwin" ];
+          publicHostKey = "c3NoLWVkMjU1MTkgQUFBQQo=";
+        }];
+        infra.radicle = {
+          enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          node = {
+            externalAddresses = [ "seed.example.ts.net:8776" ];
+            defaultSeedingPolicy = "allow";
+            connect = [ "z6MkTest@peer.example.ts.net:8776" ];
+          };
+          seedRepositories = [{ rid = "rad:z2y7KqUhUxZQ7Zhn1UNwmuMDtstTS"; }];
+          httpd.enable = true;
+          ci = {
+            enable = true;
+            trustedNids = [ "z6MkTrusted" ];
+          };
+          mirror = {
+            enable = true;
+            sourceNid = "z6MkTrusted";
+            notifyCommand = "true";
+            repos = [{
+              rid = "rad:z2y7KqUhUxZQ7Zhn1UNwmuMDtstTS";
+              githubRepo = "example/demo";
+              releases = { enable = true; systems = [ "x86_64-linux" "aarch64-darwin" ]; };
+            }];
+          };
+        };
+      };
+    }
+    (config:
+      let
+        settings = config.services.radicle.settings;
+        broker = config.services.radicle.ci.broker.settings;
+        adapterPath = broker.adapters.native.env.PATH;
+        mirrorPath = config.systemd.services.radicle-mirror-example-demo.environment.PATH;
+        nodeUnit = config.systemd.services.radicle-node;
+      in
+      # Node: tailnet-only reachability, no public seeds, static peers.
+      config.services.radicle.enable
+      && !config.services.radicle.node.openFirewall
+      && builtins.elem 8776 config.my.network.tailscale.allowedTCPPorts
+      && builtins.elem 8780 config.my.network.tailscale.allowedTCPPorts
+      && !(builtins.elem 8776 config.networking.firewall.allowedTCPPorts)
+      && settings.preferredSeeds == [ ]
+      && settings.node.peers.type == "static"
+      && settings.node.connect == [ "z6MkTest@peer.example.ts.net:8776" ]
+      && settings.node.externalAddresses == [ "seed.example.ts.net:8776" ]      # The module MAPS "allow" -> { default="allow"; scope="all"; } (rad treats a
+      # scope-less allow as followed-only). Assert the whole attrset, not just
+      # the half the test config itself set.
+      && settings.node.seedingPolicy == { default = "allow"; scope = "all"; }
+      && builtins.elem "tailscaled.service" nodeUnit.after
+      # Declarative seeding + httpd.
+      && config.systemd.services ? radicle-seed-repos
+      && config.systemd.services ? radicle-httpd
+      # CI: broker on, trigger carries the Node filter, adapter PATH has nix
+      # and the build helper (an upstream mkForce on runtimePackages would
+      # break the concat and fail HERE, not on a host).
+      && config.services.radicle.ci.broker.enable
+      && lib.any
+        (t: lib.any (f: lib.any (c: c ? Or && lib.any (n: n.Node or null == "z6MkTrusted") c.Or) (f.And or [ ])) t.filters)
+        broker.triggers
+      && lib.hasInfix "-nix-" adapterPath
+      && lib.hasInfix "radicle-ci-build" adapterPath
+      # The release path shells out to tar/gzip, and systemd.services.<n>.path
+      # REPLACES PATH rather than extending it -- so a missing archiver is
+      # invisible until a real tag lands. Guard it here.
+      && lib.hasInfix "gnutar" mirrorPath
+      && lib.hasInfix "gzip" mirrorPath
+      # Mirror: per-repo service/path/timer triple + notify template, token
+      # via LoadCredential, and the delegate-namespace watch path.
+      && config.systemd.services ? radicle-mirror-example-demo
+      && config.systemd.paths ? radicle-mirror-example-demo
+      && config.systemd.timers ? radicle-mirror-example-demo
+      && config.systemd.services ? "radicle-mirror-notify@"
+      && lib.any (lib.hasPrefix "github-token:")
+        config.systemd.services.radicle-mirror-example-demo.serviceConfig.LoadCredential
+      && config.systemd.paths.radicle-mirror-example-demo.pathConfig.PathModified
+      == "/var/lib/radicle/storage/z2y7KqUhUxZQ7Zhn1UNwmuMDtstTS/refs/namespaces/z6MkTrusted/refs/rad/sigrefs"
+      # Remote builders: buildMachines renders with ssh-ng and the sops key.
+      && (builtins.head config.nix.buildMachines).protocol == "ssh-ng"
+      && (builtins.head config.nix.buildMachines).systems == [ "aarch64-darwin" ]
+      && config.nix.distributedBuilds
+      # Persistence: forge state survives impermanence.
+      && builtins.elem "/var/lib/radicle" config.my.system.persistence.features.systemDirectories
+      && builtins.elem "/var/lib/radicle-ci" config.my.system.persistence.features.systemDirectories
+      && builtins.elem "/var/lib/radicle-mirror" config.my.system.persistence.features.systemDirectories);
+
+  # Workstation shape: node only, block policy, no CI/mirror/httpd -- and the
+  # per-user app: rad CLI in home packages plus the outbound-only user node
+  # with a pinned private-net config.
+  radicle-workstation = evalAssert "radicle-workstation"
+    {
+      networking.hostName = "test-radicle-ws";
+      my = {
+        secrets.enable = true;
+        network.tailscale.enable = true;
+        infra.radicle = {
+          enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          node.connect = [ "z6MkSeed@seed.example.ts.net:8776" ];
+        };
+        users.raduser = {
+          fullName = "Rad User";
+          description = "rad";
+          email = "rad@example.com";
+          apps.dev.tools.radicle = {
+            enable = true;
+            node = {
+              enable = true;
+              connect = [ "z6MkSeed@seed.example.ts.net:8776" ];
+            };
+          };
+        };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.raduser; in
+      config.services.radicle.enable
+      && config.services.radicle.settings.node.seedingPolicy.default == "block"
+      && !config.services.radicle.ci.broker.enable
+      && !(config.systemd.services ? radicle-httpd)
+      && builtins.any (p: (p.pname or "") == "radicle-node") hm.home.packages
+      && hm.systemd.user.services ? radicle-node
+      && lib.hasInfix "--config" (toString hm.systemd.user.services.radicle-node.Service.ExecStart)
+      && hm.systemd.user.services ? radicle-config-pin);
+
+  # The nixpkgs module's checkConfig runs `rad config` against the generated
+  # config.json at BUILD time. The toplevel-forcing suites can't enable
+  # radicle (sops assertions, no fixture precedent), so build the configFile
+  # derivation directly -- this is the only place the settings JSON meets a
+  # real `rad` binary before a host does.
+  radicle-config-valid =
+    (lib.nixosSystem {
+      inherit specialArgs;
+      modules = baseModules ++ [
+        baseConfig
+        {
+          networking.hostName = "test-radicle-cfg";
+          my = {
+            secrets.enable = true;
+            network.tailscale.enable = true;
+            infra.radicle = {
+              enable = true;
+              publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+              node = {
+                connect = [ "z6MkuEBniT9BRGVjKUUV2Yi8dcEHzbDAn1fD5meaZ33bNMJV@seed.example.ts.net:8776" ];
+                externalAddresses = [ "seed.example.ts.net:8776" ];
+                defaultSeedingPolicy = "allow";
+              };
+            };
+          };
+        }
+      ];
+    }).config.services.radicle.configFile;
 }

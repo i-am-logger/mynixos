@@ -53,6 +53,8 @@ in
     (mkOptionsModule ../my/video/virtual/options.nix { inherit lib; })
     (mkOptionsModule ../my/theming/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
+    (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
+    (mkOptionsModule ../my/dev/remote-builders/options-linux.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/boot/options.nix { inherit lib; })
     (mkOptionsModule ../my/storage/options.nix { inherit lib; })
     (mkOptionsModule ../my/network/options.nix { inherit lib; })
@@ -182,6 +184,11 @@ in
 
     ../my/infra/github-runner
     ../my/infra/k3s
+    ../my/infra/radicle
+
+    # Remote nix builders, client half (nix.buildMachines). The darwin half
+    # (accepting builds) is my/dev/remote-builders/darwin.nix.
+    ../my/dev/remote-builders
 
     # impermanence: the implementation plus its two aggregation modules. The
     # aggregations emit only `my.*`, but tmpfs-root persistence has no macOS
@@ -225,6 +232,8 @@ in
     ../my/users/apps/media/audacious
     ../my/users/apps/media/audio-utils
     ../my/users/apps/media/qobine # alsa-lib; packages/qobine is Linux-only
+    ../my/users/apps/dev/radicle/options-linux.nix # its option: HM-only, Linux-only
+    ../my/users/apps/dev/radicle/linux.nix # user radicle-node: HM systemd.user service
     ../my/users/apps/security/1password # programs._1password{,-gui}
     ../my/users/apps/viewers/feh # X11
     ../my/users/apps/visualizers/bespec # packages/bespec: platforms = [ "x86_64-linux" ]
