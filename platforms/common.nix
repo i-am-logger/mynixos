@@ -120,6 +120,7 @@ in
 
       # AI
       ../my/users/apps/ai/claude-code
+      ../my/users/apps/ai/babysitter
 
       # Art
 
