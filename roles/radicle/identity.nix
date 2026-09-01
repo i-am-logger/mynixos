@@ -16,13 +16,15 @@
 # so it belongs in the role's arguments, in the clear, beside the connect list
 # it has to agree with.
 #
-# `sops.validateSopsFiles` has to go off because that check demands the sops
-# file be a store path. It cannot be: the whole point is that the file arrives
-# at runtime, per container, and is never built into the image.
+# Both paths are runtime paths, which `my.secrets` requires by default rather
+# than merely permits -- see my/secrets/options.nix. This file used to switch
+# `sops.validateSopsFiles` off by hand to get that, back when a role was the
+# only thing in the fleet keeping secrets out of the store; the option now
+# tracks `my.secrets.allowSecretsInStore`, so the role gets it for free and
+# setting it here would be a second definition of the same switch.
 #
-# It is the minimum available loosening -- sops-nix has no per-secret toggle --
-# but it switches off more than the store-path test, and the rest is worth
-# stating because none of it is obvious from the option's name:
+# What that costs is not obvious from the option's name, and is worth stating
+# once because it applies to every consumer of my.secrets now, not just roles:
 #
 #   * the manifest derivation's checkPhase drops from `-check-mode=sopsfile` to
 #     `-check-mode=manifest` (sops-nix modules/sops/manifest-for.nix:56), so the
@@ -34,6 +36,8 @@
 #     (modules/sops/default.nix:447-465) simply disappear. They have nothing to
 #     do with store paths. Nothing here sets uid/gid, so nothing is broken
 #     today; a role that starts setting them loses the check that they agree.
+#
+# sops-nix has no per-secret toggle, so this is the minimum loosening available.
 
 identityDir:
 
@@ -43,6 +47,4 @@ identityDir:
     ageKeyFile = "${identityDir}/age.key";
     defaultSopsFile = "${identityDir}/secrets.yaml";
   };
-
-  sops.validateSopsFiles = false;
 }

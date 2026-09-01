@@ -305,6 +305,12 @@
             inherit lib nixpkgs system self inputs;
           };
 
+          # Secrets must never land in /nix/store. Guards the flake-input
+          # interpolation that copies a whole directory in as a side effect.
+          secretsStorePolicyTests = import ./tests/secrets-store-policy.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
           # The darwin module set, evaluated from a Linux runner. Only `config`
           # is read, so no aarch64-darwin builder is needed.
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
@@ -323,6 +329,7 @@
         // userOptionReachTest
         // mkSystemTests
         // darwinSmokeTests
+        // secretsStorePolicyTests
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
