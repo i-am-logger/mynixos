@@ -173,7 +173,7 @@ Entries marked *(NixOS)* or *(macOS)* are declared on that platform alone — se
 - **Secrets**: sops-nix integration
 - **Storage**: disko partitioning, impermanence (tmpfs root + persistent storage) *(NixOS)*
 - **Theming**: vogix runtime theme management *(NixOS)*
-- **Dev**: Docker (rootless `virtualisation.docker` on NixOS, Colima on macOS), direnv, devenv, Helix, GitHub Desktop; binfmt and AppImage *(NixOS)*
+- **Dev**: Containers (rootless `virtualisation.podman` by default on NixOS, `virtualisation.docker` behind an enum, Colima on macOS), direnv, devenv, Helix, GitHub Desktop; binfmt and AppImage *(NixOS)*
 - **AI**: Claude Code; Ollama with ROCm, claude-code-proxy, openclaw *(NixOS)*
 - **Terminals**: Ghostty, Kitty, Alacritty, WezTerm, Warp
 - **Shells**: Bash, Fish, Zsh with Starship prompt

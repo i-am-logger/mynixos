@@ -199,6 +199,163 @@ in
     };
   };
 
+  # Containers. `dev.enable = true` alone must produce a WORKING rootless podman
+  # host, and evalTest's forcing would not notice any single piece of that going
+  # missing -- the virtualisation.* tree is not among the four things it forces,
+  # and the subid ranges only fail at runtime.
+  containers-podman-default =
+    let
+      devUser = {
+        networking.hostName = "test-containers-podman";
+        my.users.devuser = {
+          fullName = "Dev User";
+          description = "dev user";
+          email = "dev@example.com";
+          dev.enable = true;
+        };
+      };
+    in
+    evalAssert "containers-podman-default" devUser
+      (config:
+        let
+          pkgNames = map (p: p.pname or "") config.environment.systemPackages;
+          runtimeNames = map (p: p.pname or "") config.virtualisation.podman.extraRuntimes;
+          inherit (config.my.system.persistence) features;
+          groupsOf = u: u.extraGroups or [ ];
+        in
+        config.my.dev.containers.backend == "podman"
+        && config.virtualisation.podman.enable
+        && config.virtualisation.podman.dockerCompat
+        # dockerSocket would symlink /run/docker.sock onto the ROOTFUL podman
+        # socket, whose SocketGroup is the root-equivalent `podman` group.
+        && !config.virtualisation.podman.dockerSocket.enable
+        && config.virtualisation.podman.defaultNetwork.settings.dns_enabled
+        && config.virtualisation.containers.enable
+        && !config.virtualisation.docker.enable
+        # The security point of the backend: NO account is put in a container
+        # group. Both names are checked -- `podman`'s socket group is as
+        # root-equivalent as `docker`'s was, so renaming would not have helped.
+        && !(lib.any
+          (u: lib.elem "docker" (groupsOf u) || lib.elem "podman" (groupsOf u))
+          (lib.attrValues config.users.users))
+        # Rootless podman fails at RUNTIME without a subordinate id range.
+        # nixpkgs defaults this on for normal users, so what is asserted is that
+        # mynixos left it on AND that its own eval-time guard is satisfied.
+        && config.users.users.devuser.autoSubUidGidRange
+        && !(lib.any (a: !a.assertion) config.assertions)
+        # crun is podman's default OCI runtime and is unconditional in podman's
+        # own helpersBin, so nothing here needs to place it. What IS worth
+        # pinning is that we did not override extraRuntimes: that option
+        # replaces rather than appends, so setting it would silently drop runc
+        # as a fallback. nixpkgs' default is [ runc ].
+        && runtimeNames == [ "runc" ]
+        && lib.elem "crun" pkgNames
+        && lib.elem ".local/share/containers" features.userDirectories
+        && !(lib.elem ".docker" features.userDirectories)
+        && !(lib.elem "/var/lib/docker" features.systemDirectories));
+
+  # The other side of the enum still works, and still hands out no group: the
+  # docker backend is rootless too.
+  containers-docker-backend =
+    let
+      devUser = {
+        networking.hostName = "test-containers-docker";
+        my.dev.containers.backend = "docker";
+        my.users.devuser = {
+          fullName = "Dev User";
+          description = "dev user";
+          email = "dev@example.com";
+          dev.enable = true;
+        };
+      };
+    in
+    evalAssert "containers-docker-backend" devUser
+      (config:
+        let
+          pkgNames = map (p: p.pname or "") config.environment.systemPackages;
+          inherit (config.my.system.persistence) features;
+          groupsOf = u: u.extraGroups or [ ];
+        in
+        config.virtualisation.docker.enable
+        && config.virtualisation.docker.rootless.enable
+        && config.virtualisation.docker.rootless.setSocketVariable
+        && !config.virtualisation.podman.enable
+        && !(lib.any (u: lib.elem "docker" (groupsOf u)) (lib.attrValues config.users.users))
+        && lib.elem "runc" pkgNames
+        && lib.elem "/var/lib/docker" features.systemDirectories
+        && lib.elem ".docker" features.userDirectories);
+
+  # Opting out per account leaves the dev feature on and no runtime installed --
+  # the two switches are genuinely independent.
+  containers-opt-out = evalAssert "containers-opt-out"
+    {
+      networking.hostName = "test-containers-opt-out";
+      my.users.devuser = {
+        fullName = "Dev User";
+        description = "dev user";
+        email = "dev@example.com";
+        dev = {
+          enable = true;
+          containers.enable = false;
+        };
+      };
+    }
+    (config:
+      config.my.dev.enable
+      && !config.virtualisation.podman.enable
+      && !config.virtualisation.docker.enable
+      && !config.virtualisation.containers.enable);
+
+  # The subid guard belongs to BOTH backends: rootless dockerd needs newuidmap
+  # and /etc/subuid + /etc/subgid exactly as rootless podman does. Turn the
+  # range off under the docker backend and the failure must appear at EVAL time
+  # -- when it lived inside the podman branch this configuration evaluated clean
+  # and died on the user's first `docker run`.
+  containers-docker-subid-guard =
+    evalAssert "containers-docker-subid-guard"
+      {
+        networking.hostName = "test-containers-docker-subid";
+        my.dev.containers.backend = "docker";
+        my.users.devuser = {
+          fullName = "Dev User";
+          description = "dev user";
+          email = "dev@example.com";
+          dev.enable = true;
+        };
+        users.users.devuser.autoSubUidGidRange = false;
+      }
+      (config:
+        lib.any
+          (a: !a.assertion && lib.hasInfix "no subordinate uid/gid range" a.message)
+          config.assertions);
+
+  # ...and the guard is scoped to the accounts that actually run containers.
+  # A second active user without dev enabled may switch the range off -- it owns
+  # no container runtime, so nothing is broken and nothing must fire.
+  containers-subid-guard-scoped =
+    evalAssert "containers-subid-guard-scoped"
+      {
+        networking.hostName = "test-containers-subid-scope";
+        my.users = {
+          devuser = {
+            fullName = "Dev User";
+            description = "dev user";
+            email = "dev@example.com";
+            dev.enable = true;
+          };
+          plainuser = {
+            fullName = "Plain User";
+            description = "plain user";
+            email = "plain@example.com";
+          };
+        };
+        users.users.plainuser.autoSubUidGidRange = false;
+      }
+      (config:
+        config.virtualisation.podman.enable
+        && !config.users.users.plainuser.autoSubUidGidRange
+        && !(lib.any (a: !a.assertion) config.assertions));
+
   # Test 6: Graphical option can be set
   graphical = evalTest "graphical" {
     networking.hostName = "test-graphical";

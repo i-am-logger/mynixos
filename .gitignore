@@ -1,5 +1,6 @@
 # AI assistant files
 .claude/
+.a5c/
 AGENTS.md
 CLAUDE.md
 *.agents.md

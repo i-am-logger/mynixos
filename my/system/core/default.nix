@@ -144,10 +144,21 @@ in
             SSH_AUTH_SOCK = "\${SSH_AUTH_SOCK:-$(gpgconf --list-dirs agent-ssh-socket)}";
           };
 
-          # Prevent NetworkManager from managing container interfaces
+          # Prevent NetworkManager from managing container interfaces.
+          #
+          # podman* is netavark's default bridge (podman0, plus podman1..n for
+          # additional networks). Left managed, NetworkManager autoconnects and
+          # runs DHCP on it and can take it down under a running container,
+          # which breaks both container connectivity and the aardvark-dns
+          # resolution my.dev.containers turns on.
+          #
+          # The list is static rather than derived from
+          # my.dev.containers.backend: my/system/core has no business reading
+          # my.dev, and the entries already there (cni*, flannel*, docker*)
+          # are not conditional on a backend either.
           etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
             [keyfile]
-            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:br-*
+            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:podman*;interface-name:br-*
           '';
 
           # Linux-only half of the base set. The portable half lives in

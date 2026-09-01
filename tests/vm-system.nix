@@ -100,7 +100,7 @@ pkgs.testers.runNixOSTest {
           description = "Alice Example";
           email = "alice@example.com";
           shell = "fish"; # exercises the shell -> login-shell mapping
-          dev.enable = true; # feature-derivation => disk/dialout/docker groups
+          dev.enable = true; # => disk/dialout groups + rootless podman subids
           terminal.enable = true; # mkApp pipeline => bat/lsd/... installed via HM
           # Trim the heaviest terminal defaults to keep the VM closure lean:
           apps.terminal = {
@@ -110,8 +110,13 @@ pkgs.testers.runNixOSTest {
           };
         };
 
-        # Second ACTIVE user WITHOUT dev — proves dev group-derivation is
-        # per-user for docker but all-active-users for disk/dialout.
+        # Second ACTIVE user WITHOUT dev — proves the dev base groups
+        # (disk/dialout) are derived for ALL active users once any user turns
+        # dev on. Nothing about the subid ranges is per-user: mynixos writes no
+        # users.users entry for them, it only asserts at eval time, so the
+        # ranges come from nixpkgs' own default for every normal account. The
+        # per-user scoping of that ASSERTION is covered in tests/module-eval.nix
+        # (containers-subid-guard-scoped), which eval can see and a VM cannot.
         carol = {
           fullName = "Carol Example";
           description = "Carol Example";
@@ -149,9 +154,54 @@ pkgs.testers.runNixOSTest {
         for g in ["alice", "wheel", "networkmanager"]:
             assert g in groups, f"alice missing base group '{g}' (got: {groups})"
 
-    with subtest("dev derivation is PER-USER for docker (only the dev user)"):
-        assert "docker" in machine.succeed("id -nG alice").split(), "alice (dev.enable) should be in docker"
-        assert "docker" not in machine.succeed("id -nG carol").split(), "carol (no dev) must NOT be in docker"
+    with subtest("containers: podman is the backend and no CONTAINER group is handed out"):
+        # dockerCompat gives `docker` as an alias for podman, so the name still
+        # works -- what must be gone is the GROUP, whose members could bind-mount
+        # / into a container and come back as root. (This says nothing about the
+        # other groups mynixos grants; `disk` is handed out separately.)
+        machine.succeed("podman --version")
+        machine.fail("getent group docker")
+        for u in ["alice", "carol"]:
+            g = machine.succeed(f"id -nG {u}").split()
+            assert "docker" not in g and "podman" not in g, f"{u} must not be in a container group (got: {g})"
+
+    with subtest("rootless podman: the container user has subuid/subgid ranges"):
+        # Without these, `podman run` fails at RUNTIME with an opaque uid-mapping
+        # error. nixpkgs turns autoSubUidGidRange on for every normal user, so
+        # this is not per-user -- what it proves is that mynixos did not turn it
+        # OFF, which is the failure the module asserts against at eval time.
+        machine.succeed("grep -q '^alice:' /etc/subuid")
+        machine.succeed("grep -q '^alice:' /etc/subgid")
+
+    with subtest("containers: a container runs and aardvark-dns resolves a container name"):
+        # The only runtime proof of my.dev.containers' dns_enabled: `webserver`
+        # is a container NAME, and it resolves only because aardvark-dns is
+        # serving the default network (and the firewall lets UDP 53 through on
+        # podman0). An empty scratch image with the host store bind-mounted runs
+        # host binaries, so nothing has to be fetched or built for this.
+        machine.succeed("tar cv --files-from /dev/null | podman import - scratchimg")
+        machine.succeed(
+            "podman run -d --name=webserver"
+            " -v /nix/store:/nix/store -v /run/current-system/sw/bin:/bin"
+            " -w ${pkgs.writeTextDir "index.html" "<h1>mynixos</h1>"}"
+            " scratchimg ${pkgs.python3}/bin/python -m http.server 8000"
+        )
+        machine.succeed("podman ps | grep -q webserver")
+        machine.wait_until_succeeds(
+            "podman run --rm --name=client"
+            " -v /nix/store:/nix/store -v /run/current-system/sw/bin:/bin"
+            " scratchimg ${pkgs.curl}/bin/curl -s http://webserver:8000 | grep -q mynixos"
+        )
+
+    with subtest("NetworkManager does not manage podman's bridge"):
+        # Left managed, NM autoconnects and runs DHCP on podman0 and can take it
+        # down under a running container -- which would break both the run above
+        # and its name resolution. The unmanaged-devices keyfile written by
+        # my/system/core is what prevents it. Checked HERE, while the webserver
+        # container is still up: netavark removes the bridge again once the last
+        # container leaves the network.
+        machine.wait_for_unit("NetworkManager.service")
+        machine.succeed("nmcli -t -f DEVICE,STATE device | grep -q '^podman0:unmanaged'")
 
     with subtest("dev base groups (disk/dialout) apply to ALL active users when my.dev.enable"):
         for u in ["alice", "carol"]:

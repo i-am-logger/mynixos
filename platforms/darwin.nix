@@ -78,9 +78,12 @@ in
     # is wired as plain launchd daemons instead.
     ../my/system/nix-gc
 
-    # Docker via Colima -- the macOS counterpart to my/dev/development's
-    # `virtualisation.docker`. Reads the same `dev.docker.enable` option.
-    ../my/dev/docker
+    # Containers via Colima -- the macOS counterpart to my/dev/development's
+    # `virtualisation.podman`. Reads the same `dev.containers.enable` option;
+    # the injector beside it flips `my.dev.containers.backend` to "docker",
+    # which is the only runtime Colima serves here.
+    ../my/dev/containers
+    ../my/dev/containers/mynixos-darwin.nix
 
     # Accept remote nix builds (my.dev.builderHost): the locked-down account
     # + forced-command key + nix.custom.conf trust. The client half

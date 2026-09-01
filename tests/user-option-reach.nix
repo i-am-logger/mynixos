@@ -171,6 +171,17 @@ let
     "video" = "v4l2loopback.";
   };
 
+  # `my.dev.containers` -- including `backend` -- is deliberately NOT listed on
+  # either side, and must never be. The asymmetry there is in the
+  # IMPLEMENTATION, not the reach: the option is declared once, in
+  # my/dev/development/options.nix, loaded from platforms/common.nix, and means
+  # the same thing on both platforms. Linux implements "podman" (rootless, no
+  # root-equivalent group) and "docker"; darwin runs Colima and implements
+  # "docker" alone, flipping only the DEFAULT via
+  # my/dev/containers/mynixos-darwin.nix and rejecting "podman" with an
+  # assertion. Listing it here would be wrong twice over -- it would claim a
+  # one-sided option where there is none, and the staleness check below would
+  # fail it for existing on both platforms.
   topDarwinOnly = {
     "hardware.biometrics" = "Touch ID / Apple Watch unlock.";
     "hardware.laptops.apple" = "Apple Silicon laptop profiles.";

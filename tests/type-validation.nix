@@ -278,6 +278,34 @@ in
     (c: c.my.environment.login.look)
     { networking.hostName = "test"; my.environment.login.look = "regreet"; };
 
+  # --- Enum: my.dev.containers.backend ---
+  #
+  # An enum and not two booleans, because podman's dockerCompat/dockerSocket and
+  # dockerd both claim the `docker` binary and /run/docker.sock. A third value
+  # would have to name a runtime that is actually wired up.
+
+  containers-backend-rejects-invalid = mustReject "containers-backend-rejects-invalid"
+    (c: c.my.dev.containers.backend)
+    { networking.hostName = "test"; my.dev.containers.backend = "containerd"; };
+
+  containers-backend-rejects-bool = mustReject "containers-backend-rejects-bool"
+    (c: c.my.dev.containers.backend)
+    { networking.hostName = "test"; my.dev.containers.backend = true; };
+
+  containers-backend-accepts-podman = mustAccept "containers-backend-accepts-podman"
+    (c: c.my.dev.containers.backend)
+    { networking.hostName = "test"; my.dev.containers.backend = "podman"; };
+
+  containers-backend-accepts-docker = mustAccept "containers-backend-accepts-docker"
+    (c: c.my.dev.containers.backend)
+    { networking.hostName = "test"; my.dev.containers.backend = "docker"; };
+
+  containers-backend-defaults-to-podman = mustAccept "containers-backend-defaults-to-podman"
+    (c:
+      if c.my.dev.containers.backend == "podman" then "ok"
+      else builtins.throw "my.dev.containers.backend should default to podman on Linux")
+    { networking.hostName = "test"; };
+
   # --- Persistence path validation (relativePath type) ---
 
   persistence-rejects-absolute-path =
