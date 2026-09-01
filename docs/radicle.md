@@ -56,6 +56,24 @@ $ sops set …  # private key file content -> secrets.yaml under radicle/node-ke
 $ rm -rf $RAD_HOME
 ```
 
+**Where that sops file may live.** `my.secrets` refuses a sops file inside
+`/nix/store` (`allowSecretsInStore`, default false), so `defaultSopsFile` must
+be a **runtime path written as a quoted string**:
+
+```nix
+my.secrets.defaultSopsFile = "/persist/etc/sops/secrets.yaml";   # not a path literal
+```
+
+A path literal, or an interpolated flake input, is copied into the store — and
+the store is world-readable and permanent, so the node key would be published to
+every process on the host. Interpolating an input is the worst form, because it
+copies the whole *directory* the named file sits in, along with anything else
+that happens to be there. The assertion fires at evaluation with the reasoning
+attached; `docs/radicle-containers.md` records how this was found the hard way.
+
+The same rule is why a containerised role takes its identity from a read-only
+bind mount rather than from the image.
+
 ### 2. Seed host
 
 ```nix
