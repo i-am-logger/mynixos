@@ -88,14 +88,25 @@ in
       # silently changes what a tmpfs-root host persists — and pointing it at a
       # /home path would put a user path in the SYSTEM persistence list. Data loss
       # is not worth the tidiness.
-      directories = [
+      # `unique` is load-bearing, not tidiness. Two independent features may each
+      # need the same directory to survive a wipe, and both are right to say so:
+      # my/dev/development persists /var/lib/containers for a developer's podman,
+      # and a container-hosting role persists it because a forge must not depend
+      # on developer tooling being enabled. impermanence rejects a repeated path
+      # outright ("specified two or more times"), so without this the two cannot
+      # coexist on one host — and the failure is a build error naming a directory,
+      # with nothing to say which modules asked for it.
+      #
+      # The per-user path already does exactly this (aggregation.nix), so this
+      # makes the system list agree with it rather than introducing a new rule.
+      directories = unique ([
         "/etc/nixos"
         "/var/lib/nixos"
         "/var/lib/systemd"
         "/var/log"
       ]
       ++ cfg.extraSystemDirectories # Allow custom additions
-      ++ config.my.system.persistence.features.systemDirectories; # Feature-declared system directories
+      ++ config.my.system.persistence.features.systemDirectories); # Feature-declared system directories
 
       # Per-user persistence
       users = mkMerge (

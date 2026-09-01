@@ -520,6 +520,42 @@ in
       config.my.hardware.peripherals.keychron.k2-he.udev;
   };
 
+  # Two independent features may each need the SAME directory to survive a wipe,
+  # and both are right to say so -- my/dev/development persists
+  # /var/lib/containers for a developer.s podman, and a container-hosting role
+  # persists it because a forge must not depend on developer tooling being on.
+  # impermanence rejects a repeated path outright ("specified two or more
+  # times"), so without dedupe the two cannot coexist on one host. This is not
+  # hypothetical: it broke a real build the first time both were true.
+  #
+  # The assertion is on the LIST, not on membership: a check that the directory
+  # is merely present would pass just as happily with it listed twice.
+  smoke-persistence-duplicate-system-dir = mkSmokeTest {
+    name = "test-persistence-duplicate-system-dir";
+    myConfig = {
+      system = {
+        enable = true;
+        hostname = "test-persistence-duplicate-system-dir";
+        # the same path a feature module would contribute, declared twice over
+        persistence.features.systemDirectories = [ "/var/lib/containers" "/var/lib/containers" ];
+      };
+      storage.impermanence.enable = true;
+    };
+    # impermanence needs the persist filesystem to exist; no other test here
+    # enables it, so this one supplies it rather than relying on a host profile.
+    extraModules = [{
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+    }];
+    assertions = config:
+      let dirs = map (d: d.directory or d) config.environment.persistence."/persist".directories;
+      in dirs == lib.unique dirs
+        && builtins.elem "/var/lib/containers" dirs;
+  };
+
   # Test: Keychron disabled means no udev rules regardless
   smoke-udev-device-disabled = mkSmokeTest {
     name = "test-udev-device-disabled";
