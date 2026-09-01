@@ -38,8 +38,25 @@ in
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = config.my.secrets.enable;
-        message = "my.infra.radicle requires my.secrets.enable = true (the node key comes from sops).";
+        # Only when sops is the delivery mechanism. A role that sets
+        # `privateKeyFile` has the key by other means and must NOT enable
+        # my.secrets: doing so is what makes sops-install-secrets run, and it
+        # cannot (it mounts a ramfs, which needs CAP_SYS_ADMIN a rootless
+        # container does not have).
+        assertion = cfg.privateKeyFile != null -> !config.my.secrets.enable;
+        message = ''
+          my.infra.radicle.privateKeyFile is set AND my.secrets.enable is true.
+
+          privateKeyFile exists for hosts that cannot run sops-install-secrets --
+          a rootless container, which has no CAP_SYS_ADMIN to mount the secrets
+          filesystem with. Leaving my.secrets enabled alongside it puts that tool
+          back in the activation path, where it will fail, so the two are
+          mutually exclusive rather than merely redundant.
+        '';
+      }
+      {
+        assertion = cfg.privateKeyFile == null -> config.my.secrets.enable;
+        message = "my.infra.radicle requires my.secrets.enable = true (the node key comes from sops), or my.infra.radicle.privateKeyFile set to a key delivered another way.";
       }
       {
         assertion = config.my.network.tailscale.enable;
@@ -54,7 +71,17 @@ in
     # Root-owned, mode 0400: systemd reads LoadCredential sources as root
     # before User= drops privileges, so the radicle user never needs (and
     # never gets) direct read access.
-    sops.secrets.${cfg.privateKeySecret} = { mode = "0400"; };
+    #
+    # DECLARED ONLY when sops is the delivery mechanism. Declaring it is not
+    # inert: sops-nix runs sops-install-secrets whenever any secret exists, and
+    # that tool mounts a ramfs, which needs CAP_SYS_ADMIN. A rootless container
+    # has no such capability, so on a role this declaration alone is the
+    # difference between a node that starts and one that dies in activation --
+    # which is why `privateKeyFile` suppresses the declaration rather than just
+    # overriding what reads it.
+    sops.secrets = mkIf (cfg.privateKeyFile == null) {
+      ${cfg.privateKeySecret} = { mode = "0400"; };
+    };
 
     services.radicle = {
       enable = true;
@@ -63,8 +90,15 @@ in
       # rename alias.) The `or` fallback is the unifi-module idiom: same
       # value either way on a real host, and readable in tests that mkForce
       # the sops set away.
+      #
+      # Either way this is a PATH, and either way the file is read by systemd as
+      # root before User= drops -- the delivery mechanism changes, the property
+      # that the radicle user never holds the key does not.
       privateKey =
-        (config.sops.secrets.${cfg.privateKeySecret} or { path = "/run/secrets/${cfg.privateKeySecret}"; }).path;
+        if cfg.privateKeyFile != null then
+          toString cfg.privateKeyFile
+        else
+          (config.sops.secrets.${cfg.privateKeySecret} or { path = "/run/secrets/${cfg.privateKeySecret}"; }).path;
       inherit (cfg) publicKey;
 
       node = {

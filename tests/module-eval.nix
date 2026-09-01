@@ -937,12 +937,11 @@ in
       && !config.boot.loader.systemd-boot.enable
       && !config.boot.lanzaboote.enable
 
-      # The domain, unchanged: node + broker + adapter, with the key delivered
-      # by LoadCredential from sops exactly as on a host.
+      # The domain, unchanged: node + broker + adapter, with the key still
+      # delivered by LoadCredential -- from a file rather than from sops.
       && config.services.radicle.enable
       && config.services.radicle.ci.broker.enable
       && config.systemd.services ? radicle-node
-      && config.sops.secrets ? "radicle/node-key"
       && config.services.radicle.settings.node.seedingPolicy.default == "block"
 
       # A builder serves nothing. httpd and the explorer belong to a seed.
@@ -958,9 +957,22 @@ in
       && config.my.users == { }
       && builtins.attrNames config.home-manager.users == [ ]
 
-      # The identity contract: the sops file is a RUNTIME path, so one image
-      # serves every builder and the container is what carries the identity.
-      && !(lib.hasPrefix builtins.storeDir (toString config.sops.defaultSopsFile))
+      # The identity contract. A role declares NO sops secrets at all, and the
+      # assertion is on the whole set rather than on one absent name: sops-nix
+      # runs sops-install-secrets whenever ANY secret is declared, and that tool
+      # mounts a ramfs, which needs a CAP_SYS_ADMIN this role must not have. One
+      # stray secret from any module would put it back in the activation path,
+      # and the failure would surface as `cannot mount: operation not permitted`
+      # from inside a nested boot.
+      && config.sops.secrets == { }
+      && !config.my.secrets.enable
+
+      # The key is a RUNTIME path under the directory the host bind-mounts, so
+      # one image serves every builder and the container carries the identity.
+      # Checked for the store prefix too: a store path here would mean the key
+      # was baked into the image, which is the one thing this design forbids.
+      && config.services.radicle.privateKey == "/var/lib/radicle-identity/node-key"
+      && !(lib.hasPrefix builtins.storeDir config.services.radicle.privateKey)
 
       && config.system.build.image.imageName == "radicle-x64-builder");
 
