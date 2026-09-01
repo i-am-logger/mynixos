@@ -90,6 +90,19 @@ let
     extraModules = darwinExtra ++ (args.extraModules or [ ]);
   });
 
+  # A role: no hardware, no users, and `system` instead of a hardware profile.
+  # Nothing is added on top -- platforms/oci.nix supplies the stateVersion and
+  # the docker-container profile relaxes the `fileSystems."/"` requirement, so
+  # a role that needed an `extraModules` prelude here would be a role a
+  # consumer could not write either.
+  ociBase = {
+    platform = "oci";
+    hostname = "mks-oci";
+    system = "x86_64-linux";
+  };
+
+  evalOci = args: self.lib.mkSystem (ociBase // args);
+
   # `tryEval` does NOT catch a missing attribute, but it does catch `throw`,
   # which is how mkSystem reports a rejected argument.
   throws = expr: !(builtins.tryEval (builtins.deepSeq expr "ok")).success;
@@ -190,6 +203,102 @@ in
   mksystem-darwin-rejects-filesystem = pureCheck "darwin-rejects-filesystem"
     (throws (evalDarwin { my = { filesystem = { type = "disko"; }; }; }).config)
     "a darwin host naming my.filesystem should be told, not silently ignored";
+
+  # `system` is the oci branch's alone: everywhere else the hardware profile
+  # sets nixpkgs.hostPlatform, and two sources for one fact is how a host ends
+  # up silently building for the wrong architecture.
+  mksystem-linux-rejects-system = pureCheck "linux-rejects-system"
+    (throws (evalLinux { system = "x86_64-linux"; }).config)
+    "a NixOS host naming `system` should be told the hardware profile owns it";
+
+  mksystem-darwin-rejects-system = pureCheck "darwin-rejects-system"
+    (throws (evalDarwin { system = "aarch64-darwin"; }).config)
+    "a darwin host naming `system` should be told the hardware profile owns it";
+
+  # --- System: the oci role emitter ----------------------------------------
+
+  # A role is a NixOS evaluation like any other machine -- that is the claim
+  # `platform = "oci"` makes. What distinguishes it is `system.build.image`
+  # beside the toplevel, and `boot.isContainer`: no kernel, no initrd, no
+  # bootloader. Asserting the hostname alone would prove none of that.
+  mksystem-oci-builds-role =
+    let e = evalOci { }; in
+    pureCheck "oci-builds-role"
+      (e.config.networking.hostName == "mks-oci"
+        && e.options ? systemd && !(e.options ? launchd)
+        && e.config.boot.isContainer
+        && !e.config.boot.loader.systemd-boot.enable
+        && e.config.system.build ? image)
+      "platform = oci should produce a container-shaped NixOS role with system.build.image";
+
+  # The image is named after the role, which is what makes several roles from
+  # one flake distinguishable once they are loaded into a runtime.
+  mksystem-oci-image-named-for-role = pureCheck "oci-image-named-for-role"
+    ((evalOci { }).config.system.build.image.imageName == "mks-oci")
+    "the role's hostname should name its image";
+
+  # ... and it must NOT be nixosModules.default: lanzaboote signs an EFI stub
+  # for a bootloader a container has not got, and impermanence describes what
+  # survives a tmpfs root when the image IS the root. Both modules are loaded
+  # for their option DECLARATIONS (platforms/linux.nix writes those paths under
+  # mkIf, and a mkIf-false definition still needs the option to exist), so the
+  # thing to assert is that neither is switched on.
+  mksystem-oci-has-no-bootloader = pureCheck "oci-has-no-bootloader"
+    (
+      let c = (evalOci { }).config; in
+      !c.boot.lanzaboote.enable
+      && !c.my.boot.uefi
+      && c.environment.persistence == { }
+    )
+    "a role must carry neither a signed bootloader nor a tmpfs-root persistence layer";
+
+  # A container has no disk to partition, no hardware profile, and no accounts.
+  # Each is rejected with its own reason rather than accepted and ignored.
+  mksystem-oci-rejects-filesystem = pureCheck "oci-rejects-filesystem"
+    (throws (evalOci { my = { filesystem = { type = "disko"; }; }; }).config)
+    "a role naming my.filesystem should be told the image IS its filesystem";
+
+  mksystem-oci-rejects-hardware = pureCheck "oci-rejects-hardware"
+    (throws (evalOci { hardware = [{ nixpkgs.hostPlatform = "x86_64-linux"; }]; }).config)
+    "a role naming hardware should be told a container has none";
+
+  # The one that keeps the image small BY CONSTRUCTION: a user brings a
+  # home-manager closure and a workstation's worth of apps into a machine whose
+  # only job is to run one domain.
+  mksystem-oci-rejects-users = pureCheck "oci-rejects-users"
+    (throws (evalOci { users = [ (mkNixosUser "alice") ]; }).config)
+    "a role naming users should be told a role has no accounts";
+
+  # `system` is the ONE thing a container cannot be discovered from, so its
+  # absence is an error rather than a guess at the evaluator's architecture.
+  mksystem-oci-requires-system = pureCheck "oci-requires-system"
+    (throws (self.lib.mkSystem { platform = "oci"; hostname = "mks-oci"; }).config)
+    "platform = oci without `system` should throw, not default to the builder's arch";
+
+  # The per-user tier axis is the OPERATING SYSTEM, and a container is Linux.
+  # If the oci branch passed "oci" to myModules, a `my.users.<n>.linux` tier
+  # would be dropped in silence instead of applied.
+  # Deliberately an entry with NO fullName: that is what lib/active-users.nix
+  # filters on, so this one carries settings and creates no account -- which is
+  # the only shape of my.users a role accepts. Using the account-creating
+  # `tieredUser` here would now be rejected, and rightly: it would prove tier
+  # resolution with a config a role must refuse.
+  mksystem-oci-uses-linux-tier = pureCheck "oci-uses-linux-tier"
+    ((evalOci {
+      my = { users.alice = { linux = { shell = "fish"; }; darwin = { shell = "zsh"; }; }; };
+    }).config.my.users.alice.shell == "fish")
+    "a role should resolve the linux tier, because a container is Linux";
+
+  mksystem-oci-rejects-my-users-with-account = pureCheck "oci-rejects-my-users-with-account"
+    (throws (evalOci { my = { users = tieredUser; }; }))
+    "a role must refuse a my.users entry with a fullName -- that is an account";
+
+  # An unknown platform is a typo, and a typo must not silently fall through to
+  # a default. This is also the check that keeps the dispatch honest when a
+  # fourth branch (\"vm\") is added.
+  mksystem-unknown-platform-throws = pureCheck "unknown-platform-throws"
+    (throws (self.lib.mkSystem { platform = "vm"; hostname = "mks-vm"; }))
+    "an unimplemented platform should throw by name, not build something else";
 
   # --- System: tiers and layers reach config -------------------------------
 

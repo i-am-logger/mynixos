@@ -68,8 +68,12 @@ in
       # Allow WireGuard UDP port for tailscale
       networking.firewall.allowedUDPPorts = [ config.services.tailscale.port ];
 
-      # Allow configured TCP ports on tailscale interface (defense in depth over ACLs)
-      networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ] ++ cfg.allowedTCPPorts;
+      # Allow configured TCP ports on tailscale interface (defense in depth over
+      # ACLs). Only the ports a consumer ASKED for: a port belongs to the
+      # feature that needs it, so sshd's own port is contributed by
+      # my/network/openssh and only while sshd is actually running. A role that
+      # switches sshd off therefore advertises nothing here.
+      networking.firewall.interfaces.tailscale0.allowedTCPPorts = cfg.allowedTCPPorts;
 
 
       # Enable UDP GRO forwarding on all physical interfaces for tailscale throughput

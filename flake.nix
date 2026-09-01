@@ -203,6 +203,11 @@
         };
       };
 
+      # The radicle roles: the role FUNCTIONS a consumer instantiates with its
+      # own identities, plus the reference fleet this flake builds images for.
+      # See roles/radicle/default.nix for why those two are not the same thing.
+      radicleRoles = import ./roles/radicle { inherit self; };
+
     in
     {
       # Main NixOS module providing the `my.*` namespace.
@@ -216,6 +221,29 @@
       nixosModules.default = {
         imports = [
           ./platforms/linux.nix
+          impermanence.nixosModules.impermanence
+          lanzaboote.nixosModules.lanzaboote
+        ];
+      };
+
+      # The module set of a ROLE -- a mynixos system emitted as an OCI image by
+      # `mkSystem { platform = "oci"; }`.
+      #
+      # Named here for the same reason the two above are: impermanence and
+      # lanzaboote are flake input *values*, not paths, so platforms/oci.nix
+      # cannot name them itself.
+      #
+      # They ARE carried, even though a container has neither a bootloader to
+      # sign nor a tmpfs root to survive. platforms/linux.nix writes
+      # `boot.lanzaboote` and `environment.persistence` under `mkIf`, and the
+      # module system pushes that condition down to the leaves -- so a
+      # `mkIf false` definition still needs the option declared. Dropping the
+      # modules buys "the option does not exist" from a module that is switched
+      # off, not the error anyone wants. platforms/oci.nix asserts instead, and
+      # both modules are inert until enabled.
+      nixosModules.oci = {
+        imports = [
+          ./platforms/oci.nix
           impermanence.nixosModules.impermanence
           lanzaboote.nixosModules.lanzaboote
         ];
@@ -239,6 +267,7 @@
       # Export library functions
       lib = mynixosLib // {
         inherit securityKeys hardware;
+        roles.radicle = { inherit (radicleRoles) builder seed; };
       };
 
       # Formatter (treefmt: nix + shell + yaml)
@@ -316,6 +345,15 @@
           inherit self inputs system lib nixpkgs;
         };
       });
+
+      # Role images. forAllSystems, not forAllDevSystems: an OCI image is a
+      # Linux system closure, and a darwin runner has no way to build one.
+      #
+      # These are the REFERENCE fleet -- buildable proof that the "oci" emitter
+      # produces a real image, with identities whose private halves do not
+      # exist. A deployment calls `mynixos.lib.roles.radicle.{builder,seed}`
+      # with its own keys instead; see roles/radicle/default.nix.
+      packages = forAllSystems radicleRoles.images;
 
       # Dev shell with pre-commit hooks installed
       devShells = forAllDevSystems (system:

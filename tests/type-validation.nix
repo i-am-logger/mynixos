@@ -62,8 +62,49 @@ let
       touch $out
     '';
 
+  # mkSystem's `platform`. It is a plain FUNCTION argument, not an option, so
+  # mustReject -- which evaluates a NixOS config -- cannot express it. The
+  # discipline is kept unchanged though: a VALID platform is read first, so
+  # "mkSystem throws for every input" cannot masquerade as "the bad value was
+  # rejected". Same failure mode as an option that was renamed away, same fix.
+  #
+  # The enum is closed on purpose. `platform = "vm"` is a designed-for future
+  # branch and is REJECTED BY NAME until it exists, because the alternative --
+  # falling through to a default -- builds the wrong kind of machine in silence.
+  role = platform: self.lib.mkSystem {
+    inherit platform;
+    hostname = "type-validation-role";
+    system = "x86_64-linux";
+  };
+
+  platformRejects = name: badPlatform:
+    let
+      read = platform: builtins.tryEval
+        (builtins.deepSeq (role platform).config.networking.hostName "ok");
+      control = read "oci";
+      result = read badPlatform;
+    in
+    pkgs.runCommand "type-validation-${name}" { } (
+      if !control.success then
+        builtins.throw
+          ("FAIL: ${name} cannot build a system with a VALID platform -- "
+            + "mkSystem's oci branch is broken, so this check was passing for the wrong reason")
+      else if result.success then
+        builtins.throw "FAIL: should have rejected platform '${badPlatform}'"
+      else ''
+        echo "PASS: correctly rejected platform '${badPlatform}'"
+        touch $out
+      ''
+    );
+
 in
 {
+  # --- Enum-by-dispatch: mkSystem's `platform` ---
+
+  platform-rejects-unknown = platformRejects "platform-rejects-unknown" "container";
+
+  platform-rejects-unimplemented = platformRejects "platform-rejects-unimplemented" "vm";
+
   # --- String type: my.system.hostname ---
 
   hostname-rejects-int = mustReject "hostname-rejects-int"

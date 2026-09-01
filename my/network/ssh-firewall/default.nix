@@ -4,7 +4,7 @@
 # relies on for the same guarantee:
 #
 #   services.openssh.openFirewall = false;                                  # my/network/openssh
-#   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];     # my/network/tailscale
+#   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 ];     # my/network/openssh
 #
 # NixOS gives you default-deny input for free. macOS gives you neither that nor
 # any per-interface control, so we build it on pf.

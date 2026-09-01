@@ -40,6 +40,25 @@ let
         touch $out
       '';
 
+  # Like evalAssert, but for a ROLE -- a system mkSystem already built, rather
+  # than a module list this file assembles. A role brings its own module set
+  # (platforms/oci.nix) and its own architecture, so baseModules/baseConfig do
+  # not apply: handing it those would test a hand-built lookalike instead of
+  # what a consumer actually gets from `self.lib.roles.*`.
+  roleAssert = name: role: predicate:
+    let
+      ok = predicate role.config
+        # Forced so the check reaches the real closure and every assertion in
+        # it, not just the option values the predicate happens to name.
+        && builtins.deepSeq role.config.system.build.image.drvPath true;
+    in
+    if !ok then builtins.throw "FAIL: module-eval-${name} -- config assertion did not hold"
+    else
+      pkgs.runCommand "module-eval-${name}" { } ''
+        echo "PASS: ${name}"
+        touch $out
+      '';
+
   evalTest = name: testConfig:
     let
       eval = lib.nixosSystem {
@@ -824,6 +843,44 @@ in
       && lib.hasInfix "--config" (toString hm.systemd.user.services.radicle-node.Service.ExecStart)
       && hm.systemd.user.services ? radicle-config-pin);
 
+  # --- Tailnet reachability: a port belongs to the feature that needs it -----
+  #
+  # sshd's port on tailscale0 is contributed by my/network/openssh, gated on
+  # sshd actually running -- NOT hard-coded by my/network/tailscale, which used
+  # to prepend a literal 22 and so advertised SSH on roles that switch sshd off.
+  #
+  # The gate also has to stay on `services.openssh.enable` rather than on
+  # anything under `my.network`: that whole namespace is one submodule option,
+  # so a contribution to `my.network.tailscale.allowedTCPPorts` from the openssh
+  # module closes an evaluation loop through its own `mkIf` condition. These two
+  # checks fail with infinite recursion if that shape ever comes back.
+  tailnet-ssh-port-with-sshd = evalAssert "tailnet-ssh-port-with-sshd"
+    {
+      networking.hostName = "test-tailnet-ssh-on";
+      my.network.tailscale = {
+        enable = true;
+        allowedTCPPorts = [ 9999 ];
+      };
+    }
+    (config:
+      config.services.openssh.enable
+      && builtins.elem 22 config.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+      && builtins.elem 9999 config.networking.firewall.interfaces.tailscale0.allowedTCPPorts);
+
+  tailnet-ssh-port-without-sshd = evalAssert "tailnet-ssh-port-without-sshd"
+    {
+      networking.hostName = "test-tailnet-ssh-off";
+      my.network.tailscale = {
+        enable = true;
+        allowedTCPPorts = [ 9999 ];
+      };
+      # What platforms/oci.nix does to every role.
+      services.openssh.enable = lib.mkForce false;
+    }
+    (config:
+      !config.services.openssh.enable
+      && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 9999 ]);
+
   # The nixpkgs module's checkConfig runs `rad config` against the generated
   # config.json at BUILD time. The toplevel-forcing suites can't enable
   # radicle (sops assertions, no fixture precedent), so build the configFile
@@ -852,4 +909,84 @@ in
         }
       ];
     }).config.services.radicle.configFile;
+
+  # --- Roles: my.infra.radicle inside `mkSystem { platform = "oci"; }` ------
+  #
+  # The point of the oci emitter is that the domain is reused UNCHANGED, so
+  # what these assert is not "the image exists" but "the same units, the same
+  # credential delivery and the same web view come out of a role as out of a
+  # host" -- plus the two things only a container can get wrong: a bootloader
+  # it cannot have, and accounts it must not have.
+  #
+  # `system.build.image.drvPath` is forced, which pulls the whole toplevel and
+  # therefore every assertion in the system (ci.trustedNids' among them). These
+  # are the only checks here that go that deep, and they can: a role has no
+  # users, so none of the import-from-derivation vogix does is on the path.
+  oci-radicle-builder = roleAssert "oci-radicle-builder"
+    (self.lib.roles.radicle.builder {
+      inherit system;
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+      trustedNids = [ "z6MkuEBniT9BRGVjKUUV2Yi8dcEHzbDAn1fD5meaZ33bNMJV" ];
+      connect = [ "z6MkSeed@radicle-seed.example.ts.net:8776" ];
+    })
+    (config:
+      # A machine, not a process: an init, and the nix DB loader that makes nix
+      # usable inside a builder at all.
+      config.boot.isContainer
+      && config.systemd.services ? register-nix-paths
+      && !config.boot.loader.systemd-boot.enable
+      && !config.boot.lanzaboote.enable
+
+      # The domain, unchanged: node + broker + adapter, with the key delivered
+      # by LoadCredential from sops exactly as on a host.
+      && config.services.radicle.enable
+      && config.services.radicle.ci.broker.enable
+      && config.systemd.services ? radicle-node
+      && config.sops.secrets ? "radicle/node-key"
+      && config.services.radicle.settings.node.seedingPolicy.default == "block"
+
+      # A builder serves nothing. httpd and the explorer belong to a seed.
+      && !(config.systemd.services ? radicle-httpd)
+
+      # And it is not logged into either: sshd is off, so nothing may put 22 on
+      # the tailnet. The node port is the ONLY inbound reachability a builder has.
+      && !config.services.openssh.enable
+      && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8776 ]
+
+      # No accounts, which is what keeps home-manager and a workstation's
+      # closure out of the image.
+      && config.my.users == { }
+      && builtins.attrNames config.home-manager.users == [ ]
+
+      # The identity contract: the sops file is a RUNTIME path, so one image
+      # serves every builder and the container is what carries the identity.
+      && !(lib.hasPrefix builtins.storeDir (toString config.sops.defaultSopsFile))
+
+      && config.system.build.image.imageName == "radicle-x64-builder");
+
+  oci-radicle-seed = roleAssert "oci-radicle-seed"
+    (self.lib.roles.radicle.seed {
+      inherit system;
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+      externalAddresses = [ "radicle-seed.example.ts.net:8776" ];
+      seedHostname = "radicle-seed.example.ts.net";
+    })
+    (config:
+      config.boot.isContainer
+      && config.services.radicle.enable
+      # A seed holds every peer's refs; that is what makes seeds plural and a
+      # second one able to pull the repositories across.
+      && config.services.radicle.settings.node.seedingPolicy.default == "allow"
+      && config.systemd.services ? radicle-httpd
+
+      # Its OWN nginx, inside the role -- the explorer no longer has to cross a
+      # container boundary to be served.
+      && config.services.nginx.enable
+      && config.services.nginx.virtualHosts ? "radicle-explorer"
+
+      # A seed runs no CI: the broker is a builder's job.
+      && !config.services.radicle.ci.broker.enable
+
+      && config.my.users == { }
+      && config.system.build.image.imageName == "radicle-seed");
 }
