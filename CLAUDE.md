@@ -41,6 +41,13 @@ git-hooks bundle (treefmt + statix + deadnix), so `nix flake check` covers forma
 - `flake.nix` holds inputs, the `lib` export, the hardware-profile paths, checks and dev outputs — not the
   module list.
 
+`platforms/oci.nix` is a fourth file, and deliberately not a fourth *platform*: it imports `linux.nix`
+wholesale and overrides the host defaults a container cannot honour. Importing the whole thing is the point —
+`mkIf false` still requires an option to be **declared**, so a role that never boots a bootloader must still
+carry lanzaboote's and impermanence's declarations or every host module that mentions them fails to evaluate.
+What it overrides is the small set of things `linux.nix` turns on for a laptop and a container has no business
+running: openrgb, audio, sshd, systemd-oomd, the flake registry, and `/run/wrappers` as a mount.
+
 ### Platform reach is structural
 
 **This is the invariant not to break.** An option is declared in the file that implements it, and which
@@ -103,10 +110,15 @@ Declared on both platforms:
   `environment`, `input`, `theming`, `github`, `yubikeys`, and the `apps.*` tree
 - **`my.hardware`** — the cross-platform core in `my/hardware/options.nix` (`cpu` / `gpu` metadata, and
   `audio`) plus the per-vendor categories each platform can act on
-- **`my.dev`** — development tooling and `dev.docker` (`virtualisation.docker` on Linux, Colima on macOS)
+- **`my.dev`** — development tooling and `dev.containers`, whose `backend` enum defaults to **podman** on Linux
+  (rootless, daemonless, no root-equivalent group) and to docker on darwin, where Colima is what runs. A
+  `DOCKER_HOST` pointing at the rootless socket is what keeps `docker`-shaped tooling working
 - **`my.fonts`** — `fonts.packages`, installed system-wide
 - **`my.network`** — declared on both, but `sshFirewall` is the only key darwin has
-- **`my.secrets`** — sops-nix wiring
+- **`my.secrets`** — sops-nix wiring. Secrets must be **runtime paths**: `allowSecretsInStore` defaults to
+  false and asserts on both `defaultSopsFile` and every `sops.secrets.<name>.sopsFile`, because `/nix/store` is
+  world-readable and permanent. The shape it exists to block is `"${someFlakeInput}/secrets.yaml"`, which reads
+  as one file and copies the whole *directory* it sits in
 
 Linux only: `my.ai`, `my.boot`, `my.environment`, `my.filesystem`, `my.forensics`, `my.graphical`, `my.infra`,
 `my.performance`, `my.presets`, `my.security`, `my.storage`, `my.streaming`, `my.theming`, `my.video` — plus
@@ -133,7 +145,7 @@ silently ignored.
 
 ```nix
 mkSystem {
-  platform     = "darwin";   # or "linux" (the default)
+  platform     = "darwin";   # or "linux" (the default), or "oci"
   hostname     = "…";        # or set my.system.hostname
   hardware     = [ … ];      # module paths, e.g. mynixos.lib.hardware.laptops.apple.macbook-pro-m5-max
   users        = [ … ];
@@ -143,10 +155,30 @@ mkSystem {
 }
 ```
 
-There is no `system` argument on either platform: the hardware profile sets `nixpkgs.hostPlatform`. `platform`
-selects the evaluator (`lib.nixosSystem` or `nix-darwin.lib.darwinSystem`), and the darwin branch asserts that
-the resolved `hostPlatform` really is darwin, so a host that forgot to enable a hardware profile fails loudly
-instead of building something subtly wrong.
+On `linux` and `darwin` there is no `system` argument: the hardware profile sets `nixpkgs.hostPlatform`.
+`platform` selects the evaluator (`lib.nixosSystem` or `nix-darwin.lib.darwinSystem`), and the darwin branch
+asserts that the resolved `hostPlatform` really is darwin, so a host that forgot to enable a hardware profile
+fails loudly instead of building something subtly wrong.
+
+**`platform = "oci"` emits a role as a container image.** The enum is flat even though it now carries two
+axes — `linux`/`darwin` are operating systems, `oci` is an output *format*, and `vm` will be another. A
+container is implicitly Linux, so it stays unambiguous, and one word in a host file reads better than a second
+argument. `system` is **required** here and rejected on the other two, because a container has no hardware
+profile to derive an architecture from.
+
+A role is a machine, not a service: it gets its own tailnet node and its own identity, and knows nothing about
+the host that runs it. That is what the oci branch's rejections enforce, each with a reason in the error —
+`my.filesystem` (the image *is* the filesystem), `my.storage.impermanence` (a container's root is already
+discarded; state is a bind mount the host declares), `hardware`, `users`, and `my.users` entries **carrying a
+`fullName`**. The last is subtle: `lib/active-users.nix` filters on exactly `fullName`, so such an entry reaches
+the same account and home-manager modules the `users` argument does and would pull a workstation closure into
+the image. An entry *without* one is fine — it carries settings and creates no account.
+
+`roles/` holds the role definitions (currently `roles/radicle/{default,builder,seed,identity}.nix`). A role is
+a **function** a consumer instantiates with its own keys; `packages.*` builds a *reference* fleet whose
+identities have no surviving private halves, tagged `reference` rather than `latest` so an image built for
+nobody cannot be mistaken for a deployment. `my/system/oci-image` turns the resulting system into
+`system.build.image` via `dockerTools.streamLayeredImage`.
 
 Both branches assemble, in order: hardware modules → the platform module (`self.nixosModules.default` /
 `self.darwinModules.default`) → the optional `config` module → the hostname → the per-user system modules →
@@ -277,8 +309,18 @@ gives a host its architecture on both platforms.
 - `tests/user-option-reach.nix` — which `my.*` options each platform declares.
 - `tests/mksystem.nix` — platform dispatch, argument rejection, `my` layering, the per-user platform tiers.
 - `tests/darwin-smoke.nix` — the darwin module set, evaluated from a Linux runner.
-- `tests/vm-system.nix` — boots a real qemu VM and asserts runtime behaviour. Exposed under the `tests` output
-  rather than `checks`, so `nix flake check` stays light and KVM-free.
+- `tests/secrets-store-policy.nix` — sops files must not be store paths. Every case is paired with its
+  opposite, because a policy that only ever says "no" is indistinguishable from an assertion that never fires.
+
+Under the `tests` output rather than `checks`, so `nix flake check` stays light and KVM-free — run on demand
+with `nix build .#tests.<system>.<name> -L`, and part of the pre-push routine:
+
+- `tests/vm-system.nix` — boots a real qemu VM and asserts runtime behaviour.
+- `tests/vm-login.nix` — SDDM under the vogix greeter, end to end: the greeter renders (OCR on its hostname
+  line), the palette really reaches `theme.conf`, and typed credentials authenticate through PAM.
+- `tests/vm-radicle.nix` — two VMs on an isolated LAN, which is what makes "private network" true by
+  construction rather than by configuration: seed, CI broker firing on a fetch, and a workstation profile
+  pushing to it.
 
 `tests/module-eval.nix` deliberately stops short of `system.build.toplevel`: vogix uses
 import-from-derivation, so building the toplevel needs an `x86_64-linux` builder at evaluation time, and
@@ -339,5 +381,8 @@ nopasswdRebuild = lib.mkEnableOption "NOPASSWD sudo for nixos-rebuild (skips Yub
 
 - `docs/CONTRIBUTING.md`
 - `docs/network-defense.md`
+- `docs/radicle.md` — the forge as it runs on a host today
+- `docs/radicle-containers.md` — roles as machines: the `platform = "oci"` emitter, what a role may not
+  declare, and why the seed is added-then-retired rather than migrated
 - `docs/SECURE_BOOT_SETUP.md`
 - `docs/yubikey-on-darwin.md` — what YubiKey support on macOS would take, and why this fleet does not carry it
