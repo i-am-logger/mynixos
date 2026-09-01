@@ -148,6 +148,114 @@
                 example = { mynixos = "rad:z2y7KqUhUxZQ7Zhn1UNwmuMDtstTS"; };
                 description = "Short-name -> RID aliases for clone URLs.";
               };
+
+              # radicle-httpd is a JSON API, not a web page -- every path
+              # answers application/json. The browsable forge is
+              # radicle-explorer, a static SPA that CALLS that API. Serving our
+              # own copy, rather than pointing a public explorer at this node,
+              # is the whole point on a private network: no third-party
+              # JavaScript ever sees the repositories.
+              explorer = {
+                enable = lib.mkEnableOption "the radicle-explorer web UI, served locally (tailnet-only)";
+
+                listenPort = lib.mkOption {
+                  type = lib.types.port;
+                  default = 8781;
+                  description = "Port for the explorer UI, opened on tailscale0 only.";
+                };
+
+                scheme = lib.mkOption {
+                  type = lib.types.enum [ "http" "https" ];
+                  default = "http";
+                  description = ''
+                    How the BROWSER reaches this explorer. "https" additionally
+                    publishes it through `tailscale serve`, which terminates TLS
+                    with the tailnet's own Let's Encrypt certificate -- so the
+                    page is a secure context (no browser warning, and the web
+                    APIs that require one keep working).
+
+                    The tailnet is WireGuard-encrypted either way; this is about
+                    what the browser is willing to do, not about the traffic
+                    being readable.
+                  '';
+                };
+
+                externalPort = lib.mkOption {
+                  type = lib.types.port;
+                  default = 443;
+                  description = ''
+                    Port the BROWSER connects to when scheme = "https" (the
+                    `tailscale serve` front door). Ignored for plain http,
+                    where listenPort is what the browser uses.
+                  '';
+                };
+
+                # The explorer builds avatar URLs as
+                # https://www.gravatar.com/avatar/<md5(email)>, so rendering a
+                # commit list would have the BROWSER call gravatar.com with a
+                # hash of each committer's address -- an outbound request, and
+                # an identifier, leaving a forge that is otherwise private.
+                # These serve the same images from this host instead, and the
+                # implementation rewrites that URL so nothing external is ever
+                # requested.
+                # The explorer has no CI view: radicle-httpd serves repos,
+                # nodes and stats, and CI results are job COBs it never reads.
+                # The broker publishes its own HTML report pages instead, and
+                # nothing serves them by default -- this puts them beside the
+                # explorer so there is one place to look.
+                ciReports = {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = true;
+                    description = "Serve the CI broker's report pages under /ci/ (only when ci.enable).";
+                  };
+
+                  path = lib.mkOption {
+                    type = lib.types.str;
+                    default = "/ci/";
+                    description = "URL path the reports are served under. Must end in a slash.";
+                  };
+                };
+
+                avatars = {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = true;
+                    description = "Serve avatars locally instead of from gravatar.com.";
+                  };
+
+                  default = lib.mkOption {
+                    type = lib.types.nullOr lib.types.path;
+                    default = null;
+                    description = "Image shown for any address with no entry in byEmail.";
+                  };
+
+                  byEmail = lib.mkOption {
+                    type = lib.types.attrsOf lib.types.path;
+                    default = { };
+                    example = lib.literalExpression ''{ "you@example.com" = ./avatar.png; }'';
+                    description = ''
+                      Address -> image. The file is published under the same
+                      md5-of-lowercased-address name the explorer would have
+                      asked gravatar for, so it resolves with no code change.
+                      Use the address that appears in your COMMITS.
+                    '';
+                  };
+                };
+
+                seedHostname = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  example = "yoga.tailnet-name.ts.net";
+                  description = ''
+                    Hostname the BROWSER uses to reach this seed's httpd API.
+                    It is baked into the SPA at build time and fetched by the
+                    browser, not the server, so "localhost" only works when the
+                    browser runs on the seed itself -- use the tailnet name.
+                    Defaults to the hostname.
+                  '';
+                };
+              };
             };
 
             ci = {

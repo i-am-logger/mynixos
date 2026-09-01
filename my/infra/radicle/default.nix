@@ -33,7 +33,7 @@ let
   };
 in
 {
-  imports = [ ./ci.nix ./mirror.nix ];
+  imports = [ ./ci.nix ./mirror.nix ./explorer.nix ];
 
   config = mkIf cfg.enable {
     assertions = [

@@ -14,7 +14,7 @@ real mechanisms, all pinned by the module:
 
 | Layer | Mechanism |
 |---|---|
-| Reachability | listen on `[::]`, but 8776/8780 are opened on `tailscale0` only (`my.network.tailscale.allowedTCPPorts`); `externalAddresses` empty unless the host layer says otherwise |
+| Reachability | listen on `[::]`, but 8776/8780/8781 are opened on `tailscale0` only (`my.network.tailscale.allowedTCPPorts`); `externalAddresses` empty unless the host layer says otherwise |
 | Dialing | `peers = { type = "static" }` -- the node dials `connect` and nothing else |
 | Bootstrap | a non-empty `connect` keeps iris/rosa out of the address book entirely (heartwood only inserts them when `connect` AND the address book are empty) |
 | Seed hints | `preferredSeeds = []` pinned -- `rad auth` writes the PUBLIC seeds there by default |
@@ -66,7 +66,11 @@ my.infra.radicle = {
     externalAddresses = [ "yoga.<tailnet>.ts.net:8776" ];
     defaultSeedingPolicy = "allow";                   # seed everything ours
   };
-  httpd.enable = true;                                # web view on :8780
+  httpd = {
+    enable = true;                                    # JSON API on :8780
+    explorer.enable = true;                           # web UI on :8781
+    explorer.seedHostname = "yoga.<tailnet>.ts.net"; # baked in; the BROWSER resolves it
+  };
 };
 ```
 
@@ -114,6 +118,31 @@ $ journalctl -u radicle-node --since=-1h | grep -Ei 'iris|rosa|radicle\.network'
 $ ss -tnp | grep radicle-node          # peers must be 100.64.0.0/10 / fd7a:115c:a1e0::/48 only
 $ sudo tcpdump -i <wan-if> port 8776   # silent while a sync runs on tailscale0
 ```
+
+## The web UI
+
+`radicle-httpd` on 8780 is a **JSON API**, not a web page -- every path
+answers `application/json`. The browsable forge is `radicle-explorer`, a
+static SPA that calls that API, served from this host on 8781:
+
+```console
+$ xdg-open http://yoga.<tailnet>.ts.net:8781/
+```
+
+It is served locally on purpose. The explorer is client-side, so pointing a
+public instance at your node would put a third party's JavaScript in front of
+every repository it fetches. A local copy keeps that inside the tailnet.
+
+Two consequences of it being built statically:
+
+- `explorer.seedHostname` is baked in at build time and resolved by the
+  **browser**, not the server -- so `localhost` only works if the browser runs
+  on the seed. Use the tailnet name.
+- Changing the seed hostname or port means a rebuild, not a config reload.
+
+The UI's own help text mentions `seed.radicle.garden` and links to
+radicle.network. That is prose, not configuration -- the configured seed is
+yours, and nothing is fetched from those hosts unless you click a link.
 
 ## CI
 

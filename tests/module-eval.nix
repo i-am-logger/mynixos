@@ -530,7 +530,14 @@ in
             connect = [ "z6MkTest@peer.example.ts.net:8776" ];
           };
           seedRepositories = [{ rid = "rad:z2y7KqUhUxZQ7Zhn1UNwmuMDtstTS"; }];
-          httpd.enable = true;
+          httpd = {
+            enable = true;
+            explorer = {
+              enable = true;
+              scheme = "https";
+              seedHostname = "seed.example.ts.net";
+            };
+          };
           ci = {
             enable = true;
             trustedNids = [ "z6MkTrusted" ];
@@ -573,6 +580,21 @@ in
       # Declarative seeding + httpd.
       && config.systemd.services ? radicle-seed-repos
       && config.systemd.services ? radicle-httpd
+      # The explorer is a static SPA served by OUR nginx -- never through
+      # services.radicle.httpd.nginx, whose non-null branch would rewrite
+      # externalAddresses to a public DNS name and switch on ACME.
+      && config.services.nginx.enable
+      && config.services.radicle.httpd.nginx == null
+      # Under https the explorer port is loopback-only and must NOT be
+      # opened on the tailnet -- tailscale serve is the only entrance.
+      && !(builtins.elem 8781 config.my.network.tailscale.allowedTCPPorts)
+      && (builtins.head config.services.nginx.virtualHosts."radicle-explorer".listen).addr == "127.0.0.1"
+      && (config.services.nginx.virtualHosts."radicle-explorer".locations."/".tryFiles or "") == "$uri $uri/ /index.html"
+      # Single origin: the SPA and its API must share a scheme+host+port, or
+      # an https page cannot call the api at all (mixed content).
+      && lib.hasInfix "127.0.0.1:8780/api/"
+        (config.services.nginx.virtualHosts."radicle-explorer".locations."/api/".proxyPass or "")
+      && config.systemd.services ? radicle-explorer-serve
       # CI: broker on, trigger carries the Node filter, adapter PATH has nix
       # and the build helper (an upstream mkForce on runtimePackages would
       # break the concat and fail HERE, not on a host).

@@ -155,7 +155,20 @@ in
     # ProtectSystem=strict makes /nix read-only. Targeted loosening only --
     # never enableHardening = false, and the node unit's confinement is not
     # touched (upstream defends it with a systemd-analyze threshold test).
-    systemd.services.radicle-ci-broker.serviceConfig.ReadWritePaths =
-      [ "/nix/var/nix/daemon-socket" ];
+    systemd.services.radicle-ci-broker.serviceConfig = {
+      ReadWritePaths = [ "/nix/var/nix/daemon-socket" ];
+
+      # Upstream creates the report and adapter-log directories with
+      # systemd-tmpfiles. That loses a race against impermanence: the bind
+      # mount for /var/lib/radicle-ci is established AFTER tmpfiles has run,
+      # so the directory tmpfiles made is hidden underneath it and the broker
+      # starts logging "HTML report directory does not exist".
+      #
+      # StateDirectory/LogsDirectory are created by systemd as part of
+      # starting the unit -- after mounts, every start -- so they are correct
+      # on a persisted host and self-healing rather than reboot-dependent.
+      StateDirectory = mkForce [ "radicle-ci" "radicle-ci/reports" ];
+      LogsDirectory = mkForce [ "radicle-ci" "radicle-ci/adapters/native" ];
+    };
   };
 }
