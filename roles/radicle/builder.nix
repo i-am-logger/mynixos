@@ -110,9 +110,28 @@ self.lib.mkSystem {
   ]
   ++ my;
 
-  # The identity contract: see ./identity.nix. A module rather than a `my`
-  # layer because it also has to switch sops-nix's store-path check off, which
-  # is not a `my.*` option and should not become one -- it is a fact about how
-  # THIS deployment delivers the file, not about what mynixos configures.
-  extraModules = [ (import ./identity.nix identityDir) ];
+  # Modules, for what a `my` layer cannot express: a layer is a plain
+  # attribute set and receives no module arguments, so it cannot name `pkgs`
+  # or reach options outside `my.*`.
+  #
+  # The identity contract: see ./identity.nix.
+  #
+  # A BUILDER CARRIES ITS OWN TOOLCHAIN. `nix` is already unconditional on the
+  # adapter PATH (my/infra/radicle/ci.nix); `devenv` is added here because it
+  # is what a builder IS, not something the host lends it. A host that had to
+  # supply it would make the role depend on where it happens to run -- the
+  # exact coupling this design exists to remove -- and the same role on another
+  # machine would then build differently, silently.
+  #
+  # Written as a module rather than passed in as a derivation so it is
+  # evaluated by THIS system and gets THIS system's pkgs. A package handed in
+  # from the host would embed the host's package set into a different machine,
+  # which works only while the two happen to share a nixpkgs and an
+  # architecture.
+  extraModules = [
+    (import ./identity.nix identityDir)
+    ({ pkgs, ... }: {
+      my.infra.radicle.ci.adapters.native.extraRuntimePackages = [ pkgs.devenv ];
+    })
+  ];
 }

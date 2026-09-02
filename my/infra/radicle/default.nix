@@ -218,37 +218,50 @@ in
         ];
 
         radicle-httpd = mkIf cfg.httpd.enable containerConfinementOff;
+
+        # EVERY unit, not just the one that failed first. The constraint is a
+        # property of the MACHINE -- it cannot mount -- so it applies to each
+        # unit that uses namespacing, and radicle has four. Fixing only
+        # radicle-node left the broker and the seeding oneshot failing at step
+        # NAMESPACE exactly as the node had, with `systemctl is-system-running`
+        # still reporting `running` because units in auto-restart are
+        # `activating`, not `failed`.
+        radicle-ci-broker = mkIf cfg.ci.enable containerConfinementOff;
+        radicle-explorer-serve = mkIf (cfg.httpd.enable && cfg.httpd.explorer.enable) containerConfinementOff;
       };
 
       # Declarative seeding -- administration without sudo. It needs the same
       # read-only profile at RAD_HOME that every non-node unit does; see
       # ./rad-profile.nix for what that is and why the key is excluded.
-      services.radicle-seed-repos = mkIf (cfg.seedRepositories != [ ]) {
-        description = "Declaratively seed Radicle repositories";
-        after = [ "radicle-node.service" ];
-        requires = [ "radicle-node.service" ];
-        wantedBy = [ "multi-user.target" ];
-        environment = {
-          RAD_HOME = radProfile.radHome;
-          HOME = radProfile.radHome;
-        };
-        path = [ config.services.radicle.package pkgs.gitMinimal ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          User = "radicle";
-          Group = "radicle";
-          BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
-        };
-        script = concatMapStrings
-          (repo: ''
-            rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
-              echo "rad seed ${repo.rid} failed" >&2
-              exit 1
-            }
-          '')
-          cfg.seedRepositories;
-      };
+      services.radicle-seed-repos = mkIf (cfg.seedRepositories != [ ]) (mkMerge [
+        containerConfinementOff
+        {
+          description = "Declaratively seed Radicle repositories";
+          after = [ "radicle-node.service" ];
+          requires = [ "radicle-node.service" ];
+          wantedBy = [ "multi-user.target" ];
+          environment = {
+            RAD_HOME = radProfile.radHome;
+            HOME = radProfile.radHome;
+          };
+          path = [ config.services.radicle.package pkgs.gitMinimal ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            User = "radicle";
+            Group = "radicle";
+            BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
+          };
+          script = concatMapStrings
+            (repo: ''
+              rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
+                echo "rad seed ${repo.rid} failed" >&2
+                exit 1
+              }
+            '')
+            cfg.seedRepositories;
+        }
+      ]);
     };
 
     my.system.persistence.features.systemDirectories =
