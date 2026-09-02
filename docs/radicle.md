@@ -6,6 +6,14 @@ builds for x86_64-linux, aarch64-linux and aarch64-darwin, and an event-driven
 mirror that keeps chosen repositories -- and their releases -- public on
 GitHub. Radicle is the source of truth; GitHub is a projection.
 
+This document describes the forge **as one host runs it**, which is what
+`my.infra.radicle` configures. Where it says "the seed", read "a seed": seeds
+are plural in radicle because a node's identity is its NID and the NID lives in
+the key, so a fleet runs as many as it likes and workstations carry one
+`connect` entry per seed. yoga currently runs two -- the original on the host
+and a second as a container role -- and its CI runs on a builder role rather
+than here. `docs/radicle-containers.md` covers roles as machines.
+
 ## How the network is private
 
 `network = "test"` is **not** isolation -- it only empties the bootstrap list,
@@ -163,6 +171,19 @@ radicle.network. That is prose, not configuration -- the configured seed is
 yours, and nothing is fetched from those hosts unless you click a link.
 
 ## CI
+
+> **On yoga, CI no longer runs here.** It moved to a builder *role* -- a
+> container that is its own machine with its own NID -- and this host's
+> `ci.enable` is `false`. See `docs/radicle-containers.md`. The rest of this
+> section describes the host-based shape, which is still what the options do
+> and is still correct for a host that runs its own broker.
+>
+> Two things changed with the move, both worth knowing before turning CI on
+> anywhere. **A builder carries its own toolchain** rather than borrowing the
+> host's, so a host running a builder role needs no build tooling for the forge
+> at all. And **reports are read off disk, not out of job COBs**: the builder is
+> the only machine its reports exist on, so it serves them itself and whatever
+> fronts CI proxies to it.
 
 One broker fleet-wide, on the seed host. Radicle CI has no job matrix and job
 results (COBs) do not aggregate across brokers -- but `nix build` already fans

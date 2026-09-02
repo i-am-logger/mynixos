@@ -48,16 +48,22 @@ every one of those features is load-bearing:
 
 | Feature | What it does | What a process-shaped image costs |
 |---|---|---|
-| `LoadCredential` | key into a per-unit `$CREDENTIALS_DIRECTORY`, never at a stable path, read as root before `User=` drops | a stable-path file for the process lifetime |
 | `StateDirectory` / `LogsDirectory` | directories created after mounts, every start | a race with impermanence -- a bug this repo already hit and fixed (`ci.nix:161-171`) |
 | `systemd.paths` (mirror) | inotify on each repo's `sigrefs` | no equivalent; needs a supervisor or a poll loop |
 | `BindsTo` (broker → node) | broker dies with its node — upstream's unit, verified live with `systemctl show radicle-ci-broker -p BindsTo` | faked with coupled containers |
 | a shell | -- | assertions about the image cannot run, so negative checks pass vacuously |
-| the role's own nginx | serves `/ci/` from `report_dir` (`explorer.nix:154`) | reports cross a container boundary to the host |
+| the role's own nginx | a builder serves its own `/ci/` reports from `report_dir` (`ci.nix`), and whatever fronts CI proxies to it | reports cross a container boundary to the host |
 
 An earlier draft took "minimal image" literally -- one process, `FROM scratch`,
 no init -- and paid every row of that table. Machine-shaped roles make those
 problems disappear rather than solving them.
+
+**One systemd feature does not survive the move, and the table used to claim it
+did: `LoadCredential`.** systemd builds `$CREDENTIALS_DIRECTORY` by mounting,
+so it needs `CAP_SYS_ADMIN` and is unavailable to a rootless role -- the same
+constraint that moves sops decryption out to the host (see *Secrets and
+identity*). The key is read from a stable path instead. Everything else in the
+table works inside a role exactly as it does on a host.
 
 **A role is still not yoga.** It declares no users, so there is no `logger`, no
 home-manager, no workstation closure. That property comes from the config, not
@@ -205,11 +211,41 @@ every builder, and rotating a key is replacing a file with no rebuild. A role
 with no identity does not come up as nobody -- `radicle-node` exits
 `243/CREDENTIALS` and stays down.
 
-Identity arrives as a read-only bind mount at `identityDir`
-(`/var/lib/radicle-identity`): an `age.key` and the `secrets.yaml` holding
-`radicle/node-key`. The node's **public** key is not there -- it is public data,
-it is what a peer pins in `<nid>@host:port`, and it belongs in the role's
-arguments beside the `connect` list it has to agree with.
+Identity arrives as a read-only bind mount at `identityDir`, holding one file
+the role reads: **`node-key`, the private key already decrypted**. The node's
+**public** key is not there -- it is public data, it is what a peer pins in
+`<nid>@host:port`, and it belongs in the role's arguments beside the `connect`
+list it has to agree with.
+
+**The key arrives decrypted, and that is not the design an earlier draft
+described.** It said the role mounted an `age.key` and a `secrets.yaml` and let
+sops-nix decrypt inside the container. That cannot work: `sops-install-secrets`
+mounts a ramfs at the secrets directory -- a tmpfs under `sops.useTmpfs`, but
+still `mount(2)` -- and that needs `CAP_SYS_ADMIN`. A role runs
+repository-supplied shell, so withholding `SYS_ADMIN` is the entire reason it is
+a separate role with a disposable key. Both requirements cannot be met inside
+the container, so **decryption moves out**, to a host that has the capability,
+and the plaintext is bind-mounted in. `my/infra/radicle` asserts that
+`my.secrets` and a role identity are mutually exclusive, because enabling the
+former is what puts `sops-install-secrets` back in the activation path.
+
+The failure it produced was legible from neither end: sops reported
+`failed to mount filesystem for secrets: cannot mount: operation not permitted`,
+which reads as a sops problem, from an activation script, inside a container
+whose logs are a nested boot.
+
+What that costs, stated plainly: the key exists decrypted at a stable path for
+as long as the container runs, rather than only inside one unit's credentials
+directory. It is still encrypted at rest, and it still never enters the store.
+
+`node-key` is mode **0444**, deliberately. `radicle-node` reads its keystore
+*after* dropping to `User=radicle` inside the container, and the host's forge
+uid maps to container **root** -- so a 0400 file owned by it is unreadable to
+the one process that needs it, failing as
+`Unlocking node keystore.. Permission denied`. The directory above is `0711`:
+traversable but not listable, so a 0700 directory would block the node at the
+*path* even when the file itself is readable. Those two failures are
+indistinguishable -- both are `Permission denied` on the same `open()`.
 
 **Nothing may come from a flake input.** A `path` input is copied into
 `/nix/store`, which is world-readable and permanent, and interpolating one copies
@@ -225,22 +261,57 @@ copies, alongside a zero-byte `.enc` file. `my.secrets.allowSecretsInStore`
 A machine-shaped container cannot use `--cap-drop=ALL`: systemd needs
 capabilities a single process does not.
 
-That is a smaller loss than it looks, because **the hardening lives at the unit
-boundary, where this repo already wrote it.** `services.radicle` runs the node
-under `confinement.mode = "full-apivfs"` with `ProtectSystem=strict`,
-`CapabilityBoundingSet=""`, `SocketBindDeny=any` and a `SystemCallFilter`. All of
-it applies again -- it was *lost* in the process-shaped design, not gained. Two
-boundaries now, not one.
+An earlier draft of this document claimed the unit-level hardening applied
+again inside the container, giving "two boundaries now, not one". **That was
+wrong, and it was wrong in the direction that flatters the design.**
+`services.radicle` runs the node under `confinement.mode = "full-apivfs"` with
+`ProtectSystem=strict`, `PrivateTmp`, `ProtectHome`, `ProtectProc` and
+`ProcSubset` -- and systemd implements every one of those with `mount(2)`.
+A rootless container has no `CAP_SYS_ADMIN`, so each of them fails at step
+`NAMESPACE`. `my/infra/radicle/default.nix` therefore turns them off under
+`boot.isContainer`, for every unit rather than only the one that failed first:
+the constraint is a property of the machine, not of a unit.
+
+The honest accounting splits in two, and only one half is a loss:
+
+- **Delivery.** `BindReadOnlyPaths` was how upstream put `config.json` and
+  `radicle.pub` where the node reads them. Those files are in the image already;
+  tmpfiles symlinks do the same job with no capability at all. Nothing given up.
+- **Hardening.** `ProtectSystem`, `PrivateTmp`, `ProtectHome`, `ProtectProc`,
+  `ProcSubset` have no substitute without mount namespacing. **Genuinely lost.**
+
+What remains is the container boundary: rootless, a user namespace, no
+`SYS_ADMIN`, `no-new-privileges`, a bounded capability set. **One boundary, not
+two** -- which is what the code has said since the day it was written.
 
 At the container boundary:
 
 ```
 --security-opt=no-new-privileges
---userns=auto                            # distinct range per container
+--systemd=always                         # REQUIRED; see below
 --pids-limit / --memory / --memory-swap  # a CI recipe can fork-bomb the host
 --cap-add=NET_ADMIN --cap-add=NET_RAW    # tailscaled, and the firewall (above)
 no published ports · no socket mount
 ```
+
+**`--userns=auto` must NOT be used**, though an earlier draft listed it. It
+allocates a fresh uid range per container, so the host uid owning the identity
+files is not mapped inside and the read-only bind mount reads as an unmapped
+owner -- which looks like a file-mode problem and is not one. Plain rootless
+podman maps the host account to container root, and that is what makes a
+read-only identity mount readable at all. The isolation it was reaching for
+belongs at a different seam: **one forge user per role**, which separates
+storage, subuid range and control surface by construction. yoga's builder and
+its container seed have separate accounts for exactly this reason -- the builder
+runs repository-supplied shell, and an escape from it must not reach a seed's
+non-disposable key.
+
+**`--systemd=always` is required.** podman sets up `/run`, `/run/lock` and the
+cgroup hierarchy as tmpfs only in systemd mode, which it auto-enables *only*
+when the command is literally `/sbin/init`, `/usr/sbin/init`,
+`/usr/local/sbin/init` or `systemd`. A NixOS toplevel is a store path ending in
+`/init`, which matches none of them. Without the flag systemd execs and dies
+instantly, printing nothing -- which reads as a broken image and is not one.
 
 `CAP_SYS_ADMIN` is deliberately withheld. A builder runs repository-supplied
 shell, which is the whole reason it is a separate role with a disposable key.
@@ -361,6 +432,35 @@ Three consequences, all following from the NID living in the key:
 
 Leaving both running is a legitimate end state, not a half-finished migration.
 
+**Steps 1 and 2 are done on yoga** (2026-09-02). `radicle-yoga-seed` runs as a
+container role beside the original, with its own tailnet node and its own NID,
+and the original is untouched. Replication is not inferred from unit state --
+the original seed's journal records the new one fetching from it:
+
+```
+Peer z6Mks9Ty… fetched rad:z2WxYCuLx8F8r2bPLPNjjboGM7qPU from us successfully
+Peer z6Mks9Ty… fetched rad:z4KpNmJDpSD4xYHcsASaWa9y3AKTd from us successfully
+Peer z6Mks9Ty… fetched rad:zfDtFXYCZjVrrJ2gbFUPZVAK1XzC from us successfully
+```
+
+Three repositories, not the two named in `seedRepositories` -- the third
+followed from `defaultSeedingPolicy = "allow"`. Step 3 is deliberately not
+taken.
+
+Two things that verification taught, both about how to *check* rather than what
+to build:
+
+- **The public API cannot prove replication here.** These repositories are
+  private, so `radicle-httpd` 404s them and `/api/v1/repos` reports zero on
+  *both* seeds whether replication worked or not. The seed's journal is the
+  honest source, and it needs no privileges; a storage diff needs root, since
+  both stores are `0700`.
+- **Session state must be sampled over time.** Immediately after a workstation
+  switch, the *original* seed cycles `Connected → connection reset` while it
+  closes the stale pre-restart session as conflicting. It settles by itself. A
+  single sample reads that transient as a dead seed -- or, taken a moment later,
+  as a healthy one.
+
 **The mirror is the one role that cannot overlap** -- two mirrors force-push the
 same refs. That is free right now: `mirror.enable = false`, GATE C still shut.
 Whenever it is switched on, it goes on exactly one seed.
@@ -381,12 +481,33 @@ the responder key in advance -- `crates/radicle-node/src/wire.rs` declares
 handshake whenever the balancer picks the wrong one. The HTTP surface balances
 normally.
 
+## Settled by building it
+
+- **A builder carries its own toolchain.** `devenv` is added by the builder
+  role, not lent by the host: `nix` is already unconditional on the adapter
+  PATH, and a host that had to supply the rest would make the role depend on
+  where it happens to run -- the exact coupling this design removes. It is
+  written as a module rather than passed in as a derivation, so it is evaluated
+  by *that* system and gets *that* system's `pkgs`; a package handed in from the
+  host embeds the host's package set into a different machine, which works only
+  while the two share a nixpkgs and an architecture. Builds succeed on this
+  shape.
+- **CI reports are read off disk, not out of job COBs.** The builder is the only
+  machine its reports exist on, so it serves them itself and whatever fronts CI
+  proxies to it. Reading its filesystem from outside would mean matching subuid
+  mappings across a userns boundary by hand.
+- **Rootless systemd as PID 1 works**, given `--systemd=always` and
+  `NET_ADMIN`/`NET_RAW`. The two failure modes look nothing alike and neither
+  names its cause: without the flag, systemd dies instantly printing nothing;
+  without the capability, `firewall.service` is *skipped* by its
+  `ConditionCapability` and the role comes up `running` with an empty ruleset.
+
 ## Open questions
 
-- Does `devenv` work under a chroot store? Decides the build-store shape, and is
-  the next thing milestone 4 runs into.
 - Whether httpd and the explorer become their own roles or stay inside the seed
-  machine. Inside is simpler and costs nothing until a second seed exists.
+  machine. Inside is still simpler, but the reason to defer -- "costs nothing
+  until a second seed exists" -- has expired: a second seed exists, so there are
+  now two explorers, each baked with its own `seedHostname`.
 - Whether a `search` role (Meilisearch + `radicle-search`) runs its own replica
   node or shares a seed's storage read-only. Deferred until search is wanted.
 - Image size. Deferred deliberately -- correctness first.
