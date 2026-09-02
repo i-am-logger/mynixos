@@ -87,6 +87,22 @@ let
     "d /var/lib/radicle/keys 0700 radicle radicle -"
     "L+ /var/lib/radicle/config.json - - - - ${config.services.radicle.configFile}"
     "L+ /var/lib/radicle/keys/radicle.pub - - - - ${pkgs.writeText "radicle.pub" cfg.publicKey}"
+
+    # The PRIVATE key. Upstream delivers it with LoadCredential plus a bind
+    # mount from /run/credentials/<unit>/, and NEITHER half works here:
+    #
+    #   - the bind is mount(2), which is why BindReadOnlyPaths is emptied above;
+    #   - systemd builds /run/credentials/<unit>/ by mounting a ramfs, so
+    #     without CAP_SYS_ADMIN it silently skips it. The directory is simply
+    #     never created, and the node fails with
+    #     `Unlocking node keystore.. Permission denied` -- EACCES on a symlink
+    #     into a directory that does not exist, which reads like a mode problem
+    #     and is an absent mount.
+    #
+    # So the key is linked straight from where the host put it. That is the same
+    # file LoadCredential would have copied; the copy was only ever a way to hand
+    # it to the unit without leaving it at a stable path.
+    "L+ /var/lib/radicle/keys/radicle - - - - ${toString cfg.privateKeyFile}"
   ];
 in
 {
@@ -252,6 +268,33 @@ in
             Group = "radicle";
             BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
           };
+          # radicle-node.service declares no `Type=`, so systemd defaults to
+          # `Type=simple` and considers it started the instant the process is
+          # forked -- before the node has opened its database. `After=` therefore
+          # orders this unit, it does not make it WAIT for readiness, and
+          # `rad seed` can run against a database that does not exist yet:
+          #
+          #     Error: internal error: unable to open database file (code 14)
+          #
+          # That is a race, so it passes until it does not. It survived every
+          # test on one repository and failed the first time a second was added,
+          # which is the worst way for a race to announce itself.
+          #
+          # Wait for the node to actually answer instead of assuming it does.
+          # `rad node status` succeeding is the readiness signal the unit type
+          # does not give us.
+          preStart = ''
+            for i in $(seq 1 60); do
+              if rad node status >/dev/null 2>&1; then
+                echo "node is answering after ''${i}s"
+                exit 0
+              fi
+              sleep 1
+            done
+            echo "radicle-node did not become ready within 60s -- not seeding" >&2
+            exit 1
+          '';
+
           script = concatMapStrings
             (repo: ''
               rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
