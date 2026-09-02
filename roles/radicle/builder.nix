@@ -38,6 +38,19 @@
   # Which lane this builder is. Becomes the hostname and the node alias.
 , lane ? "x64"
 
+  # The node name: the container's hostname AND, because tailscaled runs
+  # inside, its name on the tailnet. Defaults to the lane alone, which is
+  # unique on ONE host. A fleet running builders on several hosts wants the
+  # host in it: a tailnet name must be unique fleet-wide, and tailscale does
+  # not reject a collision -- it silently appends -1, so two hosts' builders
+  # become indistinguishable in exactly the place you would look to tell
+  # them apart.
+  #
+  # Naming a role after where it runs is in slight tension with a role being
+  # PLACED rather than welded to a host. Uniqueness wins: the identity is the
+  # NID, not the name, so moving a role means re-registering anyway.
+, name ? "radicle-${lane}-builder"
+
   # `<nid>@<host>:<port>` seeds this builder dials. A builder DIALS OUT and is
   # never dialed, so it advertises no external addresses at all.
 , connect ? [ ]
@@ -65,7 +78,7 @@
 self.lib.mkSystem {
   platform = "oci";
   inherit system;
-  hostname = "radicle-${lane}-builder";
+  hostname = name;
 
   my = [
     {

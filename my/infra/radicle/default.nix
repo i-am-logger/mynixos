@@ -31,6 +31,29 @@ let
     inherit config pkgs;
     inherit (cfg) publicKey;
   };
+
+  # nixpkgs runs radicle-node and radicle-httpd under systemd `confinement`
+  # (mode "full-apivfs"), which builds the unit a private root by MOUNT
+  # NAMESPACING. That is mount(2), and it needs CAP_SYS_ADMIN -- which a role
+  # running repository-supplied shell must not have. Inside a rootless container
+  # the unit dies at step NAMESPACE with `Operation not supported`, restarting
+  # forever: 311 times before this was found, with `systemctl is-system-running`
+  # still reporting `running`, because a unit stuck in auto-restart is
+  # `activating`, not `failed`.
+  #
+  # `boot.isContainer` is the honest condition. It is not "this is a radicle
+  # role" -- it is "this machine cannot do mount namespacing", which is the
+  # actual constraint and is true of any container, however it was built.
+  #
+  # THE COST IS REAL AND IS NOT HIDDEN. On a host the node has two boundaries:
+  # the unit's confinement and whatever contains the machine. In a container it
+  # has one. The container's own boundary is not nothing -- rootless, a user
+  # namespace, no SYS_ADMIN, no-new-privileges, a bounded capability set -- but
+  # it is one boundary, not two, and the unit-level ProtectSystem/SocketBindDeny/
+  # SystemCallFilter that confinement carried go with it.
+  containerConfinementOff = mkIf config.boot.isContainer {
+    confinement.enable = mkForce false;
+  };
 in
 {
   imports = [ ./ci.nix ./mirror.nix ./explorer.nix ];
@@ -148,9 +171,16 @@ in
     # The upstream unit orders only against network-online.target. Binding is
     # wildcard so there is no bind race, but dialing the static peers by
     # MagicDNS name wants tailscaled up first.
-    systemd.services.radicle-node = {
-      after = [ "tailscaled.service" ];
-      wants = [ "tailscaled.service" ];
+    systemd.services = {
+      radicle-node = mkMerge [
+        {
+          after = [ "tailscaled.service" ];
+          wants = [ "tailscaled.service" ];
+        }
+        containerConfinementOff
+      ];
+
+      radicle-httpd = mkIf cfg.httpd.enable containerConfinementOff;
     };
 
     # Declarative seeding -- administration without sudo. It needs the same
