@@ -99,11 +99,22 @@ self.lib.mkSystem {
           defaultSeedingPolicy = "block";
         };
 
-        # No httpd and no explorer. A builder serves nothing; its reports are
-        # published by the broker and read on a seed.
+        # No httpd and no explorer: a builder serves no repositories and reads
+        # none. It does serve its own CI reports, because it is the only machine
+        # they exist on -- an earlier version of this comment said they were
+        # "published by the broker and read on a seed", which assumed job COBs
+        # carry the result. On this fleet they do not: the explorer reads reports
+        # off DISK, so moving CI here moved the reports with it.
         ci = {
           enable = true;
           inherit trustedNids;
+
+          # A builder is the only place its reports exist, so it is the only
+          # place that can serve them. Whatever fronts CI results proxies here;
+          # nothing reads this container's filesystem from outside, which is what
+          # keeps the files owned by the container's own user instead of needing
+          # subuid mappings matched by hand across the boundary.
+          serveReports.enable = true;
         };
       };
     }

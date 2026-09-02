@@ -248,6 +248,28 @@
                     default = "/ci/";
                     description = "URL path the reports are served under. Must end in a slash.";
                   };
+
+                  proxyTo = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    example = "http://radicle-x64-builder.tailnet.ts.net:8782/";
+                    description = ''
+                      Serve the reports by PROXYING to another node rather than
+                      reading them from this machine's disk.
+
+                      Needed the moment CI runs somewhere other than the machine
+                      showing the explorer. Reports exist only on the builder
+                      that produced them, and reaching them from here would mean
+                      reading another container's filesystem across a userns
+                      boundary -- matching subuid mappings by hand, which is
+                      brittle in exactly the way this design avoids elsewhere.
+
+                      With this set the local `report_dir` is not consulted, so
+                      it works on a host whose own `ci.enable` is false. Without
+                      it, a host that has stopped running CI serves an empty
+                      directory listing: CI working perfectly and invisibly.
+                    '';
+                  };
                 };
 
                 avatars = {
@@ -293,6 +315,42 @@
 
             ci = {
               enable = lib.mkEnableOption "Radicle CI (broker + native adapters) on this node";
+
+              # A role has no explorer and no httpd -- it serves no repositories
+              # and reads none. Its CI reports still have to be reachable, and on
+              # this fleet they are read off DISK, not from job COBs: the
+              # explorer aliases report_dir directly.
+              #
+              # When CI moved into a container that quietly stopped working. The
+              # seed's explorer still pointed at the SEED's report_dir, which no
+              # longer receives anything, so /ci/ became an empty directory
+              # listing rather than an error -- CI running correctly, invisibly.
+              #
+              # So a role serves its own reports and whatever fronts them proxies
+              # to it. That keeps the files owned by the container's own user;
+              # reading them from the host instead means matching subuid mappings
+              # by hand across the boundary, which is the richest single source of
+              # breakage in this design.
+              serveReports = {
+                enable = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = ''
+                    Serve this node's CI reports over HTTP, with no explorer and
+                    no httpd. For a role whose reports are read by something
+                    else -- a seed's explorer proxying to it.
+                  '';
+                };
+
+                listenPort = lib.mkOption {
+                  type = lib.types.port;
+                  default = 8782;
+                  description = ''
+                    Port the reports are served on, opened on tailscale0 only
+                    like every other port this domain uses.
+                  '';
+                };
+              };
 
               trustedNids = lib.mkOption {
                 type = lib.types.listOf lib.types.str;

@@ -948,9 +948,14 @@ in
       && !(config.systemd.services ? radicle-httpd)
 
       # And it is not logged into either: sshd is off, so nothing may put 22 on
-      # the tailnet. The node port is the ONLY inbound reachability a builder has.
+      # the tailnet. Exactly two ports are reachable and both are named here, so
+      # a third one appearing has to be argued for rather than merely noticed:
+      # the node's P2P port, and the CI reports the builder serves because it is
+      # the only machine they exist on.
       && !config.services.openssh.enable
-      && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8776 ]
+      && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8776 8782 ]
+      && config.services.nginx.enable
+      && !config.services.radicle.httpd.enable
 
       # No accounts, which is what keeps home-manager and a workstation's
       # closure out of the image.

@@ -150,6 +150,42 @@ in
         cfg.ci.adapters;
     };
 
+    # A role serving its own CI reports: nginx, no explorer, no httpd. The
+    # explorer's own ciReports path aliases report_dir on the SEED, which is
+    # wrong the moment CI runs somewhere else -- and wrong silently, because an
+    # empty report_dir renders as an empty directory listing.
+    services.nginx = mkIf cfg.ci.serveReports.enable {
+      enable = true;
+      virtualHosts."radicle-ci-reports" = {
+        # BOTH families. `listen [::]:port` in nginx is IPv6-ONLY unless the
+        # socket says otherwise, and a tailnet peer may dial either -- yoga
+        # reaches this over IPv4 and got connection refused while `ss` showed
+        # something listening, which reads as a firewall problem and is not one.
+        # radicle-node binds dual-stack, so the two looked identical in config
+        # and behaved differently on the wire.
+        listen = [
+          { addr = "0.0.0.0"; port = cfg.ci.serveReports.listenPort; }
+          { addr = "[::]"; port = cfg.ci.serveReports.listenPort; }
+        ];
+        locations."/" = {
+          alias = "${config.services.radicle.ci.broker.settings.report_dir}/";
+          # autoindex because a run is named after its id: without a listing
+          # there is no way to reach one without already knowing it.
+          extraConfig = "autoindex on;";
+        };
+      };
+    };
+
+    # The report dir belongs to the radicle user; nginx needs group read to
+    # serve it. Read-only -- nginx never writes there.
+    users.users.nginx.extraGroups =
+      optional (cfg.ci.serveReports.enable && cfg.ci.enable) "radicle";
+
+    # tailscale0 only, like every other port this domain opens. A builder is
+    # dialled by nothing except whatever fronts its reports.
+    my.network.tailscale.allowedTCPPorts =
+      optional cfg.ci.serveReports.enable cfg.ci.serveReports.listenPort;
+
     # `nix build` in a recipe talks to the daemon over its unix socket;
     # connect(2) on AF_UNIX needs a writable socket inode, and the broker's
     # ProtectSystem=strict makes /nix read-only. Targeted loosening only --

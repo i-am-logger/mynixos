@@ -139,10 +139,13 @@ in
           # Same-origin API. The trailing slashes matter: /api/v1/x must reach
           # httpd as /api/v1/x, not /api/api/v1/x.
           "/api/".proxyPass = "http://127.0.0.1:${toString cfg.httpd.listenPort}/api/";
-        } // optionalAttrs (ecfg.ciReports.enable && cfg.ci.enable) {
-          # The broker writes HTML reports here; autoindex so a run is
-          # reachable without knowing its filename. Read-only, and on the same
-          # tailnet-only origin as everything else.
+          # CI reports come from wherever CI actually RAN. `proxyTo` covers the
+          # case that broke silently: CI moved to a builder container, this
+          # host's own ci.enable went false, and the /ci/ location disappeared
+          # with it -- so the page went blank rather than wrong, which is harder
+          # to notice. With proxyTo set the local report_dir is irrelevant and
+          # the condition no longer depends on ci.enable at all.
+        } // optionalAttrs (ecfg.ciReports.enable && (cfg.ci.enable || ecfg.ciReports.proxyTo != null)) {
           # Without this, /ci (no trailing slash) does not match the /ci/
           # location, falls through to the SPA, and the explorer reports
           # "repository not found" -- which looks like a broken CI page
@@ -150,12 +153,21 @@ in
           ${removeSuffix "/" ecfg.ciReports.path} = {
             return = "301 ${ecfg.ciReports.path}";
           };
-          ${ecfg.ciReports.path} = {
-            alias = "${config.services.radicle.ci.broker.settings.report_dir}/";
-            extraConfig = ''
-              autoindex on;
-            '';
-          };
+          ${ecfg.ciReports.path} =
+            if ecfg.ciReports.proxyTo != null then {
+              # The builder serves its own reports; this is a window onto them.
+              # Reading its filesystem from here instead would mean matching
+              # subuid mappings across a userns boundary by hand.
+              proxyPass = ecfg.ciReports.proxyTo;
+            } else {
+              # The broker writes HTML reports here; autoindex so a run is
+              # reachable without knowing its filename. Read-only, and on the
+              # same tailnet-only origin as everything else.
+              alias = "${config.services.radicle.ci.broker.settings.report_dir}/";
+              extraConfig = ''
+                autoindex on;
+              '';
+            };
         } // optionalAttrs acfg.enable {
           # Served from here rather than gravatar.com. Unknown addresses fall
           # back to the default image, so a missing avatar is a local 200
@@ -176,8 +188,11 @@ in
 
     # The report dir belongs to the radicle user; nginx needs group read to
     # serve it. Read-only: nginx never writes there.
+    # Only when nginx READS the reports off this machine. Proxying needs no
+    # group membership -- and granting it anyway would hand nginx access to the
+    # radicle user.s files on a host that has no reason to touch them.
     users.users.nginx.extraGroups =
-      optional (ecfg.ciReports.enable && cfg.ci.enable) "radicle";
+      optional (ecfg.ciReports.enable && cfg.ci.enable && ecfg.ciReports.proxyTo == null) "radicle";
 
     # Only opened on the tailnet when nginx is the front door. Under https
     # the port is loopback-only and opening it would be a lie -- the entrance
