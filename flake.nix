@@ -26,9 +26,14 @@
     };
 
 
-    # Runtime theme management
+    # Runtime theme management.
+    #
+    # Tracks hud-live rather than master: my/theming/vogix sets
+    # programs.vogix.behavior.input.kbLayout, an option that exists only on that
+    # branch. Pinned to master this flake does not evaluate on any host. Move it
+    # back when hud-live lands.
     vogix = {
-      url = "github:i-am-logger/vogix";
+      url = "github:i-am-logger/vogix/hud-live";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
