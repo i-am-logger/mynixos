@@ -124,6 +124,10 @@ in
     ../my/system/core
     ../my/system/kernel
     ../my/system/systemd
+    # A duplicate uid or gid makes two accounts one principal, and neither
+    # NixOS nor `getent` objects. Fleet-wide because it is a property of any
+    # machine with accounts, not of anything radicle-specific.
+    ../my/system/unique-ids
 
     # Theming
     ../my/theming
