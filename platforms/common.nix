@@ -59,6 +59,7 @@ in
       ../my/users/apps/security/1password/options.nix
       ../my/users/apps/ai/claude-code/options.nix
       ../my/users/apps/git/options.nix
+      ../my/users/apps/ssh/options.nix
       ../my/users/apps/communication/discord/options.nix
 
       # Each multiplexer contributes its own name to the terminal.multiplexer

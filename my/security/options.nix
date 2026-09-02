@@ -27,6 +27,20 @@
 
         nopasswdRebuild = lib.mkEnableOption "NOPASSWD sudo for nixos-rebuild (skips YubiKey touch on rebuild)";
 
+        # sudo authenticated by a signature from the caller's forwarded SSH
+        # agent, rather than by a security key plugged into THIS machine.
+        #
+        # This is what makes sudo usable on a headless host. pam_u2f asks for a
+        # touch on the machine running sudo, which nobody is standing at; the
+        # agent answers from wherever the operator actually is, with a key that
+        # never crosses the network. The client half is
+        # my.users.<name>.apps.terminal.network.ssh.forwardAgentHosts.
+        #
+        # The trusted keys are the authorized_keys files, NOT the user's own
+        # ~/.ssh/authorized_keys: a file the user can write is a file the user
+        # can add a key to, which would make this trivially self-granting.
+        sshAgentSudo = lib.mkEnableOption "sudo authenticated by the caller's forwarded SSH agent";
+
         # Authentication DEVICES are not declared here — they live under
         # my.hardware (securityKeys.yubico, biometrics). This domain owns policy
         # and only observes them, warning when the security stack is on but no
