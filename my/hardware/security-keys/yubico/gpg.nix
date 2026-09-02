@@ -312,6 +312,13 @@ in
                   behavior = "own";
                   backend = "gpg";
                   key = userCfg.email;
+
+                  # jj's gpg backend defaults to `gpg2`, which reaches gnupg
+                  # directly: the email resolves to whichever key is listed
+                  # first, and gnupg then demands THAT card regardless of which
+                  # one is inserted. Route it through the wrapper git already
+                  # uses, so on every host the inserted card picks the key.
+                  backends.gpg.program = "gpg-smart";
                 };
               };
             };
