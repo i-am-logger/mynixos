@@ -53,7 +53,41 @@ let
   # SystemCallFilter that confinement carried go with it.
   containerConfinementOff = mkIf config.boot.isContainer {
     confinement.enable = mkForce false;
+
+    # Disabling confinement is NOT enough. The base unit carries ten more
+    # directives that systemd implements with mount(2), and every one of them
+    # fails the same way. They fall into two kinds, and only one is a loss:
+    #
+    #   DELIVERY -- BindReadOnlyPaths puts config.json and radicle.pub at the
+    #   paths the node reads. Those files are already in the image; the mount is
+    #   only how upstream gets them into place. Symlinks do the same job with no
+    #   capability at all, so nothing is given up (see the tmpfiles rules below).
+    #
+    #   HARDENING -- ProtectSystem, PrivateTmp, ProtectHome, ProtectProc,
+    #   ProcSubset. These have no substitute without mount namespacing, and they
+    #   are genuinely lost. What remains is the container boundary: rootless, a
+    #   user namespace, no SYS_ADMIN, no-new-privileges, a bounded capability
+    #   set. One boundary, not two.
+    serviceConfig = {
+      BindReadOnlyPaths = mkForce [ ];
+      PrivateTmp = mkForce false;
+      ProtectHome = mkForce false;
+      ProtectSystem = mkForce false;
+      ProtectProc = mkForce "default";
+      ProcSubset = mkForce "all";
+    };
   };
+
+  # The delivery half, done without mounting. `L+` replaces whatever is there,
+  # so this is idempotent across restarts and survives the state directory being
+  # a volume -- which is why it cannot simply be baked into the image at that
+  # path: the host's bind mount would hide it.
+  containerRadHomeRules = optionals config.boot.isContainer [
+    "d /var/lib/radicle 0700 radicle radicle -"
+    "d /var/lib/radicle/keys 0700 radicle radicle -"
+    "L+ /var/lib/radicle/config.json - - - - ${config.services.radicle.configFile}"
+    "L+ /var/lib/radicle/keys/radicle.pub - - - - ${pkgs.writeText "radicle.pub" cfg.publicKey}"
+  ];
 in
 {
   imports = [ ./ci.nix ./mirror.nix ./explorer.nix ];
@@ -171,46 +205,50 @@ in
     # The upstream unit orders only against network-online.target. Binding is
     # wildcard so there is no bind race, but dialing the static peers by
     # MagicDNS name wants tailscaled up first.
-    systemd.services = {
-      radicle-node = mkMerge [
-        {
-          after = [ "tailscaled.service" ];
-          wants = [ "tailscaled.service" ];
-        }
-        containerConfinementOff
-      ];
+    systemd = {
+      tmpfiles.rules = containerRadHomeRules;
 
-      radicle-httpd = mkIf cfg.httpd.enable containerConfinementOff;
-    };
-
-    # Declarative seeding -- administration without sudo. It needs the same
-    # read-only profile at RAD_HOME that every non-node unit does; see
-    # ./rad-profile.nix for what that is and why the key is excluded.
-    systemd.services.radicle-seed-repos = mkIf (cfg.seedRepositories != [ ]) {
-      description = "Declaratively seed Radicle repositories";
-      after = [ "radicle-node.service" ];
-      requires = [ "radicle-node.service" ];
-      wantedBy = [ "multi-user.target" ];
-      environment = {
-        RAD_HOME = radProfile.radHome;
-        HOME = radProfile.radHome;
-      };
-      path = [ config.services.radicle.package pkgs.gitMinimal ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        User = "radicle";
-        Group = "radicle";
-        BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
-      };
-      script = concatMapStrings
-        (repo: ''
-          rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
-            echo "rad seed ${repo.rid} failed" >&2
-            exit 1
+      services = {
+        radicle-node = mkMerge [
+          {
+            after = [ "tailscaled.service" ];
+            wants = [ "tailscaled.service" ];
           }
-        '')
-        cfg.seedRepositories;
+          containerConfinementOff
+        ];
+
+        radicle-httpd = mkIf cfg.httpd.enable containerConfinementOff;
+      };
+
+      # Declarative seeding -- administration without sudo. It needs the same
+      # read-only profile at RAD_HOME that every non-node unit does; see
+      # ./rad-profile.nix for what that is and why the key is excluded.
+      services.radicle-seed-repos = mkIf (cfg.seedRepositories != [ ]) {
+        description = "Declaratively seed Radicle repositories";
+        after = [ "radicle-node.service" ];
+        requires = [ "radicle-node.service" ];
+        wantedBy = [ "multi-user.target" ];
+        environment = {
+          RAD_HOME = radProfile.radHome;
+          HOME = radProfile.radHome;
+        };
+        path = [ config.services.radicle.package pkgs.gitMinimal ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = "radicle";
+          Group = "radicle";
+          BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
+        };
+        script = concatMapStrings
+          (repo: ''
+            rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
+              echo "rad seed ${repo.rid} failed" >&2
+              exit 1
+            }
+          '')
+          cfg.seedRepositories;
+      };
     };
 
     my.system.persistence.features.systemDirectories =
