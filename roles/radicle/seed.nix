@@ -26,13 +26,21 @@
 
   # The node's radicle public key, as `keys/radicle.pub` contains it and
   # WITHOUT a trailing comment. Public data; the matching private key arrives
-  # at runtime through sops (see identityDir below). A seed's NID is derived
-  # from this key, so a new seed means a new key means a new NID -- which is
-  # exactly why standing one up beside another is safe.
+  # at runtime ALREADY DECRYPTED, from the host (see identityDir below). A
+  # seed's NID is derived from this key, so a new seed means a new key means a
+  # new NID -- which is exactly why standing one up beside another is safe.
 , publicKey
 
-  # Distinguishes several seeds. Becomes the hostname and the node alias.
-, name ? "seed"
+  # The node name: the container's hostname AND, because tailscaled runs
+  # inside, its name on the tailnet. The FULL name, not a suffix -- this used
+  # to be a suffix onto "radicle-", which meant a caller naming its seed
+  # `radicle-yoga-seed` (as ./builder.nix's naming argues it should) silently
+  # got `radicle-radicle-yoga-seed`. Nothing catches that: the image builds,
+  # the container runs, and the damage is that `externalAddresses` and
+  # `seedHostname` then name a tailnet host that does not exist -- so the seed
+  # advertises an address nobody can dial and its explorer fetches from
+  # nowhere, both of which look like network faults rather than a typo.
+, name ? "radicle-seed"
 
   # `<nid>@<host>:<port>` peers this seed dials, and the addresses it
   # advertises. A second seed lists the first here (and gets listed by it), so
@@ -56,8 +64,12 @@
   # The one directory the host bind-mounts into the container, read-only. It is
   # what makes the IMAGE identity-free and the CONTAINER identified: several
   # seeds can share one image and differ only in what is mounted here.
-  #   age.key       sops age key for this role
-  #   secrets.yaml  sops file holding `radicle/node-key`
+  #   node-key   the node's private key, ALREADY DECRYPTED by the host
+  #
+  # Decryption is the host's job because sops-install-secrets mounts a ramfs
+  # for its secrets directory, which needs CAP_SYS_ADMIN -- see ./identity.nix
+  # for why a role cannot have it. Any ciphertext the host keeps beside the
+  # plaintext is its business, not the role's.
 , identityDir ? "/var/lib/radicle-identity"
 
   # Auth key for unattended tailnet registration, as a FILE. Null leaves the
@@ -72,7 +84,7 @@
 self.lib.mkSystem {
   platform = "oci";
   inherit system;
-  hostname = "radicle-${name}";
+  hostname = name;
 
   my = [
     {
@@ -109,8 +121,7 @@ self.lib.mkSystem {
   ++ my;
 
   # The identity contract: see ./identity.nix. A module rather than a `my`
-  # layer because it also has to switch sops-nix's store-path check off, which
-  # is not a `my.*` option and should not become one -- it is a fact about how
-  # THIS deployment delivers the file, not about what mynixos configures.
+  # layer because a layer is a plain attribute set and receives no module
+  # arguments, so it cannot reach options outside `my.*`.
   extraModules = [ (import ./identity.nix identityDir) ];
 }

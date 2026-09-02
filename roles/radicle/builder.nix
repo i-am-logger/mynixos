@@ -27,7 +27,7 @@
 
   # The node's radicle public key, as `keys/radicle.pub` contains it and
   # WITHOUT a trailing comment. Public data; the matching private key arrives
-  # at runtime through sops (see identityDir below).
+  # at runtime ALREADY DECRYPTED, from the host (see identityDir below).
 , publicKey
 
   # NIDs whose pushes and patches may trigger CI. MANDATORY, and asserted
@@ -62,8 +62,12 @@
   # The one directory the host bind-mounts into the container, read-only. It is
   # what makes the IMAGE identity-free and the CONTAINER identified: several
   # builders can share one image and differ only in what is mounted here.
-  #   age.key       sops age key for this role
-  #   secrets.yaml  sops file holding `radicle/node-key`
+  #   node-key   the node's private key, ALREADY DECRYPTED by the host
+  #
+  # Decryption is the host's job because sops-install-secrets mounts a ramfs
+  # for its secrets directory, which needs CAP_SYS_ADMIN -- exactly the
+  # capability a role running repository-supplied shell must not have. See
+  # ./identity.nix.
 , identityDir ? "/var/lib/radicle-identity"
 
   # Auth key for unattended tailnet registration, as a FILE. Null leaves the

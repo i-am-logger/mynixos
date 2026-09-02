@@ -1006,4 +1006,33 @@ in
 
       && config.my.users == { }
       && config.system.build.image.imageName == "radicle-seed");
+
+  # A caller-supplied `name` is the node name VERBATIM, not a suffix.
+  #
+  # The check above cannot see this: it takes the default, so a role that
+  # prefixed "radicle-" onto the argument would produce "radicle-seed" either
+  # way and pass. The role did exactly that, and the deployment that named its
+  # seed `radicle-yoga-seed` -- the naming ./builder.nix argues for, since a
+  # tailnet name must be unique fleet-wide -- silently became
+  # `radicle-radicle-yoga-seed`.
+  #
+  # Nothing downstream complains. The image builds, the container boots, and
+  # the breakage is that tailscaled registers under the doubled name while
+  # `externalAddresses` and `seedHostname` still carry the intended one: the
+  # seed advertises an address that does not resolve and its explorer fetches
+  # from a host that is not there. Both read as tailnet faults.
+  oci-radicle-seed-named = roleAssert "oci-radicle-seed-named"
+    (self.lib.roles.radicle.seed {
+      inherit system;
+      name = "radicle-yoga-seed";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+      externalAddresses = [ "radicle-yoga-seed.example.ts.net:8776" ];
+      seedHostname = "radicle-yoga-seed.example.ts.net";
+    })
+    (config:
+      config.system.build.image.imageName == "radicle-yoga-seed"
+      # The hostname is what tailscaled registers as, so it is the half that
+      # has to agree with the advertised address -- asserting only the image
+      # name would let the two drift apart again.
+      && config.networking.hostName == "radicle-yoga-seed");
 }
