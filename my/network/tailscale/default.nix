@@ -63,6 +63,21 @@ in
             "--advertise-tags=${concatStringsSep "," cfg.tags}"
           ]
           ++ optional (cfg.authKeyFile != null) "--authkey=file:${cfg.authKeyFile}";
+
+        # The tailnet name follows the machine's hostname, always.
+        #
+        # A node keeps whatever name it registered with, forever -- the OS
+        # hostname is consulted at FIRST registration and never again. A
+        # machine that is later renamed therefore keeps its old tailnet
+        # identity silently, which is exactly what happened to a radicle
+        # builder here: renamed on the host, still listed under the old name
+        # on the tailnet, with nothing anywhere reporting the mismatch.
+        #
+        # extraSetFlags, not extraUpFlags: `tailscaled-autoconnect` only runs
+        # when an authKeyFile is set, and the machines on this fleet register
+        # interactively. `tailscaled-set` runs regardless, so this converges on
+        # every start rather than only at first join.
+        extraSetFlags = [ "--hostname=${config.networking.hostName}" ];
       };
 
       # Allow WireGuard UDP port for tailscale
