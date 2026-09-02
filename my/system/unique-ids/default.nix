@@ -32,12 +32,39 @@
 { pkgs, ... }:
 
 {
+  # DRIVEN BY A TIMER, NOT BY multi-user.target, and that is the whole point.
+  #
+  # The first version was `wantedBy = [ "multi-user.target" ]`, so it ran as
+  # part of switch-to-configuration. A unit that fails during a switch makes
+  # the switch exit non-zero, and `rebuild-system` reports failure.
+  #
+  # That builds a trap. A duplicate id is repaired by renumbering an account,
+  # and the renumber only takes effect on ACTIVATION -- so the guard failed the
+  # very rebuild that would have fixed the thing it was guarding. The repair
+  # script for the radicle-forge / fwupd-refresh collision hit exactly this:
+  # it called rebuild-system half way through, and the guard failed it.
+  #
+  # A drift check is not a boot-critical safety property. It needs to be
+  # VISIBLE, not blocking: a failed unit shows in `systemctl --failed` and
+  # stays there, which is all the loudness this needs. Run it on demand with
+  # `systemctl start unique-ids-enforced`.
+  systemd.timers.unique-ids-enforced = {
+    description = "Periodically assert no uid or gid is shared";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      # Not at boot exactly: accounts are created during activation, and on the
+      # first boot after a new account appears this would otherwise race it.
+      OnBootSec = "2min";
+      OnUnitActiveSec = "1h";
+      Unit = "unique-ids-enforced.service";
+    };
+  };
+
   systemd.services.unique-ids-enforced = {
     description = "Assert no uid or gid is shared by two accounts";
     # After the accounts are created; that unit is what allocates the ids this
     # checks, so running before it would test the previous generation.
     after = [ "systemd-sysusers.service" ];
-    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
