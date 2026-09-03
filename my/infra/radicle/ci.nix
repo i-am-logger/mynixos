@@ -23,6 +23,45 @@ with lib;
 let
   cfg = config.my.infra.radicle;
 
+  # WAIT FOR THE NODE'S CONTROL SOCKET, because ordering does not.
+  #
+  # The broker is `after` and `bindsTo` radicle-node, and neither means what is
+  # needed here: radicle-node is a `simple` service, so systemd considers it
+  # started the moment it EXECS -- long before it has created
+  # $RAD_HOME/node/control.sock. The broker then subscribes, finds no socket,
+  # and treats it as unrecoverable:
+  #
+  #   ERROR: failed to add events to queue
+  #   caused by: failed to subscribe to node events
+  #   caused by: node control socket does not exist: /var/lib/radicle/node/control.sock
+  #   CI broker ends in unrecoverable error
+  #
+  # systemd restarts it and the second attempt usually wins, so the unit ends up
+  # `active` and the failure is invisible in anything but the journal. What it
+  # costs is not nothing: events that arrive inside that window are never
+  # queued, so a push landing just after a restart produces no CI run at all --
+  # and a container restarts on every image change.
+  #
+  # Bounded rather than infinite: a node that never opens its socket is a real
+  # failure and must still surface as one, just with a message that says so
+  # instead of a race that reads as a broker bug.
+  waitForNodeSocket = pkgs.writeShellScript "radicle-ci-broker-wait-for-node" ''
+    sock=${radProfile.radHome}/node/control.sock
+    for _ in $(seq 1 120); do
+      [ -S "$sock" ] && exit 0
+      sleep 1
+    done
+    echo "radicle-node control socket did not appear at $sock after 120s." >&2
+    echo "The broker subscribes to the node's event stream and cannot start" >&2
+    echo "without it; check radicle-node.service." >&2
+    exit 1
+  '';
+
+  radProfile = import ./rad-profile.nix {
+    inherit config pkgs;
+    inherit (cfg) publicKey;
+  };
+
   # The darwin remote builder, if the host declares one. The probe uses the
   # builder's real host name on TCP 22: reachability needs no credentials,
   # and the ssh key is root-owned -- the broker could not use it anyway.
@@ -192,6 +231,11 @@ in
     # never enableHardening = false, and the node unit's confinement is not
     # touched (upstream defends it with a systemd-analyze threshold test).
     systemd.services.radicle-ci-broker.serviceConfig = {
+      # See waitForNodeSocket above: `after`/`bindsTo` on a `simple` service
+      # order against the EXEC, not against readiness, so the broker has to wait
+      # for the node's control socket itself.
+      ExecStartPre = [ "${waitForNodeSocket}" ];
+
       ReadWritePaths = [ "/nix/var/nix/daemon-socket" ];
 
       # Upstream creates the report and adapter-log directories with
