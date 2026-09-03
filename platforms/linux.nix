@@ -54,6 +54,7 @@ in
     (mkOptionsModule ../my/theming/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
+    (mkOptionsModule ../my/infra/oci-roles/options.nix { inherit lib; })
     (mkOptionsModule ../my/dev/remote-builders/options-linux.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/boot/options.nix { inherit lib; })
     (mkOptionsModule ../my/storage/options.nix { inherit lib; })
@@ -189,6 +190,9 @@ in
     ../my/infra/github-runner
     ../my/infra/k3s
     ../my/infra/radicle
+    # How a host RUNS a role, once rather than per role. Linux-only by
+    # construction: podman and virtualisation.oci-containers are.
+    ../my/infra/oci-roles
 
     # Remote nix builders, client half (nix.buildMachines). The darwin half
     # (accepting builds) is my/dev/remote-builders/darwin.nix.
