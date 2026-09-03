@@ -70,6 +70,15 @@
   # ./identity.nix.
 , identityDir ? "/var/lib/radicle-identity"
 
+  # The URL a READER reaches this builder's CI reports at.
+  #
+  # A builder cannot derive it: it is proxied by whatever fronts it and
+  # knows neither that host's name nor the path it is mounted under. Unset,
+  # the native adapter has no base_url, and upstream calls that "mandatory
+  # for access from CI broker page" -- every run then renders as the bare
+  # word "failure" with an empty Info column and no link to its log.
+, reportsPublicUrl ? null
+
   # Auth key for unattended tailnet registration, as a FILE. Null leaves the
   # node to a manual `tailscale up`.
 , tailscaleAuthKeyFile ? null
@@ -118,7 +127,10 @@ self.lib.mkSystem {
           # nothing reads this container's filesystem from outside, which is what
           # keeps the files owned by the container's own user instead of needing
           # subuid mappings matched by hand across the boundary.
-          serveReports.enable = true;
+          serveReports = {
+            enable = true;
+            publicUrl = reportsPublicUrl;
+          };
         };
       };
     }
@@ -146,7 +158,18 @@ self.lib.mkSystem {
   extraModules = [
     (import ./identity.nix identityDir)
     ({ pkgs, ... }: {
-      my.infra.radicle.ci.adapters.native.extraRuntimePackages = [ pkgs.devenv ];
+      my.infra.radicle.ci.adapters.native.extraRuntimePackages = [
+        pkgs.devenv
+        # Upstream's base PATH is bash coreutils curl gawk gitMinimal gnused
+        # wget -- no grep, which almost every recipe reaches for and which fails
+        # as "grep: command not found" in the middle of a run rather than as a
+        # missing dependency.
+        pkgs.gnugrep
+        # unshare(1), so a recipe can TEST whether it may create a nested user
+        # namespace instead of inferring it from a nix build that dies four
+        # levels down with "cannot set host name".
+        pkgs.util-linux
+      ];
     })
   ];
 }

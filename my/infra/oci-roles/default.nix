@@ -123,6 +123,13 @@ let
           "--systemd=always"
           "--security-opt=no-new-privileges"
 
+        ]
+        # /proc fully visible, so nix's sandbox can remount it. See the
+        # nixSandbox option for why this is not a capability grant and why
+        # `--no-sandbox` is the wrong reading of the error it fixes.
+        ++ optional role.nixSandbox "--security-opt=unmask=/proc/*"
+        ++ [
+
           # NO --userns=auto. It allocates a FRESH uid range per container, so
           # the host uid owning the identity files is not mapped inside -- the
           # read-only mount then reads as an unmapped owner and fails with

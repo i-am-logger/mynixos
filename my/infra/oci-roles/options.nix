@@ -173,6 +173,38 @@
               '';
             };
 
+
+            nixSandbox = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = ''
+                Make `/proc` fully visible inside this container, which is what
+                nix's build sandbox requires.
+
+                Nix does not need a capability for its sandbox. It clones
+                CLONE_NEWNS|CLONE_NEWPID|CLONE_NEWUSER and then REMOUNTS /proc,
+                and the kernel refuses that remount whenever anything is mounted
+                over a path inside /proc -- see the comment at
+                libutil/linux/linux-namespaces.cc:64. podman masks ten such
+                paths by default (/proc/acpi, /proc/kcore, /proc/keys,
+                /proc/scsi, /proc/timer_list and friends) and mounts six more
+                read-only, so /proc is never fully visible and every nix build
+                inside a role fails with
+
+                  error: this system does not support the kernel namespaces
+                  that are required for sandboxing
+
+                That message names capabilities the container genuinely lacks,
+                which makes `--no-sandbox` look like the fix. It is not: the
+                sandbox stays ON and the masking is what has to go.
+
+                Isolation is unaffected. The container keeps its own PID
+                namespace, so an unmasked /proc still shows only its own
+                processes, and this grants no capability, no device and no view
+                of the host.
+              '';
+            };
+
             extraOptions = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [ ];

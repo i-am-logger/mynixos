@@ -180,11 +180,22 @@ in
       };
 
       adapters.native.instances = mapAttrs
-        (_: adapter: {
+        (name: adapter: {
           # listOf merge CONCATENATES with upstream's unconditional base set
           # (bash, coreutils, git, ...); module-eval asserts nix survives the
           # merge so an upstream mkForce would fail CI here, not on a host.
           runtimePackages = [ pkgs.nix radicle-ci-build ] ++ adapter.extraRuntimePackages;
+        } // optionalAttrs (cfg.ci.serveReports.publicUrl != null) {
+          # What turns a failed run into something a reader can open. The
+          # adapter composes `${base_url}/${run_id}/log.html` and hands it to
+          # the broker, which renders it in the Info column; upstream calls it
+          # "mandatory for access from CI broker page", and unset it is the
+          # difference between a verdict and a diagnosis.
+          #
+          # It cannot be derived here: this node is proxied by whatever fronts
+          # it, and knows neither that host's name nor the path it is mounted
+          # under. The path segment must match the nginx location above.
+          settings.base_url = "${removeSuffix "/" cfg.ci.serveReports.publicUrl}/logs/${name}";
         })
         cfg.ci.adapters;
     };
@@ -206,12 +217,29 @@ in
           { addr = "0.0.0.0"; port = cfg.ci.serveReports.listenPort; }
           { addr = "[::]"; port = cfg.ci.serveReports.listenPort; }
         ];
-        locations."/" = {
-          alias = "${config.services.radicle.ci.broker.settings.report_dir}/";
-          # autoindex because a run is named after its id: without a listing
-          # there is no way to reach one without already knowing it.
-          extraConfig = "autoindex on;";
-        };
+        locations = {
+          "/" = {
+            alias = "${config.services.radicle.ci.broker.settings.report_dir}/";
+            # autoindex because a run is named after its id: without a listing
+            # there is no way to reach one without already knowing it.
+            extraConfig = "autoindex on;";
+          };
+        }
+        # Per-run logs, which are NOT in report_dir. The broker's pages.rs
+        # writes only the status page, the per-repository pages, status.json
+        # and the RSS feeds -- never a run's output. The native adapter writes
+        # that itself, to <state>/<run_id>/log.html, and hands the URL back
+        # through base_url. Serving report_dir alone therefore publishes a list
+        # of runs and their verdicts with no way to see why any of them failed,
+        # which is what seven consecutive failures here looked like.
+        // mapAttrs'
+          (name: _: nameValuePair "/logs/${name}/" {
+            alias = "${config.services.radicle.ci.broker.stateDir}/adapters/native/${name}/";
+            # A run is named by a uuid recorded nowhere else, so without a
+            # listing an old run is unreachable even though its log is there.
+            extraConfig = "autoindex on;";
+          })
+          cfg.ci.adapters;
       };
     };
 
@@ -238,6 +266,24 @@ in
 
       ReadWritePaths = [ "/nix/var/nix/daemon-socket" ];
 
+      # WHY THE REPORTS SERVE AND THE LOGS DO NOT, without this.
+      #
+      # Upstream sets UMask=0066 on this unit, so everything it and its adapters
+      # create is 0600 for files and 0711 for directories. The broker's own
+      # report writer escapes that by calling set_permissions(0o644) explicitly
+      # (radicle-ci-broker src/util.rs:151), which is why report_dir serves. The
+      # native adapter never calls set_permissions anywhere in its tree, so a
+      # run directory lands at 0711 and its log.html at 0600 -- owned by
+      # radicle, and unreadable by nginx even though nginx is in that group.
+      #
+      # The symptom is a 403 from autoindex on a directory nginx can traverse
+      # but not list, next to a report page that serves perfectly. Nothing
+      # reports a permission error, because nothing tried to read the log.
+      #
+      # 0027 rather than 0066: group read, no other. The only member of group
+      # radicle is nginx, added by this module for exactly this purpose.
+      UMask = mkIf cfg.ci.serveReports.enable (mkForce "0027");
+
       # Upstream creates the report and adapter-log directories with
       # systemd-tmpfiles. That loses a race against impermanence: the bind
       # mount for /var/lib/radicle-ci is established AFTER tmpfiles has run,
@@ -247,7 +293,18 @@ in
       # StateDirectory/LogsDirectory are created by systemd as part of
       # starting the unit -- after mounts, every start -- so they are correct
       # on a persisted host and self-healing rather than reboot-dependent.
-      StateDirectory = mkForce [ "radicle-ci" "radicle-ci/reports" ];
+      # The adapter's per-run tree is named here for the same reason, plus
+      # one of its own: the adapter creates its state directory only `if
+      # !state.exists()`, so a directory that already exists keeps whatever
+      # mode it was first made with -- 0711, from the unit's inherited
+      # UMask -- and no later umask change can reach it. Naming the tree
+      # here makes systemd apply StateDirectoryMode on every start, which
+      # is what lets nginx list a run directory rather than 403 on it.
+      StateDirectory = mkForce (
+        [ "radicle-ci" "radicle-ci/reports" "radicle-ci/adapters" "radicle-ci/adapters/native" ]
+        ++ mapAttrsToList (name: _: "radicle-ci/adapters/native/${name}") cfg.ci.adapters
+      );
+      StateDirectoryMode = mkIf cfg.ci.serveReports.enable "0750";
       LogsDirectory = mkForce [ "radicle-ci" "radicle-ci/adapters/native" ];
     };
   };

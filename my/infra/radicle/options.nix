@@ -350,6 +350,27 @@
                     like every other port this domain uses.
                   '';
                 };
+
+                publicUrl = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  example = "https://radicle-yoga-seed.tail46cce1.ts.net/ci";
+                  description = ''
+                    The URL a READER reaches these reports at, which is not a
+                    URL this node can derive: a builder is proxied by whatever
+                    fronts it, and knows neither that host's name nor the path
+                    it is mounted under.
+
+                    Without it a failed run is a dead end. The native adapter
+                    reports `''${base_url}/''${run_id}/log.html` back to the
+                    broker, and upstream documents base_url as "mandatory for
+                    access from CI broker page" -- unset, every run renders as
+                    the bare word "failure" with an empty Info column and no
+                    link, on a page that has no other place to put the log.
+                    Seven consecutive failures on this fleet produced nothing a
+                    reader could act on for exactly that reason.
+                  '';
+                };
               };
 
               trustedNids = lib.mkOption {
