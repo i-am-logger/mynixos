@@ -51,7 +51,7 @@ in
 
       services.tailscale = {
         enable = true;
-        inherit (cfg) useRoutingFeatures authKeyParameters;
+        inherit (cfg) port useRoutingFeatures authKeyParameters;
         extraUpFlags =
           optional (cfg.controlPlane == "headscale-remote")
             "--login-server=${cfg.loginServer}"
@@ -77,11 +77,18 @@ in
         # when an authKeyFile is set, and the machines on this fleet register
         # interactively. `tailscaled-set` runs regardless, so this converges on
         # every start rather than only at first join.
-        extraSetFlags = [ "--hostname=${config.networking.hostName}" ];
+        extraSetFlags =
+          [ "--hostname=${config.networking.hostName}" ]
+          ++ optional (cfg.relayServerPort != null)
+            "--relay-server-port=${toString cfg.relayServerPort}";
       };
 
-      # Allow WireGuard UDP port for tailscale
-      networking.firewall.allowedUDPPorts = [ config.services.tailscale.port ];
+      # Allow WireGuard UDP port for tailscale. Skipped when the port is 0:
+      # tailscaled then takes whatever the kernel gives it, so there is no fixed
+      # number to open -- and opening 0 is not a rule, it is a mistake that
+      # happens to be silent.
+      networking.firewall.allowedUDPPorts =
+        optional (config.services.tailscale.port != 0) config.services.tailscale.port;
 
       # Allow configured TCP ports on tailscale interface (defense in depth over
       # ACLs). Only the ports a consumer ASKED for: a port belongs to the

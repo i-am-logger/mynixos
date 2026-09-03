@@ -164,6 +164,69 @@
             '';
           };
 
+          port = lib.mkOption {
+            type = lib.types.port;
+            default = 41641;
+            description = ''
+              UDP port tailscaled binds for WireGuard and peer-to-peer traffic.
+              0 means let the kernel pick a free one.
+
+              NOT AN ADDRESS. A tailnet node is reached by its 100.x address or
+              its MagicDNS name; this port is only the WireGuard endpoint, and
+              peers discover it through the control plane. Nothing in a config,
+              a `connect` list or a URL ever names it.
+
+              IT MUST STILL BE UNIQUE PER TAILSCALED ON ONE MACHINE, which only
+              becomes true once a host runs container roles: each role is its
+              own tailnet node with its own tailscaled, and rootless podman
+              NATs through the host, preserving source ports where it can.
+              Three nodes all on 41641 means the first to claim it works and the
+              rest do not -- reporting `magicsock: network down` and
+              `UDP: false` while looking entirely healthy, with `active`, zero
+              restarts and an intact registration. The only clue is one line in
+              a different container: `Couldn't open flow specific socket:
+              Address already in use`. Which node loses is decided by boot
+              order, so it moves.
+
+              Roles therefore default to 0 (see platforms/oci.nix) rather than
+              being assigned numbers by hand: there is nothing to coordinate and
+              nothing to remember.
+            '';
+          };
+
+          relayServerPort = lib.mkOption {
+            type = lib.types.nullOr lib.types.port;
+            default = null;
+            example = 41647;
+            description = ''
+              Make this node a PEER RELAY on the given UDP port. Null leaves it
+              a plain client.
+
+              A peer relay is tried BEFORE falling back to a DERP server, so a
+              machine that hosts container roles can relay for them locally. It
+              is worth having because rootless podman NATs each role through the
+              host with no reachable UDP endpoint, so roles cannot form direct
+              connections -- two containers on ONE machine were measured
+              relaying through a DERP server in Denver at ~25ms round trip.
+
+              SETTING THIS IS NOT SUFFICIENT ON ITS OWN. Clients also need a
+              grant carrying `tailscale.com/cap/relay` naming this node as the
+              destination, and that lives in the TAILNET POLICY, which is not
+              NixOS configuration while the fleet uses Tailscale SaaS. Without
+              the grant the relay binds its port, advertises nothing usable, and
+              every peer quietly stays on DERP -- which looks exactly like the
+              feature not working.
+
+              That split is temporary rather than inherent. `my.network.headscale`
+              already declares acl.groups, acl.tagOwners and acl.rules, so a
+              fleet on a self-hosted control plane keeps its policy in the same
+              configuration as everything else -- reviewable, versioned, and
+              reproduced by a rebuild. On Tailscale SaaS the policy is state in
+              a web console that no rebuild can reproduce, which is the real
+              argument for moving, more than any latency it would buy.
+            '';
+          };
+
           exitNode = lib.mkOption {
             type = lib.types.bool;
             default = false;

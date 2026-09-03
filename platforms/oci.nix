@@ -134,6 +134,25 @@
       theming.openrgb.enable = lib.mkForce false;
       hardware.audio.enable = lib.mkForce false;
       network.openssh.enable = lib.mkForce false;
+
+      # LET THE KERNEL PICK tailscaled's WireGuard port instead of taking the
+      # fleet-wide default of 41641.
+      #
+      # A role is its own tailnet node with its own tailscaled, and a host runs
+      # several of them beside its own. Rootless podman NATs through the host
+      # and preserves source ports where it can, so every tailscaled defaulting
+      # to 41641 means the first to claim it works and the rest do not --
+      # reporting `magicsock: network down` and `UDP: false` while looking
+      # entirely healthy: active, zero restarts, registration intact, nothing in
+      # `systemctl --failed`. The only clue is one line in a DIFFERENT
+      # container's log, `Couldn't open flow specific socket: Address already in
+      # use`, and which node loses is decided by boot order, so it moves.
+      #
+      # 0 rather than a number assigned per role, because the port is not an
+      # address: peers find a node through the control plane, and no config,
+      # `connect` entry or URL ever names it. So there is nothing to coordinate
+      # and nothing to keep in sync.
+      network.tailscale.port = lib.mkForce 0;
     };
     services.openssh.enable = lib.mkForce false;
 
