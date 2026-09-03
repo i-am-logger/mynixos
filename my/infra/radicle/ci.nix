@@ -184,7 +184,25 @@ in
           # listOf merge CONCATENATES with upstream's unconditional base set
           # (bash, coreutils, git, ...); module-eval asserts nix survives the
           # merge so an upstream mkForce would fail CI here, not on a host.
-          runtimePackages = [ pkgs.nix radicle-ci-build ] ++ adapter.extraRuntimePackages;
+          # A BUILDER CARRIES ITS OWN TOOLCHAIN -- not something the host lends
+          # it. A host that had to supply these would make the machine depend on
+          # where it happens to run, and the same machine on another host would
+          # then build differently, silently.
+          #
+          #   devenv      what repository recipes invoke to get their own toolchain
+          #   gnugrep     absent from upstream's adapter PATH (bash coreutils curl
+          #               gawk gitMinimal gnused wget), so a recipe using grep
+          #               fails mid-run as command-not-found, not as a missing dep
+          #   util-linux  unshare(1), so a recipe can TEST whether it may create a
+          #               nested user namespace instead of inferring it from a nix
+          #               build that dies four levels down in "cannot set host name"
+          #
+          # Contributed here rather than from ./builder.nix because that file
+          # declares options and so cannot name `pkgs`; this one already renders
+          # the list.
+          runtimePackages = [ pkgs.nix radicle-ci-build ]
+            ++ adapter.extraRuntimePackages
+            ++ optionals cfg.builder.enable [ pkgs.devenv pkgs.gnugrep pkgs.util-linux ];
         } // optionalAttrs (cfg.ci.serveReports.publicUrl != null) {
           # What turns a failed run into something a reader can open. The
           # adapter composes `${base_url}/${run_id}/log.html` and hands it to

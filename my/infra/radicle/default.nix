@@ -83,6 +83,11 @@ let
   ];
 in
 {
+  # ./seed.nix and ./builder.nix are the two SERVICES a node can be -- each a
+  # handful of mkDefault-ed settings on the options below. They were
+  # roles/radicle/{seed,builder}.nix, which built whole systems; what is left
+  # after the system-building half is removed is configuration, and it belongs
+  # in the domain beside the components it switches on.
   imports = [ ./ci.nix ./mirror.nix ./explorer.nix ];
 
   config = mkIf cfg.enable {

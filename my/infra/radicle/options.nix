@@ -30,6 +30,50 @@
           options = {
             enable = lib.mkEnableOption "the Radicle node (tailnet-private forge member)";
 
+            # THE THREE SERVICES A NODE CAN BE.
+            #
+            # Every radicle node runs the same daemon; what distinguishes a seed
+            # from a builder is a handful of settings, and those settings used to
+            # live in roles/radicle/{seed,builder}.nix -- functions that built
+            # whole SYSTEMS. That put mynixos in the business of shipping
+            # machines, which is the consumer flake's job, and it meant the
+            # defaults arrived as plain values in a `my` layer: a consumer who
+            # set `node.defaultSeedingPolicy` themselves got a COLLISION rather
+            # than an override, because nothing was `mkDefault`.
+            #
+            # As switches they compose. A node may be a seed and a builder at
+            # once -- the settings do not conflict except on seeding policy,
+            # where the module system reports the conflict instead of one
+            # silently winning.
+            seed = {
+              enable = lib.mkEnableOption ''
+                seed behaviour: hold every peer's refs and serve them.
+
+                Sets `node.defaultSeedingPolicy = "allow"` and turns on httpd and
+                the explorer, all with mkDefault
+              '';
+            };
+
+            # radicle-search is deliberately NOT declared here yet. The binary ships
+            # in the radicle-httpd package, but it is a client of MEILISEARCH
+            # (RADICLE_SEARCH_MEILI_URL, _KEY, _INDEX_NAME) and nixpkgs has no module
+            # for it. Declaring an option whose implementation would be a search
+            # engine nobody asked to run is the stub this repo does not ship: it
+            # arrives when a machine actually needs search, with the meilisearch
+            # wiring and persistence that implies.
+
+            builder = {
+              enable = lib.mkEnableOption ''
+                builder behaviour: run CI for the repositories it seeds.
+
+                Sets `node.defaultSeedingPolicy = "block"` -- a builder seeds only
+                what it will execute recipes for, so that has to be a decision
+                rather than a side effect of what happens to be announced -- and
+                turns on the CI broker and report serving
+              '';
+            };
+
+
             privateKeySecret = lib.mkOption {
               type = lib.types.str;
               default = "radicle/node-key";

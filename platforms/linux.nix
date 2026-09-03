@@ -54,6 +54,13 @@ in
     (mkOptionsModule ../my/theming/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
+    # The two SERVICES a radicle node can be. Declarations rather than
+    # implementations: each sets defaults on its own submodule, which is what
+    # keeps them out of the infinite recursion a sibling module would hit -- see
+    # the header of my/infra/radicle/seed.nix. Imported bare, not through
+    # mkOptionsModule, because they declare `options.my.infra` directly.
+    ../my/infra/radicle/seed.nix
+    ../my/infra/radicle/builder.nix
     (mkOptionsModule ../my/infra/oci-roles/options.nix { inherit lib; })
     (mkOptionsModule ../my/dev/remote-builders/options-linux.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/boot/options.nix { inherit lib; })
