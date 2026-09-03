@@ -260,24 +260,96 @@ in
           # Wait for the node to actually answer instead of assuming it does.
           # `rad node status` succeeding is the readiness signal the unit type
           # does not give us.
+          # WAIT FOR SOMETHING THAT MEANS WHAT IT SAYS.
+          #
+          # This used to poll `rad node status` and stop at the first success.
+          # That is a FALSE POSITIVE: it reported the node ready while `rad
+          # sync` in the very next step still failed with "to sync a repository,
+          # your node must be running". The probe answered a weaker question
+          # than the one being asked, so the unit proceeded, the fetch failed,
+          # and the repository stayed seeded-but-absent -- which is invisible,
+          # because `rad seed` lists it and `rad ls` does not.
+          #
+          # The socket is the honest signal: radicle-node creates it when it is
+          # genuinely serving, and `after`/`requires` cannot express that
+          # because radicle-node is a `simple` service, so systemd calls it
+          # started the moment it execs. Same race the CI broker had, same fix.
           preStart = ''
+            sock="${radProfile.radHome}/node/control.sock"
             for i in $(seq 1 60); do
-              if rad node status >/dev/null 2>&1; then
-                echo "node is answering after ''${i}s"
+              if [ -S "$sock" ] && rad node status >/dev/null 2>&1; then
+                echo "node is serving after ''${i}s"
                 exit 0
               fi
               sleep 1
             done
-            echo "radicle-node did not become ready within 60s -- not seeding" >&2
+            echo "radicle-node did not become ready within 60s -- not seeding." >&2
+            echo "  socket $sock: $([ -S "$sock" ] && echo present || echo absent)" >&2
             exit 1
           '';
 
+          # TWO STEPS, and leaving out the second is a trap this fleet fell into.
+          #
+          # `rad seed --no-fetch` sets the seeding POLICY and nothing else. The
+          # node then acquires the repository when a peer ANNOUNCES it -- and an
+          # announcement happens on push. So for a repository that already
+          # existed when this node was created, nothing will ever re-announce
+          # it, and the node stays subscribed to something it does not hold.
+          #
+          # That state is invisible in exactly the wrong way: `rad seed` lists
+          # the rid with policy `allow`, so the configuration looks satisfied,
+          # while `rad ls` does not list it at all. On the yoga builder it meant
+          # secure-sweep-mobile was seeded for days and never once built --
+          # broker_event_counter stuck at 0, no failed unit, indistinguishable
+          # from nobody having pushed.
+          #
+          # So: set the policy, which must always succeed, then ASK for the
+          # repository. The fetch is best-effort on purpose -- at boot there may
+          # be no connected seed holding it yet, and a node that cannot fetch
+          # today is not a misconfiguration. Failing the unit there would turn a
+          # timing condition into a permanently failed service, whereas a
+          # logged miss is repaired by the next announcement or the next start.
           script = concatMapStrings
             (repo: ''
               rad seed ${escapeShellArg repo.rid} --scope ${repo.scope} --no-fetch || {
                 echo "rad seed ${repo.rid} failed" >&2
                 exit 1
               }
+
+              if rad ls 2>/dev/null | grep -q ${escapeShellArg (removePrefix "rad:" repo.rid)}; then
+                echo "${repo.rid}: already held"
+              else
+                # `--timeout` needs a UNIT: `60` is rejected as "time unit
+                # needed, for example 60sec or 60ms". Passing a bare number made
+                # rad exit on argument parsing before it ever reached the
+                # network -- and the branch below then reported it as "no
+                # connected seed holds it yet", which was a cause it had not
+                # established. Report what actually happened instead of naming a
+                # reason.
+                # RETRIED, because one attempt at boot is a coin toss even with
+                # an honest readiness probe: the node may be serving while no
+                # peer session has formed yet, and a fetch with no reachable
+                # seed fails immediately rather than waiting.
+                fetched=no
+                for attempt in 1 2 3 4 5; do
+                  if out=$(rad sync --fetch ${escapeShellArg repo.rid} --timeout 60sec 2>&1); then
+                    echo "${repo.rid}: fetched on attempt $attempt"
+                    fetched=yes
+                    break
+                  fi
+                  sleep 10
+                done
+                if [ "$fetched" = no ]; then
+                  echo "${repo.rid}: seeded, NOT held, and every fetch failed." >&2
+                  echo "  last error:" >&2
+                  echo "$out" | sed 's/^/    /' >&2
+                  echo "  The policy is set, so an announcement would still bring it" >&2
+                  echo "  in. Until then this node is subscribed to a repository it" >&2
+                  echo "  does not have, and nothing that watches its event stream" >&2
+                  echo "  will ever fire for it -- which looks exactly like nobody" >&2
+                  echo "  having pushed." >&2
+                fi
+              fi
             '')
             cfg.seedRepositories;
         }
