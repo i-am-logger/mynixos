@@ -10,9 +10,10 @@ This document describes the forge **as one host runs it**, which is what
 `my.infra.radicle` configures. Where it says "the seed", read "a seed": seeds
 are plural in radicle because a node's identity is its NID and the NID lives in
 the key, so a fleet runs as many as it likes and workstations carry one
-`connect` entry per seed. yoga currently runs two -- the original on the host
-and a second as a container role -- and its CI runs on a builder role rather
-than here. `docs/radicle-containers.md` covers roles as machines.
+`connect` entry per seed. On yoga the seed is now a **container role** rather
+than a host service, and so is CI: `my.infra.radicle.enable` is false there, and
+the options below describe a shape that host no longer runs.
+`docs/radicle-containers.md` covers roles as machines.
 
 ## How the network is private
 

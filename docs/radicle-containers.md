@@ -444,8 +444,24 @@ Peer z6Mks9Ty… fetched rad:zfDtFXYCZjVrrJ2gbFUPZVAK1XzC from us successfully
 ```
 
 Three repositories, not the two named in `seedRepositories` -- the third
-followed from `defaultSeedingPolicy = "allow"`. Step 3 is deliberately not
-taken.
+followed from `defaultSeedingPolicy = "allow"`.
+
+**Step 3 followed the same day.** The host seed is now `enable = false` in
+`systems/yoga/radicle.nix` -- disabled, not deleted, with its storage and its
+key left in place, so rollback is one line. The old NID was removed from the
+workstation `connect` list at that point and not before, which is the whole
+reason the second seed was added first: the deletion removed something already
+redundant instead of swapping one single point of failure for another.
+
+One thing retiring a seed touches that is easy to miss: **everything that
+DIALLED it**. On yoga that was the CI builder, whose `connect` named the host
+seed. A builder whose seed has gone away fetches nothing and sees no
+announcements, so it never triggers a build -- sitting there `active`, no failed
+unit, an empty CI history, indistinguishable from "nobody pushed anything". The
+container seed's own `connect` was emptied for the related reason that a dead
+entry is not inert: radicle retries it forever and fills the log with
+`Failed to establish connection … Name or service not known`, which is exactly
+what a real network fault looks like to the next person reading those logs.
 
 Two things that verification taught, both about how to *check* rather than what
 to build:
