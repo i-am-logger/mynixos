@@ -121,12 +121,44 @@ let
         type = lib.types.attrsOf lib.types.path;
         default = { };
         example = { radicle = "/var/lib/radicle"; };
+        # A ROLE'S JOURNAL IS ALWAYS READABLE FROM THE HOST.
+        #
+        # systemd is PID 1 inside a role, so its units log to the role's own
+        # journal -- a file on a filesystem the host never mounts. podman's
+        # journald driver captures the container's stdout, which after PID 1
+        # hands off is only the two lines systemd prints before it starts
+        # logging internally. `journalctl -u podman-<role>` on the host
+        # therefore ends at "starting systemd..." and every unit failure inside
+        # is invisible.
+        #
+        # That is not a small inconvenience: it is the difference between
+        # reading why a broker stopped and guessing at it. Without this, the
+        # ways in are `podman exec` as the role's account -- manual, root-
+        # requiring, part of no configuration -- or inferring state from
+        # whatever the role serves over HTTP, which cannot distinguish a live
+        # service from a dead one whose last status page is still being served.
+        #
+        # Mounting /var/log/journal is the whole fix. journald's default
+        # Storage=auto becomes PERSISTENT exactly because that directory now
+        # exists, so the guest needs no configuration at all, and the host
+        # reads it with `journalctl -D <stateDir>/journal -u <unit>` -- full
+        # structured logs, per-unit filtering, `-f` to follow.
+        #
+        # NOT ForwardToConsole=yes: that writes to systemd's TTYPath
+        # (/dev/console), and podman without --tty gives the container no
+        # console device conmon captures, so it reaches nothing. Tried, and it
+        # silently did nothing.
+        apply = v: v // { journal = "/var/log/journal"; };
         description = ''
           `<stateDir>/<name>` mounted at `<path>` inside.
 
           EXPLICIT, because oci-containers runs `podman rm -f` in its pre-start:
           the container is destroyed and rebuilt on every image change, so
           anything not named here is anything the guest may not keep.
+
+          `journal` is added automatically and need not be listed: a role whose
+          logs cannot be read from the host is a role that can only be debugged
+          by hand.
         '';
       };
 
@@ -171,19 +203,41 @@ let
         type = lib.types.bool;
         default = false;
         description = ''
-          Make `/proc` fully visible inside, which is what nix's build sandbox
-          requires.
+          Let this guest run nix builds in nix's own sandbox. TWO things are
+          needed, and neither is a capability. Both were measured by building a
+          one-line derivation in this image under each combination, not
+          reasoned from the error text -- which misleads about both.
 
-          Nix needs no capability for it: it clones its own namespaces and then
-          REMOUNTS /proc, and the kernel refuses that remount while anything is
-          mounted over a path inside /proc -- which podman does by default for
-          ten paths. The resulting error names kernel namespaces, which reads
-          as a missing capability and invites `--no-sandbox`. It is not: the
-          sandbox stays on and the masking goes.
+          `/proc` FULLY VISIBLE. Nix clones its namespaces and REMOUNTS /proc,
+          and the kernel refuses that remount while anything is mounted over a
+          path inside /proc -- which podman does by default for ten paths.
+          Without the unmask nix stops at its namespace probe: "this system does
+          not support the kernel namespaces that are required for sandboxing",
+          which reads as a missing capability and invites `--no-sandbox`.
 
-          Isolation is unaffected. The container keeps its own PID namespace, so
-          an unmasked /proc still shows only its own processes, and this grants
-          no capability, no device and no view of the host.
+          A SECCOMP EXCEPTION for sethostname and setdomainname. Nix names the
+          UTS namespace it just created, so a build cannot observe which machine
+          it ran on. podman's default profile ERRNOs both syscalls whenever
+          CAP_SYS_ADMIN is absent from the bounding set, and the choice is made
+          once at container creation. The build dies with "cannot set host name:
+          Operation not permitted" from inside an unrelated derivation, naming
+          the last syscall rather than the filter. See nixSandboxSeccomp in
+          ../containers/default.nix for why the kernel would have allowed it.
+
+          WHAT THIS IS NOT. It is not CAP_SYS_ADMIN, which also fixes it and is
+          a far larger grant -- real mount(2), bpf, quotactl for container PID 1
+          -- and which this fleet forbids a guest that runs repository-supplied
+          shell (see identityScript above). Under the seccomp exception the
+          syscall is unblocked and the AUTHORITY is not: the kernel still
+          requires the capability in the user namespace owning the target UTS
+          namespace, so a build can only rename a namespace it created itself.
+          Verified in the image -- the build succeeds, `hostname` in the
+          container's own namespace is still refused, and mount still fails.
+
+          Isolation is otherwise unaffected: the container keeps its own PID
+          namespace, so an unmasked /proc shows only its own processes, and this
+          grants no device and no view of the host. The sandbox stays ON, which
+          is the point of building on nix at all.
         '';
       };
 

@@ -14,6 +14,71 @@ let
   # `radicle-radicle-yoga-seed`.
   cfg = config.my.virtualisation.containers;
 
+  # PODMAN'S STOCK SECCOMP PROFILE, PLUS THE TWO SYSCALLS A NIX BUILD NEEDS.
+  #
+  # containers/common's default profile carries two rules for sethostname and
+  # setdomainname: an ALLOW gated on `includes.caps: [CAP_SYS_ADMIN]`, and an
+  # ERRNO(EPERM) gated on `excludes.caps: [CAP_SYS_ADMIN]`. Podman chooses
+  # between them ONCE, when the container is created, against the bounding set
+  # (containers/common pkg/seccomp/seccomp_linux.go). A rootless container has
+  # no CAP_SYS_ADMIN, so the EPERM rule is the one compiled in.
+  #
+  # Seccomp is namespace-blind: the filter is inherited across clone(2) and
+  # execve(2) and cannot be shed by entering a user namespace. So it denies the
+  # call even where the KERNEL would allow it -- the kernel checks
+  # ns_capable(uts_ns->user_ns, CAP_SYS_ADMIN), and nix's build child holds a
+  # full capability set in the user namespace it just created. Measured:
+  #
+  #   podman run --rm busybox sh -c \
+  #     'unshare -U -u -r sh -c "grep CapEff /proc/self/status; hostname x"'
+  #   CapEff: 000001ffffffffff
+  #   hostname: sethostname: Operation not permitted
+  #
+  # Full capabilities in its own namespace, still refused. That is the whole
+  # bug, and it is why every capability-shaped theory about it was wrong.
+  #
+  # Allowing the two names is a far narrower exception than --cap-add=SYS_ADMIN,
+  # which also works but hands container PID 1 real mount(2), bpf and quotactl.
+  # Here the syscall is unblocked and the AUTHORITY is not: the kernel still
+  # requires the capability in the owning user namespace, so repository-supplied
+  # shell can only rename a UTS namespace it made itself. Verified under this
+  # profile -- the build succeeds, `hostname` in the container's own namespace
+  # is still denied, and mount still fails.
+  #
+  # Docker is not an escape: moby's default profile gates the same two names on
+  # CAP_SYS_ADMIN identically, and its default is rootful.
+  nixSandboxSeccomp = pkgs.runCommand "nix-sandbox-seccomp.json"
+    { nativeBuildInputs = [ pkgs.jq ]; } ''
+    base=$(find ${pkgs.podman.src} -path '*/pkg/seccomp/seccomp.json' -print -quit)
+    if [ -z "$base" ]; then
+      echo "podman's bundled seccomp profile is not where this expected it." >&2
+      echo "Find its new path before assuming the default is still permissive." >&2
+      exit 1
+    fi
+
+    # Appending to the leading unconditional ALLOW is enough because libseccomp
+    # keeps the FIRST argument-less rule per syscall, and that rule precedes the
+    # ERRNO one in the profile. The guard is the point: if upstream stops gating
+    # these on CAP_SYS_ADMIN, this transform is silently pointless, and a build
+    # that quietly stops being sandboxed is worse than one that fails.
+    jq -e '
+      if ([ .syscalls[]
+            | select(.action == "SCMP_ACT_ERRNO"
+                     and ((.excludes.caps // []) | index("CAP_SYS_ADMIN"))
+                     and (.names | index("sethostname"))) ] | length) != 1
+      then error("podman default seccomp profile changed shape: the CAP_SYS_ADMIN-gated sethostname denial is gone. Re-check whether this exception is still needed.")
+      else . end
+      | .syscalls |= map(
+          if .action == "SCMP_ACT_ALLOW"
+             and ((.includes // {}) | length) == 0
+             and ((.excludes // {}) | length) == 0
+             and ((.args // []) | length) == 0
+          then .names += ["sethostname","setdomainname"]
+          else . end)
+    ' "$base" > $out
+  '';
+
+
   # Where a role's host-side state lives. One parent for all of them, so a host
   # running three roles has one place to look.
   prepareUnit = role:
@@ -130,10 +195,17 @@ let
           "--security-opt=no-new-privileges"
 
         ]
-        # /proc fully visible, so nix's sandbox can remount it. See the
-        # nixSandbox option for why this is not a capability grant and why
-        # `--no-sandbox` is the wrong reading of the error it fixes.
-        ++ optional role.nixSandbox "--security-opt=unmask=/proc/*"
+        # What a nix build sandbox needs, and nothing else. Both are measured,
+        # not reasoned: without the unmask nix fails its namespace probe
+        # outright ("this system does not support the kernel namespaces that
+        # are required for sandboxing"); without the seccomp exception it gets
+        # as far as naming its UTS namespace and dies with "cannot set host
+        # name". Neither is a capability, and the container's bounding set is
+        # unchanged -- see nixSandboxSeccomp above and the nixSandbox option.
+        ++ optionals role.nixSandbox [
+          "--security-opt=unmask=/proc/*"
+          "--security-opt=seccomp=${nixSandboxSeccomp}"
+        ]
         ++ [
 
           # NO --userns=auto. It allocates a FRESH uid range per container, so
