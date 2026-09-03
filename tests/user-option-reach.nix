@@ -98,7 +98,6 @@ let
     "graphical.fontSize" = "The vogix HUD's type-scale root; the shell is Linux-only, and macOS type scaling is the OS's.";
     "graphical.idle" = "Idle staging for the shell's ext-idle-notify monitors; macOS owns its own idle/sleep policy.";
     "apps.graphical.viewers.feh" = "X11 image viewer.";
-    "apps.terminal.visualizers.bespec" = "x86_64-linux only: alsa/dbus/pipewire at build, Wayland/Vulkan at run time.";
     "apps.media.tools.pipewireTools" = "PipeWire CLI; macOS uses CoreAudio.";
     "apps.media.tools.audioUtils" = "pavucontrol/pamixer are PulseAudio clients; CoreAudio is not a drop-in.";
 

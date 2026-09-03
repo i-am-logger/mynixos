@@ -258,6 +258,5 @@ in
     ../my/users/apps/dev/radicle/linux.nix # user radicle-node: HM systemd.user service
     ../my/users/apps/security/1password # programs._1password{,-gui}
     ../my/users/apps/viewers/feh # X11
-    ../my/users/apps/visualizers/bespec # packages/bespec: platforms = [ "x86_64-linux" ]
   ];
 }

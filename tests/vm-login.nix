@@ -99,7 +99,6 @@ pkgs.testers.runNixOSTest {
         # Keep the closure lean where the login test gains nothing:
         apps.terminal = {
           sysinfo.btop.enable = false;
-          visualizers.bespec.enable = false;
           visualizers.cava.enable = false;
         };
       };

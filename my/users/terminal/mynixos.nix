@@ -44,7 +44,7 @@
           # Network tools
           network.termscp.enable = lib.mkDefault false;
 
-          # Visualizers. bespec is Linux-only; see ./mynixos-linux.nix.
+          # Visualizers
           visualizers.cava.enable = lib.mkDefault true;
 
           # Fun/Eye candy

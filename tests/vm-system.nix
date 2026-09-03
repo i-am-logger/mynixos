@@ -18,7 +18,7 @@
 # Hyprland + a display manager and ai pulls ROCm/CUDA closures (multi-GB, slow,
 # display-dependent), while config-level feature-derivation is already covered by
 # the eval smoke tests. We also disable the heaviest terminal-default apps
-# (btop builds CUDA-enabled, bespec/cava build Rust) to keep the
+# (btop builds CUDA-enabled, cava builds Rust) to keep the
 # closure lean and the boot fast.
 { self, inputs, system, nixpkgs, ... }:
 
@@ -105,7 +105,6 @@ pkgs.testers.runNixOSTest {
           # Trim the heaviest terminal defaults to keep the VM closure lean:
           apps.terminal = {
             sysinfo.btop.enable = false; # default build pulls CUDA (unfree, huge)
-            visualizers.bespec.enable = false; # custom Rust build
             visualizers.cava.enable = false;
           };
         };
