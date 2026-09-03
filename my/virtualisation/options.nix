@@ -14,12 +14,12 @@
 # only damage was a seed advertising an address nobody could dial. Deriving
 # makes that unrepresentable rather than merely tested.
 #
-# RESOURCE LIMITS BELONG TO THE GUEST, not here. A machine that wants 16g wants
-# it wherever it runs, so putting `memory` on this side would store one
-# machine's facts in whichever host happens to run it, and moving the guest
-# would silently drop them. nixpkgs settles this the same way:
-# `virtualisation.memorySize` lives in the guest's own config, not in whatever
-# launches the VM.
+# RESOURCE LIMITS ARE THE HOST'S, and that is not the same answer nixpkgs gives
+# for VMs. A VM's `virtualisation.memorySize` is virtual hardware -- the guest
+# genuinely has that much and wants it wherever it runs, so it belongs to the
+# guest. A container's limit is a cgroup ceiling the HOST imposes to defend
+# itself against a guest that can fork-bomb it. Two different things wearing one
+# word, and only the second is written here.
 { lib, ... }:
 
 let
@@ -130,6 +130,31 @@ let
         '';
       };
 
+
+      # WHY THESE ARE HOST-SIDE AND `virtualisation.memorySize` IS NOT.
+      #
+      # A VM's memory is virtual hardware: the guest genuinely has that much,
+      # wants it wherever it runs, and nixpkgs rightly puts it in the guest's
+      # own config. A container's limit is the opposite -- a cgroup ceiling the
+      # HOST imposes to defend itself, because a guest running
+      # repository-supplied shell can fork-bomb or exhaust memory and nothing
+      # else addresses denial of service against the machine underneath. Two
+      # different things wearing one word.
+      #
+      # So a host may lower them for a guest it does not fully trust, and a
+      # guest cannot raise them.
+      memory = lib.mkOption {
+        type = lib.types.str;
+        default = "4g";
+        description = "cgroup memory ceiling (podman --memory and --memory-swap).";
+      };
+
+      pidsLimit = lib.mkOption {
+        type = lib.types.int;
+        default = 2048;
+        description = "cgroup pid ceiling, which is what stops a fork bomb.";
+      };
+
       capabilities = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ "NET_ADMIN" "NET_RAW" ];
@@ -184,7 +209,20 @@ in
             containers. A bare system is the common spelling; an attrset adds
             what only the host can supply.
           '';
-          type = lib.types.listOf (lib.types.coercedTo lib.types.raw (s: { system = s; }) guest);
+          # A bare system and an entry attrset are BOTH attrsets, so the
+          # discriminator has to be explicit: an evaluated system has `.config`
+          # and an entry does not. It goes on the COERCED type, because
+          # `coercedTo` coerces whenever that type's check passes -- with
+          # `raw` there (whose check is `x: true`) every entry was wrapped as
+          # `{ system = <entry>; }`, and the failure surfaced as "attribute
+          # 'config' missing" from inside the `name` default rather than
+          # anywhere near the option that was written.
+          type = lib.types.listOf (
+            lib.types.coercedTo
+              (lib.types.addCheck lib.types.raw (x: builtins.isAttrs x && x ? config))
+              (s: { system = s; })
+              guest
+          );
         };
       };
     };
