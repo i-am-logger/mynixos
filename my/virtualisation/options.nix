@@ -171,19 +171,41 @@ let
         type = lib.types.bool;
         default = false;
         description = ''
-          Make `/proc` fully visible inside, which is what nix's build sandbox
-          requires.
+          Let this guest run nix builds in nix's own sandbox. Two things are
+          needed, and each was learned from an error that pointed elsewhere.
 
-          Nix needs no capability for it: it clones its own namespaces and then
-          REMOUNTS /proc, and the kernel refuses that remount while anything is
-          mounted over a path inside /proc -- which podman does by default for
-          ten paths. The resulting error names kernel namespaces, which reads
-          as a missing capability and invites `--no-sandbox`. It is not: the
-          sandbox stays on and the masking goes.
+          `/proc` FULLY VISIBLE. Nix clones its namespaces and then REMOUNTS
+          /proc, and the kernel refuses that remount while anything is mounted
+          over a path inside /proc -- which podman does by default for ten
+          paths. The error names kernel namespaces, which reads as a missing
+          capability and invites `--no-sandbox`.
 
-          Isolation is unaffected. The container keeps its own PID namespace, so
-          an unmasked /proc still shows only its own processes, and this grants
-          no capability, no device and no view of the host.
+          CAP_SYS_ADMIN. A build is performed by the nix DAEMON, not by whatever
+          ran `nix-build`, and the daemon runs as the container's root. Running
+          privileged, nix does not create a user namespace at all -- it relies
+          on real privilege, clones CLONE_NEWUTS, and calls sethostname in the
+          namespace it just made. Rootless container root has no CAP_SYS_ADMIN,
+          so that call is refused and the build dies reporting
+
+            error: cannot set host name: Operation not permitted
+
+          which names the last syscall rather than the missing capability. This
+          is measurable from outside: `unshare -U true` succeeds in the adapter
+          while the same commit's `nix-build` of a one-line derivation fails,
+          because they are different processes under different privilege models.
+
+          The capability is NAMESPACED, which is why this is not the loosening
+          it looks like. The container's root is an unprivileged host user
+          through a user namespace, so SYS_ADMIN inside it permits only
+          operations on namespaces that userns owns -- naming its own UTS
+          namespace, mounting inside its own mount namespace. It confers
+          nothing on the host, and the host user could do all of it already.
+
+          Isolation is otherwise unaffected: the container keeps its own PID
+          namespace, so an unmasked /proc still shows only its own processes,
+          and this grants no device and no view of the host. The sandbox stays
+          ON -- it is the reason for building on nix at all, and switching it
+          off is what these two settings exist to avoid.
         '';
       };
 
