@@ -770,6 +770,15 @@ in
       # an https page cannot call the api at all (mixed content).
       && lib.hasInfix "127.0.0.1:8780/api/"
         (config.services.nginx.virtualHosts."radicle-explorer".locations."/api/".proxyPass or "")
+      # Raw blobs, which is how the explorer renders any image a README cites.
+      # httpd mounts /raw OUTSIDE the API, so it does not appear in the
+      # /api/v1 link index -- enumerating that index concludes the endpoint
+      # does not exist. Asserted here because the failure is SILENT: without
+      # the location the request falls through to the SPA fallback and returns
+      # index.html with a 200, so a committed badge renders as a broken image
+      # while the file is present and valid and the explorer's URL is correct.
+      && lib.hasInfix "127.0.0.1:8780/raw/"
+        (config.services.nginx.virtualHosts."radicle-explorer".locations."/raw/".proxyPass or "")
       && config.systemd.services ? radicle-explorer-serve
       # CI: broker on, trigger carries the Node filter, adapter PATH has nix
       # and the build helper (an upstream mkForce on runtimePackages would

@@ -136,6 +136,21 @@ in
           "= /index.html".extraConfig = ''
             add_header Cache-Control "no-store" always;
           '';
+          # Raw blobs, which is how the explorer renders any image a README
+          # references. `radicle-httpd` mounts this OUTSIDE the API -- see
+          # `.nest("/raw", raw_router)` in crates/radicle-httpd/src/lib.rs --
+          # serving /raw/:rid/:sha/*path, /raw/:rid/head/*path and
+          # /raw/:rid/blobs/:oid. It does not appear in the /api/v1 link index,
+          # which is why enumerating that index says no such endpoint exists.
+          #
+          # Without this location the request falls through to the SPA fallback
+          # above and gets index.html with a 200, so a committed badge renders
+          # as a broken image and following the link by hand shows the
+          # explorer's own "Page not found". Nothing anywhere reports an error:
+          # the status is 200, the file is present and valid in the tree, and
+          # the explorer built the URL correctly. The only clue is that the
+          # response is text/html where an image was asked for.
+          "/raw/".proxyPass = "http://127.0.0.1:${toString cfg.httpd.listenPort}/raw/";
           # Same-origin API. The trailing slashes matter: /api/v1/x must reach
           # httpd as /api/v1/x, not /api/api/v1/x.
           "/api/".proxyPass = "http://127.0.0.1:${toString cfg.httpd.listenPort}/api/";
