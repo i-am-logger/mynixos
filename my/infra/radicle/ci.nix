@@ -374,10 +374,17 @@ in
       # bounded capability set and no-new-privileges. One boundary, not two.
       RestrictNamespaces = mkIf sandboxingBuilder (mkForce false);
       ProtectHostname = mkIf sandboxingBuilder (mkForce false);
-
-      # PrivateUsers maps only the unit's own uid, so the nested namespace nix
-      # wants has no root to map from.
-      PrivateUsers = mkIf sandboxingBuilder (mkForce false);
+      # PrivateUsers is deliberately LEFT AS UPSTREAM SETS IT. Turning it off
+      # here stopped the broker dead: it wrote its status file once at startup
+      # and never again, across two container restarts, while generation 1201
+      # with it on had run CI minutes earlier. Upstream pairs PrivateUsers with
+      # LoadCredential/ImportCredential for the node secret, and the uid mapping
+      # a credential is mounted under is part of that pairing -- so flipping it
+      # takes the broker's own key out of reach and it exits.
+      #
+      # If a nested user namespace turns out to need it after all, the answer is
+      # not to flip this: it is to give the adapter what it needs without
+      # restructuring how the broker reads its key.
 
       # Upstream's list minus `~@privileged`. `~@resources` stays: a build has
       # no business setting rlimits or re-nicing, and it was not what blocked.
