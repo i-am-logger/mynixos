@@ -134,6 +134,11 @@ let
       esac
     '';
   };
+  # A role that actually runs builds, inside a container. Both halves matter:
+  # a seed never builds, and on a host the unit's own confinement is the only
+  # boundary there is.
+  sandboxingBuilder = cfg.builder.enable && config.boot.isContainer;
+
 in
 {
   config = mkIf (cfg.enable && cfg.ci.enable) {
@@ -324,6 +329,60 @@ in
       );
       StateDirectoryMode = mkIf cfg.ci.serveReports.enable "0750";
       LogsDirectory = mkForce [ "radicle-ci" "radicle-ci/adapters/native" ];
+
+      # LET A BUILDER SANDBOX ITS BUILDS.
+      #
+      # nix builds in a sandbox, and that sandbox is the point of building on
+      # nix at all -- it is never the thing to switch off. Creating one needs a
+      # nested user namespace and the mount calls that follow it, and three
+      # directives in upstream's `enableHardening` block each deny a different
+      # part of that. Measured on this builder by the preflight in
+      # radicle-release's own recipe, not reasoned about:
+      #
+      #   max_user_namespaces: 2147483647
+      #   CapEff:              0000000000000000
+      #   unshare: unshare failed: Operation not permitted
+      #
+      # EPERM rather than ENOSPC is the finding. A namespace LIMIT reports
+      # ENOSPC, so an unlimited count sitting next to EPERM says something
+      # REFUSES the call rather than having run out -- which also rules out
+      # memory and CPU, the two things a container is usually short of. Not the
+      # kernel, and not podman, whose profile allows clone, clone3 and unshare
+      # with no argument mask. systemd's own filters, which the adapter inherits
+      # because ci-broker.nix declares exactly one unit and the adapter is a
+      # CHILD PROCESS of it, not a unit of its own:
+      #
+      #   RestrictNamespaces  seccomp-denies unshare(CLONE_NEWUSER) -- the EPERM
+      #   SystemCallFilter    `~@privileged` subtracts pivot_root, chroot and
+      #                       sethostname, which is what nix calls once it has
+      #                       the namespace (systemd-analyze syscall-filter
+      #                       @privileged lists exactly those)
+      #   ProtectHostname     denies sethostname by itself, and is why every
+      #                       earlier run died reporting `cannot set host name`
+      #                       from inside an unrelated derivation
+      #
+      # This is still not `enableHardening = false`: LockPersonality,
+      # MemoryDenyWriteExecute, RestrictRealtime, RestrictSUIDSGID,
+      # RestrictAddressFamilies, ProtectClock, ProtectKernelModules,
+      # ProtectKernelTunables and the rest stay as upstream set them. Only what
+      # a sandbox cannot be built without is dropped.
+      #
+      # Scoped to a BUILDER inside a container: a seed runs no builds and keeps
+      # all three, and on a host the unit's confinement IS the boundary so none
+      # of it applies. The argument is ./container-confinement.nix's -- a
+      # rootless container is already a user namespace with no SYS_ADMIN, a
+      # bounded capability set and no-new-privileges. One boundary, not two.
+      RestrictNamespaces = mkIf sandboxingBuilder (mkForce false);
+      ProtectHostname = mkIf sandboxingBuilder (mkForce false);
+
+      # PrivateUsers maps only the unit's own uid, so the nested namespace nix
+      # wants has no root to map from.
+      PrivateUsers = mkIf sandboxingBuilder (mkForce false);
+
+      # Upstream's list minus `~@privileged`. `~@resources` stays: a build has
+      # no business setting rlimits or re-nicing, and it was not what blocked.
+      SystemCallFilter =
+        mkIf sandboxingBuilder (mkForce [ "@system-service" "~@resources" ]);
     };
   };
 }
