@@ -30,15 +30,18 @@ let
   # A role takes no extraModules: platforms/oci.nix supplies the stateVersion
   # and the docker-container profile relaxes the `fileSystems."/"` requirement.
   # A role needing a prelude here would be a role a consumer could not write.
+  # A machine seen AS ITS CONTAINER IMAGE. `virtualisation.ociVariant` is the
+  # extended configuration that image is built from -- the same relationship
+  # `virtualisation.vmVariant` has to system.build.vm -- so asserting on it is
+  # asserting on exactly what lands in the image.
   role = my: (self.lib.mkSystem {
-    platform = "oci";
-    hostname = "oci-shape";
     system = "x86_64-linux";
+    hostname = "oci-shape";
     inherit my;
-  }).config;
+  }).config.virtualisation.ociVariant;
 
   # The control. A real NixOS host, same `my`, so a difference between the two
-  # is attributable to platforms/oci.nix and nothing else.
+  # is attributable to platforms/oci-variant.nix and nothing else.
   host = my: (self.lib.mkSystem {
     platform = "linux";
     hostname = "oci-shape-control";

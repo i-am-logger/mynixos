@@ -164,6 +164,7 @@ let
     "system.architecture" = "read by my/system/kernel to set hostPlatform; the Apple profile does that itself.";
     "system.dualBoot" = "NTFS + local-time clock for a Windows dual-boot.";
     "system.kernel" = "there is no kernel to choose on macOS.";
+    "system.ociImage" = "names the container image a Linux system can be built as (system.build.image); nix-darwin has no such output, and an OCI image is a Linux closure regardless.";
     "system.persistence" = "impermanence's collection point; nothing wipes the disk on macOS.";
     "system.systemd" = "systemd.";
     "system.udev" = "udev.";

@@ -40,12 +40,17 @@ let
         touch $out
       '';
 
-  # Like evalAssert, but for a ROLE -- a system mkSystem already built, rather
-  # than a module list this file assembles. A role brings its own module set
-  # (platforms/oci.nix) and its own architecture, so baseModules/baseConfig do
+  # Like evalAssert, but for a whole SYSTEM mkSystem already built, rather
+  # than a module list this file assembles. Such a system brings its own module set
+  # and its own architecture, so baseModules/baseConfig do
   # not apply: handing it those would test a hand-built lookalike instead of
-  # what a consumer actually gets from `self.lib.roles.*`.
-  roleAssert = name: role: predicate:
+  # what a consumer actually writes.
+  # Named for what these check: a machine configured to be a seed or a builder,
+  # seen as the container image a host would run. They used to be
+  # `self.lib.roles.radicle.*` -- constructors mynixos shipped -- and are now
+  # ordinary systems with `infra.radicle.{seed,builder}.enable`, which is the
+  # whole point: a consumer can write this, and could not write a role.
+  systemAssert = name: role: predicate:
     let
       ok = predicate role.config
         # Forced so the check reaches the real closure and every assertion in
@@ -931,20 +936,35 @@ in
   # therefore every assertion in the system (ci.trustedNids' among them). These
   # are the only checks here that go that deep, and they can: a role has no
   # users, so none of the import-from-derivation vogix does is on the path.
-  oci-radicle-builder = roleAssert "oci-radicle-builder"
-    (self.lib.roles.radicle.builder {
+  oci-radicle-builder = systemAssert "oci-radicle-builder"
+    (self.lib.mkSystem {
       inherit system;
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
-      trustedNids = [ "z6MkuEBniT9BRGVjKUUV2Yi8dcEHzbDAn1fD5meaZ33bNMJV" ];
-      connect = [ "z6MkSeed@radicle-seed.example.ts.net:8776" ];
+      hostname = "radicle-x64-builder";
+      my = [{
+        network.tailscale.enable = true;
+        infra.radicle = {
+          enable = true;
+          builder.enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          privateKeyFile = "/var/lib/radicle-identity/node-key";
+          ci.trustedNids = [ "z6MkuEBniT9BRGVjKUUV2Yi8dcEHzbDAn1fD5meaZ33bNMJV" ];
+          node.connect = [ "z6MkSeed@radicle-seed.example.ts.net:8776" ];
+        };
+      }];
     })
     (config:
-      # A machine, not a process: an init, and the nix DB loader that makes nix
-      # usable inside a builder at all.
-      config.boot.isContainer
-      && config.systemd.services ? register-nix-paths
-      && !config.boot.loader.systemd-boot.enable
-      && !config.boot.lanzaboote.enable
+      # THE MACHINE IS NOT A CONTAINER; ITS IMAGE IS. boot.isContainer and the nix
+      # DB loader come from the docker-container profile, which lives only inside
+      # the variant -- so asserting them of the MACHINE would be asserting the old
+      # model, where a role was constructed as a container rather than expressed
+      # as one. `img` is that machine seen as its image, and the split is the
+      # point: the domain is true of the machine, being a container is true only
+      # of the image.
+      let img = config.virtualisation.ociVariant; in
+      img.boot.isContainer
+      && img.systemd.services ? register-nix-paths
+      && !img.boot.loader.systemd-boot.enable
+      && !img.boot.lanzaboote.enable
 
       # The domain, unchanged: node + broker + adapter, with the key still
       # delivered by LoadCredential -- from a file rather than from sops.
@@ -961,8 +981,12 @@ in
       # a third one appearing has to be argued for rather than merely noticed:
       # the node's P2P port, and the CI reports the builder serves because it is
       # the only machine they exist on.
-      && !config.services.openssh.enable
-      && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8776 8782 ]
+      # ...of the IMAGE. The machine is an ordinary Linux system and has sshd like
+      # any other; the variant is what forces it off, and with it the port. That
+      # is the distinction this whole change is about: a machine does not stop
+      # being a machine because someone takes a container image of it.
+      && !img.services.openssh.enable
+      && img.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8776 8782 ]
       && config.services.nginx.enable
       && !config.services.radicle.httpd.enable
 
@@ -990,15 +1014,24 @@ in
 
       && config.system.build.image.imageName == "radicle-x64-builder");
 
-  oci-radicle-seed = roleAssert "oci-radicle-seed"
-    (self.lib.roles.radicle.seed {
+  oci-radicle-seed = systemAssert "oci-radicle-seed"
+    (self.lib.mkSystem {
       inherit system;
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
-      externalAddresses = [ "radicle-seed.example.ts.net:8776" ];
-      seedHostname = "radicle-seed.example.ts.net";
+      hostname = "radicle-seed";
+      my = [{
+        network.tailscale.enable = true;
+        infra.radicle = {
+          enable = true;
+          seed.enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          privateKeyFile = "/var/lib/radicle-identity/node-key";
+          node.externalAddresses = [ "radicle-seed.example.ts.net:8776" ];
+          httpd.explorer.seedHostname = "radicle-seed.example.ts.net";
+        };
+      }];
     })
     (config:
-      config.boot.isContainer
+      config.virtualisation.ociVariant.boot.isContainer
       && config.services.radicle.enable
       # A seed holds every peer's refs; that is what makes seeds plural and a
       # second one able to pull the repositories across.
@@ -1030,13 +1063,21 @@ in
   # `externalAddresses` and `seedHostname` still carry the intended one: the
   # seed advertises an address that does not resolve and its explorer fetches
   # from a host that is not there. Both read as tailnet faults.
-  oci-radicle-seed-named = roleAssert "oci-radicle-seed-named"
-    (self.lib.roles.radicle.seed {
+  oci-radicle-seed-named = systemAssert "oci-radicle-seed-named"
+    (self.lib.mkSystem {
       inherit system;
-      name = "radicle-yoga-seed";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
-      externalAddresses = [ "radicle-yoga-seed.example.ts.net:8776" ];
-      seedHostname = "radicle-yoga-seed.example.ts.net";
+      hostname = "radicle-yoga-seed";
+      my = [{
+        network.tailscale.enable = true;
+        infra.radicle = {
+          enable = true;
+          seed.enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          privateKeyFile = "/var/lib/radicle-identity/node-key";
+          node.externalAddresses = [ "radicle-yoga-seed.example.ts.net:8776" ];
+          httpd.explorer.seedHostname = "radicle-yoga-seed.example.ts.net";
+        };
+      }];
     })
     (config:
       config.system.build.image.imageName == "radicle-yoga-seed"

@@ -91,17 +91,17 @@ let
   });
 
   # A role: no hardware, no users, and `system` instead of a hardware profile.
-  # Nothing is added on top -- platforms/oci.nix supplies the stateVersion and
-  # the docker-container profile relaxes the `fileSystems."/"` requirement, so
-  # a role that needed an `extraModules` prelude here would be a role a
-  # consumer could not write either.
-  ociBase = {
-    platform = "oci";
+  # A machine with no hardware profile -- the shape a system built to be run as
+  # a container image has. Nothing is added on top: the variant supplies the
+  # stateVersion and the docker-container profile relaxes the
+  # `fileSystems."/"` requirement, so a machine that needed an `extraModules`
+  # prelude here would be one a consumer could not write either.
+  imageableBase = {
     hostname = "mks-oci";
     system = "x86_64-linux";
   };
 
-  evalOci = args: self.lib.mkSystem (ociBase // args);
+  evalImageable = args: self.lib.mkSystem (imageableBase // args);
 
   # `tryEval` does NOT catch a missing attribute, but it does catch `throw`,
   # which is how mkSystem reports a rejected argument.
@@ -215,83 +215,88 @@ in
     (throws (evalDarwin { system = "aarch64-darwin"; }).config)
     "a darwin host naming `system` should be told the hardware profile owns it";
 
-  # --- System: the oci role emitter ----------------------------------------
+  # --- The container image, as an OUTPUT of a machine ------------------------
 
-  # A role is a NixOS evaluation like any other machine -- that is the claim
-  # `platform = "oci"` makes. What distinguishes it is `system.build.image`
-  # beside the toplevel, and `boot.isContainer`: no kernel, no initrd, no
+  # `system.build.image` is an output of any Linux system, exactly as
+  # `system.build.vm` is. What distinguishes the IMAGE from the machine is the
+  # variant it is built from: `boot.isContainer`, no kernel, no initrd, no
   # bootloader. Asserting the hostname alone would prove none of that.
-  mksystem-oci-builds-role =
-    let e = evalOci { }; in
-    pureCheck "oci-builds-role"
+  mksystem-image-is-an-output =
+    let e = evalImageable { }; in
+    pureCheck "image-is-an-output"
       (e.config.networking.hostName == "mks-oci"
         && e.options ? systemd && !(e.options ? launchd)
-        && e.config.boot.isContainer
-        && !e.config.boot.loader.systemd-boot.enable
-        && e.config.system.build ? image)
-      "platform = oci should produce a container-shaped NixOS role with system.build.image";
+        && e.config.system.build ? image
+        # the base is an ordinary machine -- it is NOT a container
+        && !e.config.boot.isContainer
+        # ... and its image is
+        && e.config.virtualisation.ociVariant.boot.isContainer
+        && !e.config.virtualisation.ociVariant.boot.loader.systemd-boot.enable)
+      "every Linux system should offer system.build.image without becoming a container itself";
 
-  # The image is named after the role, which is what makes several roles from
-  # one flake distinguishable once they are loaded into a runtime.
-  mksystem-oci-image-named-for-role = pureCheck "oci-image-named-for-role"
-    ((evalOci { }).config.system.build.image.imageName == "mks-oci")
-    "the role's hostname should name its image";
+  # The image is named after the machine, which is what makes several images
+  # from one flake distinguishable once they are loaded into a runtime.
+  mksystem-image-named-for-machine = pureCheck "image-named-for-machine"
+    ((evalImageable { }).config.system.build.image.imageName == "mks-oci")
+    "the machine's hostname should name its image";
 
-  # ... and it must NOT be nixosModules.default: lanzaboote signs an EFI stub
-  # for a bootloader a container has not got, and impermanence describes what
-  # survives a tmpfs root when the image IS the root. Both modules are loaded
-  # for their option DECLARATIONS (platforms/linux.nix writes those paths under
-  # mkIf, and a mkIf-false definition still needs the option to exist), so the
-  # thing to assert is that neither is switched on.
-  mksystem-oci-has-no-bootloader = pureCheck "oci-has-no-bootloader"
+  # lanzaboote signs an EFI stub for a bootloader a container has not got, and
+  # impermanence describes what survives a tmpfs root when the image IS the
+  # root. Both modules are still LOADED for their option declarations
+  # (platforms/linux.nix writes those paths under mkIf, and a mkIf-false
+  # definition still needs the option to exist), so the thing to assert is that
+  # neither is switched on inside the variant.
+  mksystem-image-has-no-bootloader = pureCheck "image-has-no-bootloader"
     (
-      let c = (evalOci { }).config; in
+      let c = (evalImageable { }).config.virtualisation.ociVariant; in
       !c.boot.lanzaboote.enable
       && !c.my.boot.uefi
       && c.environment.persistence == { }
     )
-    "a role must carry neither a signed bootloader nor a tmpfs-root persistence layer";
+    "an image must carry neither a signed bootloader nor a tmpfs-root persistence layer";
 
-  # A container has no disk to partition, no hardware profile, and no accounts.
-  # Each is rejected with its own reason rather than accepted and ignored.
-  mksystem-oci-rejects-filesystem = pureCheck "oci-rejects-filesystem"
-    (throws (evalOci { my = { filesystem = { type = "disko"; }; }; }).config)
-    "a role naming my.filesystem should be told the image IS its filesystem";
+  # THE PROPERTY THAT REPLACED FIVE REJECTIONS.
+  #
+  # `platform = "oci"` used to REFUSE a machine that named my.filesystem,
+  # hardware, users, or impermanence -- because such a machine could not be
+  # built as a container. A variant does not get to refuse: it is an output of
+  # whatever machine it is asked about, including a laptop with disks and a
+  # GPU, so it OVERRIDES instead. qemu-vm.nix does the same to `fileSystems`.
+  #
+  # Impermanence is the sharp case and the reason rejection could not simply
+  # move into an assertion: it declares a /persist mount with no device, and
+  # `assertions` is forced as a whole list before failures are filtered, so it
+  # errors with nixpkgs' own "fileSystems.\"/persist\".fsType was accessed but
+  # has no value defined" before any message of ours is read.
+  mksystem-image-overrides-impermanence = pureCheck "image-overrides-impermanence"
+    (
+      let e = evalImageable { my = { storage.impermanence.enable = true; }; }; in
+      e.config.my.storage.impermanence.enable
+      && !e.config.virtualisation.ociVariant.my.storage.impermanence.enable
+      && builtins.isString e.config.system.build.image.drvPath
+    )
+    "a machine using impermanence must still produce an image, with impermanence off inside it";
 
-  mksystem-oci-rejects-hardware = pureCheck "oci-rejects-hardware"
-    (throws (evalOci { hardware = [{ nixpkgs.hostPlatform = "x86_64-linux"; }]; }).config)
-    "a role naming hardware should be told a container has none";
-
-  # The one that keeps the image small BY CONSTRUCTION: a user brings a
-  # home-manager closure and a workstation's worth of apps into a machine whose
-  # only job is to run one domain.
-  mksystem-oci-rejects-users = pureCheck "oci-rejects-users"
-    (throws (evalOci { users = [ (mkNixosUser "alice") ]; }).config)
-    "a role naming users should be told a role has no accounts";
-
-  # `system` is the ONE thing a container cannot be discovered from, so its
-  # absence is an error rather than a guess at the evaluator's architecture.
-  mksystem-oci-requires-system = pureCheck "oci-requires-system"
-    (throws (self.lib.mkSystem { platform = "oci"; hostname = "mks-oci"; }).config)
-    "platform = oci without `system` should throw, not default to the builder's arch";
-
-  # The per-user tier axis is the OPERATING SYSTEM, and a container is Linux.
-  # If the oci branch passed "oci" to myModules, a `my.users.<n>.linux` tier
-  # would be dropped in silence instead of applied.
-  # Deliberately an entry with NO fullName: that is what lib/active-users.nix
-  # filters on, so this one carries settings and creates no account -- which is
-  # the only shape of my.users a role accepts. Using the account-creating
-  # `tieredUser` here would now be rejected, and rightly: it would prove tier
-  # resolution with a config a role must refuse.
-  mksystem-oci-uses-linux-tier = pureCheck "oci-uses-linux-tier"
-    ((evalOci {
+  # The per-user tier axis is the OPERATING SYSTEM, and a container is Linux --
+  # so the tier a machine resolved is the tier its image carries. Nothing about
+  # taking an image may re-resolve it.
+  mksystem-image-keeps-linux-tier = pureCheck "image-keeps-linux-tier"
+    ((evalImageable {
       my = { users.alice = { linux = { shell = "fish"; }; darwin = { shell = "zsh"; }; }; };
-    }).config.my.users.alice.shell == "fish")
-    "a role should resolve the linux tier, because a container is Linux";
+    }).config.virtualisation.ociVariant.my.users.alice.shell == "fish")
+    "an image should carry the linux tier its machine resolved";
 
-  mksystem-oci-rejects-my-users-with-account = pureCheck "oci-rejects-my-users-with-account"
-    (throws (evalOci { my = { users = tieredUser; }; }))
-    "a role must refuse a my.users entry with a fullName -- that is an account";
+  # `system` and `hardware` are two answers to one question. A machine with a
+  # hardware profile gets its architecture from it; one with none -- which is
+  # the shape a machine built only to be imaged has -- names it. Both is an
+  # error rather than a precedence rule.
+  mksystem-rejects-system-and-hardware = pureCheck "rejects-system-and-hardware"
+    (throws (self.lib.mkSystem {
+      hostname = "mks-both";
+      system = "x86_64-linux";
+      hardware = [{ nixpkgs.hostPlatform = "x86_64-linux"; }];
+    }).config)
+    "naming both `system` and `hardware` should be refused, not silently resolved";
 
   # An unknown platform is a typo, and a typo must not silently fall through to
   # a default. This is also the check that keeps the dispatch honest when a

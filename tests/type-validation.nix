@@ -68,8 +68,11 @@ let
   # "mkSystem throws for every input" cannot masquerade as "the bad value was
   # rejected". Same failure mode as an option that was renamed away, same fix.
   #
-  # The enum is closed on purpose. `platform = "vm"` is a designed-for future
-  # branch and is REJECTED BY NAME until it exists, because the alternative --
+  # The enum is closed on purpose, and it is now two values: an output FORMAT is
+  # not a platform, so a container image is `system.build.image` on any Linux
+  # system rather than a third branch here. `platform = "vm"` stays REJECTED BY
+  # NAME for the same reason "oci" was removed -- a VM is another output, and
+  # the alternative to naming it --
   # falling through to a default -- builds the wrong kind of machine in silence.
   role = platform: self.lib.mkSystem {
     inherit platform;
@@ -81,14 +84,14 @@ let
     let
       read = platform: builtins.tryEval
         (builtins.deepSeq (role platform).config.networking.hostName "ok");
-      control = read "oci";
+      control = read "linux";
       result = read badPlatform;
     in
     pkgs.runCommand "type-validation-${name}" { } (
       if !control.success then
         builtins.throw
           ("FAIL: ${name} cannot build a system with a VALID platform -- "
-            + "mkSystem's oci branch is broken, so this check was passing for the wrong reason")
+            + "mkSystem's linux branch is broken, so this check was passing for the wrong reason")
       else if result.success then
         builtins.throw "FAIL: should have rejected platform '${badPlatform}'"
       else ''

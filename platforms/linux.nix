@@ -201,6 +201,13 @@ in
     # construction: podman and virtualisation.oci-containers are.
     ../my/infra/oci-roles
 
+    # `system.build.image`: this machine, taken as a container image. An OUTPUT
+    # of a Linux configuration rather than a kind of configuration -- the same
+    # relationship `system.build.vm` already has, declared the same way through
+    # extendModules. Nothing here makes a machine a container; it makes one
+    # available from it.
+    ../my/system/oci-image
+
     # Remote nix builders, client half (nix.buildMachines). The darwin half
     # (accepting builds) is my/dev/remote-builders/darwin.nix.
     ../my/dev/remote-builders

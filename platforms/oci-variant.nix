@@ -66,9 +66,8 @@
 
 {
   imports = [
-    ./linux.nix
     "${modulesPath}/profiles/docker-container.nix"
-    ../my/system/oci-image
+    ../my/system/oci-image/image.nix
   ];
 
   config = {
@@ -107,6 +106,31 @@
     #   * channel.nix installs a nixos channel a role never updates from.
     installer.cloneConfig = false;
 
+    # WHAT A CONTAINER OVERRIDES RATHER THAN REFUSES.
+    #
+    # This variant must be applicable to ANY machine -- including a laptop with
+    # disks, impermanence, users and a GPU. `nix build
+    # .#nixosConfigurations.yoga.config.system.build.image` is an absurd thing
+    # to want and it must still work, because that is what makes this an output
+    # of a configuration rather than a privilege of purpose-built ones.
+    #
+    # So the shape here is qemu-vm.nix's: it does not reject a machine that has
+    # real filesystems, it `mkVMOverride`s them. Rejection could not work even if
+    # it were wanted -- `assertions` is a list, the module system forces the
+    # whole list before filtering to the failing ones, so impermanence's
+    # undefined `/persist` mount errors with nixpkgs' own message
+    #
+    #   The option `fileSystems."/persist".fsType' was accessed but has no value
+    #
+    # before any assertion of ours is read. That is why the old
+    # `platform = "oci"` branch rejected in the CONSTRUCTOR instead, and why
+    # removing the constructor means overriding here.
+    #
+    # Impermanence describes what survives a tmpfs root being wiped. A
+    # container's root IS the image and nothing wipes it, so the question does
+    # not arise; state a machine must keep is a volume declared by whatever
+    # hosts it.
+
     # A ROLE IS ONE DOMAIN SWITCHED ON. Importing ./linux.nix wholesale is what
     # keeps my.infra.radicle working unchanged, and it is also how a role
     # inherits every default written for a WORKSTATION. Those defaults are not
@@ -134,6 +158,17 @@
       theming.openrgb.enable = lib.mkForce false;
       hardware.audio.enable = lib.mkForce false;
       network.openssh.enable = lib.mkForce false;
+
+      # Impermanence describes what survives a tmpfs root being wiped. A
+      # container's root IS the image and nothing wipes it, so the question does
+      # not arise; state a machine must keep is a volume declared by whatever
+      # hosts it. Forced rather than asserted because a variant is an output of
+      # WHATEVER machine it is asked about -- including a laptop that uses
+      # impermanence -- and an assertion could not fire anyway: `assertions` is
+      # forced as a whole list, so impermanence's deviceless /persist mount
+      # errors with nixpkgs' own message first. qemu-vm.nix mkVMOverrides
+      # `fileSystems` for the same reason.
+      storage.impermanence.enable = lib.mkForce false;
 
       # LET THE KERNEL PICK tailscaled's WireGuard port instead of taking the
       # fleet-wide default of 41641.

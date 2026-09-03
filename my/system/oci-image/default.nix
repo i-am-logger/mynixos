@@ -1,84 +1,62 @@
-# `system.build.image`: the role system, streamed as an OCI image.
+# `system.build.image`: this machine, taken as an OCI container image.
 #
-# Imported only by platforms/oci.nix, so it exists exactly where it makes
-# sense -- the same rule that keeps my.security off darwin.
+# An OUTPUT of an ordinary NixOS configuration, not a kind of configuration.
+# Copied deliberately from nixos/modules/virtualisation/build-vm.nix:13:
 #
-# streamLayeredImage rather than buildImage or the docker-container profile's
-# own `system.build.tarball`, for one reason each:
+#     vmVariant = extendModules { modules = [ ./qemu-vm.nix ]; };
+#     system.build.vm = mkDefault config.virtualisation.vmVariant.system.build.vm;
 #
-#   * LAYERED, because the ~460 store paths a "it is a machine" role costs are
-#     near-identical across every role. Layered images make them shared
-#     content-addressed layers, so the first role costs its full closure and
-#     each additional role costs only its marginal paths.
-#   * STREAM, because the output is a script that writes the tarball to stdout
-#     rather than a multi-GB tarball sitting in the nix store next to the
-#     closure it was built from. `virtualisation.oci-containers` consumes
-#     exactly this through its `imageStream` option -- no registry, and the
-#     image is never materialised twice.
+# and note that qemu-vm.nix is pointedly NOT in nixpkgs' module list. The VM
+# shape exists only inside the variant, so nothing in the base system knows it
+# might be run as one. platforms/oci-variant.nix has the same standing
+# here: nothing knows a container is possible until someone reads
+# `system.build.image`.
 #
-# Size is NOT optimised here, deliberately. Correctness first; shrinking the
-# closure is separate work with its own gates.
-{ config, pkgs, ... }:
+# WHAT THIS REPLACED. `oci` used to be a third value of mkSystem's `platform`,
+# beside `linux` and `darwin` -- so a machine destined for a container was
+# CONSTRUCTED differently rather than EXPRESSED differently, and
+# platforms/oci.nix had to import platforms/linux.nix wholesale to get back the
+# option declarations a `mkIf false` still requires. lib/mkSystem.nix said so
+# itself: "'linux'/'darwin' are operating systems while 'oci' is an output
+# format". Under a variant the base already IS the Linux system, so the
+# wholesale import and the reasoning that justified it are both gone.
+{ config, lib, extendModules, ... }:
 
 let
-  inherit (config.system.build) toplevel;
-
-  # What `register-nix-paths` (from nixpkgs' docker-container profile) loads at
-  # boot. Without it the image has a /nix/store full of paths that nix itself
-  # does not know about, so every `nix build` inside a builder role would
-  # re-fetch or rebuild what is already there.
-  #
-  # closureInfo's own store path is referenced from extraCommands only, which
-  # runs at image-BUILD time -- so the registration file's contents land in the
-  # image while the derivation that produced them does not.
-  registration = pkgs.closureInfo { rootPaths = [ toplevel ]; };
+  ociVariant = extendModules {
+    modules = [ ../../../platforms/oci-variant.nix ];
+  };
 in
 {
   imports = [ ./options.nix ];
 
-  config = {
-    system.build.image = pkgs.dockerTools.streamLayeredImage {
-      name = config.networking.hostName;
-
-      # The tag is the identity's, not the build's. A role image is only ever
-      # as trustworthy as the key it was built for, and the reference fleet in
-      # roles/radicle is built for keys whose private halves were destroyed --
-      # so tagging both `latest` would let a reference image silently occupy the
-      # tag a real deployment's image lands on, in a runtime where the two are
-      # otherwise indistinguishable. `my.system.ociImage.tag` is what a real
-      # deployment sets; the reference fleet leaves it at its default.
-      inherit (config.my.system.ociImage) tag;
-
-      # `contents` stays EMPTY on purpose. Adding the toplevel here would
-      # symlink-join it into the image root, putting a read-only store symlink
-      # at /etc -- exactly the path stage-2 activation has to own. The store
-      # closure still arrives: streamLayeredImage computes it from the config
-      # JSON too, and Cmd below names the toplevel.
-      contents = [ ];
-
-      config = {
-        # systemd as PID 1. `${toplevel}/init` and not the /init symlink
-        # created below, because this string is what carries the closure.
-        Cmd = [ "${toplevel}/init" ];
-        Env = [
-          "PATH=/run/current-system/sw/bin:/run/current-system/sw/sbin"
-          "container=podman"
-        ];
-        # systemd treats SIGRTMIN+3 as "shut down cleanly". The default SIGTERM
-        # is what PID 1 uses for its own re-exec, so a plain `podman stop` would
-        # sit through the timeout and then be killed.
-        StopSignal = "SIGRTMIN+3";
-      };
-
-      # The docker-container profile's extraCommands does the same `rm etc`
-      # dance for its tarball; with `contents = [ ]` there is nothing to remove,
-      # only the mount points systemd expects to already exist.
-      extraCommands = ''
-        mkdir -p proc sys dev run tmp var/tmp etc
-        chmod 1777 tmp var/tmp
-        ln -s ${toplevel}/init init
-        cp ${registration}/registration nix-path-registration
+  options = {
+    virtualisation.ociVariant = lib.mkOption {
+      description = ''
+        Configuration added on top of this machine to produce its container
+        image. Set anything here that should be true of the image and false of
+        the machine itself.
       '';
+      inherit (ociVariant) type;
+      default = { };
+      visible = "shallow";
     };
   };
+
+  config = {
+    system.build.image = lib.mkDefault config.virtualisation.ociVariant.system.build.image;
+
+    # A variant of a variant is a container image of a container image, which is
+    # nothing. build-vm.nix:62-69 guards its own the same way and for the same
+    # reason: unguarded, the recursion surfaces as an evaluation that never
+    # terminates rather than as an error naming what went wrong.
+    virtualisation.ociVariant = {
+      options.virtualisation.ociVariant = lib.mkOption {
+        apply = _: throw "virtualisation.ociVariant.virtualisation.ociVariant is not supported";
+      };
+    };
+  };
+
+  # uses extendModules
+  meta.buildDocsInSandbox = false;
 }
