@@ -168,6 +168,7 @@ let
     "system.persistence" = "impermanence's collection point; nothing wipes the disk on macOS.";
     "system.systemd" = "systemd.";
     "system.udev" = "udev.";
+    "virtualisation" = "running other mynixos systems inside this one; rootless podman and virtualisation.oci-containers are Linux by construction.";
     "theming" = "vogix, which is NixOS + Hyprland.";
     "video" = "v4l2loopback.";
   };

@@ -1,17 +1,23 @@
-# The generic half of running a role: an account, directories, an identity, a
-# container. Every fact below was learned by getting it wrong on a live host, so
-# each carries the failure it prevents rather than just the rule.
+# The generic half of running another mynixos system inside this one: an account,
+# directories, an identity, a container. Every fact below was learned by getting
+# it wrong on a live host, so each carries the failure it prevents, not just the
+# rule. Nothing here knows what a guest DOES -- a radicle seed, an ollama box and
+# yoga itself are the same shape from this side.
 { config, lib, pkgs, ... }:
 
 with lib;
 
 let
-  cfg = config.my.infra.ociRoles;
+  # A LIST of guests, each naming itself. `prepareUnit`/`containerOf` below take
+  # the name explicitly rather than reading an attribute key, because the name is
+  # the guest's hostname and having it twice is what once produced
+  # `radicle-radicle-yoga-seed`.
+  cfg = config.my.virtualisation.containers;
 
   # Where a role's host-side state lives. One parent for all of them, so a host
   # running three roles has one place to look.
-  prepareUnit = name: role:
-    let inherit (role) stateDir; in
+  prepareUnit = role:
+    let inherit (role) name stateDir; in
     nameValuePair "${name}-prepare" {
       description = "Prepare ${name}'s directories and identity";
       # requiredBy, not wantedBy: a role that starts without its identity does
@@ -92,8 +98,8 @@ let
       '';
     };
 
-  containerOf = name: role:
-    let inherit (role) stateDir; in
+  containerOf = role:
+    let inherit (role) name stateDir; in
     nameValuePair name {
       # Streamed straight from the role -- no registry, no tarball in the store.
       imageStream = role.system.config.system.build.image;
@@ -147,9 +153,9 @@ let
     };
 in
 {
-  config = mkIf (cfg != { }) {
-    users.users = mapAttrs'
-      (_name: role: nameValuePair role.user {
+  config = mkIf (cfg != [ ]) {
+    users.users = listToAttrs (map
+      (role: nameValuePair role.user {
         isSystemUser = true;
         group = role.user;
         # NO STATIC uid or gid. NixOS knows what is already taken and a
@@ -166,9 +172,9 @@ in
         linger = true;
         autoSubUidGidRange = true; # rootless podman maps into a subordinate range
       })
-      cfg;
+      cfg);
 
-    users.groups = mapAttrs' (_: role: nameValuePair role.user { }) cfg;
+    users.groups = listToAttrs (map (role: nameValuePair role.user { }) cfg);
 
     # Only the shared parent, which is not persisted and so has no bind mount to
     # race with. Everything under it is prepared by the per-role unit above.
@@ -177,16 +183,16 @@ in
     # everything under it is prepared by the per-role unit above.
     systemd.tmpfiles.rules =
       map (d: "d ${d} 0755 root root -")
-        (unique (mapAttrsToList (_: role: dirOf role.stateDir) cfg));
+        (unique (map (role: dirOf role.stateDir) cfg));
 
     systemd.services =
-      mapAttrs' prepareUnit cfg
+      listToAttrs (map prepareUnit cfg)
       # oci-containers gives a `podman.user` unit a PATH of podman's own bin and
       # nothing else. podman locates its OCI runtime through a helper-binary
       # wrapper that normally sits on the SYSTEM profile PATH, so without this it
       # fails with `default OCI runtime "crun" not found: invalid argument`,
       # which reads as a missing package and is a missing PATH entry.
-      // mapAttrs' (name: _: nameValuePair "podman-${name}" { path = [ pkgs.crun ]; }) cfg;
+      // listToAttrs (map (role: nameValuePair "podman-${role.name}" { path = [ pkgs.crun ]; }) cfg);
 
     # Stated here rather than left to a developer-tooling flag: a host must be
     # able to run a role with my.dev.enable = false. Unpersisted, a reboot loses
@@ -194,15 +200,15 @@ in
     # silently, and only on reboot.
     my.system.persistence.features.systemDirectories =
       [ "/var/lib/containers" ]
-      ++ concatLists (mapAttrsToList
-        (_name: role:
+      ++ concatLists (map
+        (role:
           [ "/var/lib/${role.user}" role.stateDir ]
           ++ optional (role.identityDir != null) (toString role.identityDir))
         cfg);
 
     virtualisation.oci-containers = {
       backend = "podman";
-      containers = mapAttrs' containerOf cfg;
+      containers = listToAttrs (map containerOf cfg);
     };
   };
 }

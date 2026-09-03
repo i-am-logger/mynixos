@@ -61,7 +61,7 @@ in
     # mkOptionsModule, because they declare `options.my.infra` directly.
     ../my/infra/radicle/seed.nix
     ../my/infra/radicle/builder.nix
-    (mkOptionsModule ../my/infra/oci-roles/options.nix { inherit lib; })
+    (mkOptionsModule ../my/virtualisation/options.nix { inherit lib; })
     (mkOptionsModule ../my/dev/remote-builders/options-linux.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/boot/options.nix { inherit lib; })
     (mkOptionsModule ../my/storage/options.nix { inherit lib; })
@@ -197,9 +197,9 @@ in
     ../my/infra/github-runner
     ../my/infra/k3s
     ../my/infra/radicle
-    # How a host RUNS a role, once rather than per role. Linux-only by
+    # How a host runs OTHER MYNIXOS SYSTEMS inside itself. Linux-only by
     # construction: podman and virtualisation.oci-containers are.
-    ../my/infra/oci-roles
+    ../my/virtualisation/containers
 
     # `system.build.image`: this machine, taken as a container image. An OUTPUT
     # of a Linux configuration rather than a kind of configuration -- the same
