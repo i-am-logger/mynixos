@@ -130,16 +130,10 @@ let
           "--security-opt=no-new-privileges"
 
         ]
-        # What a nix build needs, and nothing more. See the nixSandbox option:
-        # /proc unmasked so nix can remount it, and SYS_ADMIN because the build
-        # is done by the nix DAEMON as container root, which -- being
-        # privileged -- takes the no-user-namespace path and then calls
-        # sethostname in its own UTS namespace. The capability is namespaced to
-        # the container's userns and confers nothing on the host.
-        ++ optionals role.nixSandbox [
-          "--security-opt=unmask=/proc/*"
-          "--cap-add=SYS_ADMIN"
-        ]
+        # /proc fully visible, so nix's sandbox can remount it. See the
+        # nixSandbox option for why this is not a capability grant and why
+        # `--no-sandbox` is the wrong reading of the error it fixes.
+        ++ optional role.nixSandbox "--security-opt=unmask=/proc/*"
         ++ [
 
           # NO --userns=auto. It allocates a FRESH uid range per container, so

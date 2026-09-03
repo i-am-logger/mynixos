@@ -189,35 +189,6 @@
       # and nothing to keep in sync.
       network.tailscale.port = lib.mkForce 0;
     };
-
-    # A ROLE'S LOGS MUST REACH THE HOST THAT RUNS IT.
-    #
-    # systemd is PID 1 inside a role, so everything its units log goes to the
-    # role's OWN journal -- a file inside the container, on a filesystem the host
-    # does not mount. podman's journald log driver captures the container's
-    # stdout, which after PID 1 hands off is only the two lines systemd prints
-    # before it starts logging internally. So `journalctl -u podman-<role>` on the
-    # host ends at "starting systemd..." and every unit failure inside is
-    # invisible.
-    #
-    # That is not a small inconvenience. It is the difference between reading why
-    # the CI broker stopped and guessing at it: with the journal unreachable the
-    # only ways in are `podman exec` as the role's account -- a manual, root-
-    # requiring step that belongs to no configuration -- or inferring state from
-    # whatever the role happens to serve over HTTP. Both were tried today and
-    # both are worse than a log line.
-    #
-    # ForwardToConsole sends the role's journal to /dev/console, which IS the
-    # container's stdout, which podman already forwards to the host journal. One
-    # setting, no ports, no agent, nothing to keep running: the host's journal
-    # becomes the whole fleet's.
-    #
-    # MaxLevelConsole=info rather than the default notice: a unit that fails to
-    # start says so at info, and that is exactly the line worth having.
-    services.journald.extraConfig = ''
-      ForwardToConsole=yes
-      MaxLevelConsole=info
-    '';
     services.openssh.enable = lib.mkForce false;
 
     # The nixpkgs registry pin is NOT from that profile -- it is nixpkgs' own
