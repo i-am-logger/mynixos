@@ -44,18 +44,35 @@ let
   # unit-name-safe repo handle: the GitHub name is unique and readable
   safeName = repo: replaceStrings [ "/" "." ] [ "-" "-" ] repo.githubRepo;
 
+  containerConfinementOff = import ./container-confinement.nix { inherit lib config; };
+
   sourceNidOf = repo:
     if repo.sourceNid != null then repo.sourceNid else cfg.mirror.sourceNid;
 
-  # Git credential helper: the token comes from the systemd credential
-  # directory, never argv, never a URL.
+  # WHERE THE TOKEN IS READ FROM, and the one thing that decides it.
+  #
+  # By default it is systemd's credentials directory, which is the better place:
+  # the value exists only for the unit's lifetime and never at a path anything
+  # else can open. But systemd BUILDS that directory by mounting, so it needs
+  # CAP_SYS_ADMIN and is unavailable to a role -- as is sops-install-secrets,
+  # for the same reason. When `githubTokenFile` is set the host has already
+  # decrypted the token and the units read it straight from that path.
+  #
+  # Never argv and never a URL either way: a token in a command line is visible
+  # in /proc to anything that can read it, and a token in a remote URL is
+  # written into .git/config where it outlives the run.
+  tokenPath =
+    if cfg.mirror.githubTokenFile != null
+    then toString cfg.mirror.githubTokenFile
+    else "$CREDENTIALS_DIRECTORY/github-token";
+
   tokenHelper = pkgs.writeShellScript "radicle-mirror-credential-helper" ''
     echo "username=x-access-token"
-    printf 'password=%s\n' "$(cat "$CREDENTIALS_DIRECTORY/github-token")"
+    printf 'password=%s\n' "$(cat "${tokenPath}")"
   '';
 
   mirrorScript = repo: ''
-    export GH_TOKEN="$(cat "$CREDENTIALS_DIRECTORY/github-token")"
+    export GH_TOKEN="$(cat "${tokenPath}")"
 
     dir="$STATE_DIRECTORY/${safeName repo}"
 
@@ -174,9 +191,11 @@ let
       Group = "radicle";
       StateDirectory = "radicle-mirror";
       WorkingDirectory = "/var/lib/radicle-mirror";
-      LoadCredential = [
-        "github-token:${(config.sops.secrets.${cfg.mirror.githubTokenSecret} or { path = "/run/secrets/${cfg.mirror.githubTokenSecret}"; }).path}"
-      ];
+      # Only when sops is delivering the token. With `githubTokenFile` the host
+      # has already decrypted it and LoadCredential would fail anyway: systemd
+      # builds the credentials directory by mounting.
+      LoadCredential = optional (cfg.mirror.githubTokenFile == null)
+        "github-token:${(config.sops.secrets.${cfg.mirror.githubTokenSecret} or { path = "/run/secrets/${cfg.mirror.githubTokenSecret}"; }).path}";
       # See ./rad-profile.nix: the read-only profile every non-node unit
       # needs, and why the private key is not part of it.
       BindReadOnlyPaths = radProfile.bindReadOnlyPaths;
@@ -224,6 +243,23 @@ in
         message = "my.infra.radicle.mirror.enable is set but mirror.repos is empty.";
       }
       {
+        # The same shape, and the same reason, as the privateKeyFile assertion
+        # in ./default.nix. Enabling my.secrets is what runs
+        # sops-install-secrets, which mounts a ramfs for its secrets directory;
+        # a machine that needs a decrypted token handed to it is by definition
+        # one that cannot mount. Leaving both on does not fall back gracefully,
+        # it fails activation.
+        assertion = cfg.mirror.githubTokenFile != null -> !config.my.secrets.enable;
+        message = ''
+          my.infra.radicle.mirror.githubTokenFile is set AND my.secrets.enable is true.
+
+          githubTokenFile exists for a machine that cannot decrypt for itself --
+          sops-install-secrets mounts a ramfs, which needs CAP_SYS_ADMIN. Leaving
+          my.secrets enabled alongside it puts that tool back in the activation
+          path, so the two are mutually exclusive rather than merely redundant.
+        '';
+      }
+      {
         assertion = all (r: sourceNidOf r != "") cfg.mirror.repos;
         message = ""
           + "my.infra.radicle.mirror needs a sourceNid for every repo (set mirror.sourceNid "
@@ -232,12 +268,38 @@ in
       }
     ];
 
-    sops.secrets.${cfg.mirror.githubTokenSecret} = { mode = "0400"; };
+    # Declared only when sops is the delivery mechanism. Declaring it anyway
+    # would not be merely redundant: it is what puts sops-install-secrets in the
+    # activation path, and that mounts a ramfs -- so on a role it would fail
+    # activation outright, which is why my/infra/radicle/default.nix asserts
+    # privateKeyFile and my.secrets are mutually exclusive.
+    sops.secrets = optionalAttrs (cfg.mirror.githubTokenFile == null) {
+      ${cfg.mirror.githubTokenSecret} = { mode = "0400"; };
+    };
 
     systemd = {
-      services =
-        listToAttrs (map mkMirrorService cfg.mirror.repos)
-        // optionalAttrs (cfg.mirror.notifyCommand != null) {
+      # EVERY mirror service gets the container override, not just whichever
+      # fails first. The constraint is a property of the MACHINE -- it cannot
+      # mount -- so it applies to each unit that uses namespacing. Repairing
+      # only radicle-node once left the CI broker and the seeding oneshot
+      # failing at step NAMESPACE in exactly the same way, and there is one
+      # mirror service per repository here, so that mistake would scale.
+      #
+      # The notify template and the path units need nothing: a path unit has no
+      # exec context to confine, and the template sets only Type and path.
+      #
+      # mkMerge, NOT recursiveUpdate. `containerConfinementOff` is an `mkIf`,
+      # which is a `{ _type = "if"; condition; content; }` wrapper -- merging
+      # that structure INTO a service with recursiveUpdate does not apply the
+      # condition, it grafts the wrapper onto the unit and mangles it. Only the
+      # module system knows how to resolve an mkIf, so the override goes in as a
+      # second definition of the same units and lets it do that.
+      services = mkMerge [
+        (listToAttrs (map mkMirrorService cfg.mirror.repos))
+        (listToAttrs (map
+          (repo: nameValuePair "radicle-mirror-${safeName repo}" containerConfinementOff)
+          cfg.mirror.repos))
+        (optionalAttrs (cfg.mirror.notifyCommand != null) {
           "radicle-mirror-notify@" = {
             description = "Notify that %i failed";
             serviceConfig.Type = "oneshot";
@@ -248,7 +310,8 @@ in
             '';
             scriptArgs = "%i";
           };
-        };
+        })
+      ];
 
       paths = listToAttrs (map mkMirrorPath cfg.mirror.repos);
       timers = listToAttrs (map mkMirrorTimer cfg.mirror.repos);

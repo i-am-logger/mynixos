@@ -51,32 +51,9 @@ let
   # namespace, no SYS_ADMIN, no-new-privileges, a bounded capability set -- but
   # it is one boundary, not two, and the unit-level ProtectSystem/SocketBindDeny/
   # SystemCallFilter that confinement carried go with it.
-  containerConfinementOff = mkIf config.boot.isContainer {
-    confinement.enable = mkForce false;
-
-    # Disabling confinement is NOT enough. The base unit carries ten more
-    # directives that systemd implements with mount(2), and every one of them
-    # fails the same way. They fall into two kinds, and only one is a loss:
-    #
-    #   DELIVERY -- BindReadOnlyPaths puts config.json and radicle.pub at the
-    #   paths the node reads. Those files are already in the image; the mount is
-    #   only how upstream gets them into place. Symlinks do the same job with no
-    #   capability at all, so nothing is given up (see the tmpfiles rules below).
-    #
-    #   HARDENING -- ProtectSystem, PrivateTmp, ProtectHome, ProtectProc,
-    #   ProcSubset. These have no substitute without mount namespacing, and they
-    #   are genuinely lost. What remains is the container boundary: rootless, a
-    #   user namespace, no SYS_ADMIN, no-new-privileges, a bounded capability
-    #   set. One boundary, not two.
-    serviceConfig = {
-      BindReadOnlyPaths = mkForce [ ];
-      PrivateTmp = mkForce false;
-      ProtectHome = mkForce false;
-      ProtectSystem = mkForce false;
-      ProtectProc = mkForce "default";
-      ProcSubset = mkForce "all";
-    };
-  };
+  # Shared with ./mirror.nix and ./ci.nix: the constraint is a property of the
+  # MACHINE, not of one unit, so every unit this domain defines needs it.
+  containerConfinementOff = import ./container-confinement.nix { inherit lib config; };
 
   # The delivery half, done without mounting. `L+` replaces whatever is there,
   # so this is idempotent across restarts and survives the state directory being

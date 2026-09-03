@@ -396,6 +396,34 @@
             mirror = {
               enable = lib.mkEnableOption "event-driven GitHub mirroring (+ optional releases)";
 
+              githubTokenFile = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                default = null;
+                description = ''
+                  Path to an ALREADY DECRYPTED GitHub token, placed there by
+                  whatever runs this machine. The exact parallel of the node's
+                  `privateKeyFile`, and for the same reason.
+
+                  A ROLE CANNOT DECRYPT FOR ITSELF. sops-install-secrets mounts
+                  a ramfs for its secrets directory, and systemd builds
+                  `` by mounting -- so `sops.secrets` and
+                  `LoadCredential`, which this module uses when this option is
+                  null, both need CAP_SYS_ADMIN. A role running
+                  repository-supplied shell must not have it. Decryption
+                  therefore moves out to a host that does, and the plaintext is
+                  bind-mounted in.
+
+                  WHAT THAT COSTS, stated plainly: the token exists decrypted at
+                  a stable path for as long as the container runs, rather than
+                  only inside one unit's credentials directory. It is still
+                  encrypted at rest and still never enters the store. It is also
+                  an argument for the mirror being the only extra thing a seed
+                  ever runs -- the seed's own key is expensive to rotate, and
+                  every additional process beside it widens what a compromise
+                  reaches.
+                '';
+              };
+
               githubTokenSecret = lib.mkOption {
                 type = lib.types.str;
                 default = "radicle/github-token";
