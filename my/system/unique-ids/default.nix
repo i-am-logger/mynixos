@@ -55,7 +55,13 @@
       # Not at boot exactly: accounts are created during activation, and on the
       # first boot after a new account appears this would otherwise race it.
       OnBootSec = "2min";
-      OnUnitActiveSec = "1h";
+      # From the check going INACTIVE, never OnUnitActiveSec. Paired with the
+      # RemainAfterExit this unit used to carry, OnUnitActiveSec meant the
+      # oneshot stayed `active (exited)` forever, the timer never re-armed, and
+      # the hourly drift check ran exactly once per boot -- reporting `active`
+      # the whole time. Measured on a live host:
+      # NextElapseUSecMonotonic=infinity with LastTriggerUSec at boot.
+      OnUnitInactiveSec = "1h";
       Unit = "unique-ids-enforced.service";
     };
   };
@@ -65,10 +71,10 @@
     # After the accounts are created; that unit is what allocates the ids this
     # checks, so running before it would test the previous generation.
     after = [ "systemd-sysusers.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
+    # No RemainAfterExit: see the timer above. A failed run still shows in
+    # `systemctl --failed`, which is all the loudness this needs, and it is what
+    # lets the timer re-arm from the unit going inactive.
+    serviceConfig.Type = "oneshot";
     # Named on the unit's PATH rather than interpolated per call. The first
     # version reached for `${"$"}{pkgs.glibc.bin}/bin/getent`, which does not
     # exist -- getent is its own package. Every invocation failed with "No such
