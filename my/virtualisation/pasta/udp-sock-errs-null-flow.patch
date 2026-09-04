@@ -1,0 +1,72 @@
+passt: don't dereference a NULL flow in udp_sock_errs()
+
+udp_sock_fwd() (udp.c:879-881) calls udp_sock_errs() with FLOW_SIDX_NONE
+unconditionally, and udp_at_sidx() returns NULL for an invalid sidx. The three
+flow_*() logging call sites in udp_sock_errs() hand that NULL to flow_log_()
+(flow.h:287-289), which evaluates (f_)->state eagerly at the call site, before
+flow_log__() does any level filtering. `state` is the first bitfield of struct
+flow_common, offset 0, so the read is of address 0. Guarding flow.h alone is not
+enough: flow_log__() (flow.c:286-305) dereferences f as well.
+
+Observed on yoga: an audit ANOM_ABEND sig=11 for libexec/podman/pasta, kernel
+`segfault at 0 ip ...3f2a2 ... error 4`. In the binary that faulted
+(/nix/store/dbnaxh8gphmb5pymv0593c29hrnhpzzx-.../bin/passt.avx2), objdump at
+0x3f2a2 is `movzbl (%rdi),%r8d` immediately before `call <flow_log__>`, inside
+udp_sock_errs (symbol at 0x3f170) -- the udp.c:718 flow_dbg() site. The guest
+lost its only path to the network and nothing reported it: conmon never exited,
+so the host's podman unit read active (running) with NRestarts=0 for three hours.
+
+Present in current upstream master (passt.top), so a nixpkgs bump is not the fix.
+Not filed upstream yet. udp_sock_recverr() is not affected -- it re-resolves sidx
+and asserts uflow at udp.c:632.
+
+This guarantees "no crash". It does NOT guarantee "datapath restored": the guard
+makes `return -1` reachable at two of the three sites, which pre-patch was
+unreachable because the process died first. udp_sock_fwd() answers -1 with a
+rate-limited log and `continue` back into the same loop, so an unclearable socket
+error can become a silent CPU spin carrying the same external signature as the
+crash. The tailnet liveness probe is the only thing that tells those two apart.
+
+--- a/udp.c
++++ b/udp.c
+@@ -710,20 +710,35 @@
+ 	errlen = sizeof(err);
+ 	if (getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &errlen) < 0 ||
+ 	    errlen != sizeof(err)) {
+-		flow_perror_ratelimit(uflow, now, "Error reading SO_ERROR");
++		if (uflow)
++			flow_perror_ratelimit(uflow, now,
++					      "Error reading SO_ERROR");
++		else
++			logmsg_ratelimit(err_perror, err, now,
++					 "Error reading SO_ERROR on %s port %hu",
++					 pif_name(pif), port);
+ 		return -1;  /* error reading error, unrecoverable */
+ 	}
+ 
+ 	if (err) {
+-		flow_dbg(uflow, "Unqueued error on UDP socket: %s",
+-			 strerror_(err));
++		if (uflow)
++			flow_dbg(uflow, "Unqueued error on UDP socket: %s",
++				 strerror_(err));
++		else
++			debug("Unqueued error on flowless UDP socket, %s port %hu: %s",
++			      pif_name(pif), port, strerror_(err));
+ 		n_err++;
+ 	}
+ 
+ 	if (!n_err) {
+ 		/* EPOLLERR, but no errors to clear !? */
+-		flow_err_ratelimit(uflow, now,
+-				   "EPOLLERR event without reported errors");
++		if (uflow)
++			flow_err_ratelimit(uflow, now,
++					   "EPOLLERR event without reported errors");
++		else
++			err_ratelimit(now,
++				      "EPOLLERR without reported errors, %s port %hu",
++				      pif_name(pif), port);
+ 		return -1; /* no way to clear, unrecoverable */
+ 	}
+ 

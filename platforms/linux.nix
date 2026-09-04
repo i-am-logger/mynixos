@@ -201,6 +201,12 @@ in
     # construction: podman and virtualisation.oci-containers are.
     ../my/virtualisation/containers
 
+    # An overlay carrying one out-of-tree patch to passt, podman's rootless
+    # network helper. Delete this line and the directory the moment nixpkgs
+    # carries the upstream fix; tests/passt-null-flow.nix fails when the
+    # unpatched build stops crashing, which is how that moment announces itself.
+    ../my/virtualisation/pasta
+
     # `system.build.image`: this machine, taken as a container image. An OUTPUT
     # of a Linux configuration rather than a kind of configuration -- the same
     # relationship `system.build.vm` already has, declared the same way through
