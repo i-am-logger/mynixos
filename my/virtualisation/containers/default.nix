@@ -110,7 +110,7 @@ let
         [ "/var/lib/${role.user}" stateDir ]
         ++ optional (role.identityDir != null) (toString role.identityDir);
 
-      path = [ pkgs.sops ];
+      path = [ pkgs.sops pkgs.acl ];
       serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
       script = ''
         set -euo pipefail
@@ -129,6 +129,43 @@ let
         ${concatMapStringsSep "\n" (v: ''
           install -d -m 0700 -o ${role.user} -g ${role.user} ${stateDir}/${v}
         '') (attrNames role.stateVolumes)}
+
+        # The operator's read on the guest journal, granted by ACL because no
+        # mode can reach it: journald inside writes 0640 owned by container
+        # root:systemd-journal, which the host sees as this account and a gid in
+        # its SUBORDINATE range. `other` gets nothing, and no host group can
+        # ever BE that gid -- so group ownership, setgid, and adding anyone to
+        # systemd-journal all end at the same wall.
+        #
+        # `--x` on ${stateDir} rather than `chmod 0711`, even though the
+        # identity directory below uses exactly that: 0711 hands `other`
+        # traversal into radicle, radicle-ci and tailscale too, where what is
+        # reachable then depends on modes the GUEST chose -- a guest-controlled
+        # decision about host-side exposure. The 0711 precedent does not
+        # transfer because its principal is a service INSIDE the guest, which no
+        # host ACL can name. For the same reason this gets an ACCESS entry and
+        # no default: a default here would be inherited by the other volumes.
+        #
+        # Capital X is execute on directories only -- journalctl must readdir,
+        # files stay r--. The DEFAULT entry on journal is the load-bearing half:
+        # an access entry alone covers the tree that exists now and nothing
+        # journald creates afterwards, which is the machine-id directory and
+        # every rotated file. It survives the guest because chmod never removes
+        # a NAMED entry and chown does not touch the ACL at all.
+        #
+        # wheel and adm are the two groups systemd's own stock tmpfiles rules
+        # already grant on the host's /var/log/journal.
+        #
+        # TRAP: `install -m` DESTROYS an inherited ACL. The installs above are
+        # safe only because they run on directories this unit creates itself --
+        # never add one over journal files.
+        #
+        # GAP: RemainAfterExit above means a bare `systemctl restart
+        # podman-${name}.service` does not re-run this unit, so the ACL is
+        # applied on activation and on boot, not on a container restart.
+        setfacl -m g:wheel:x -m g:adm:x ${stateDir}
+        setfacl -R -m g:wheel:rX -m d:g:wheel:rX \
+                   -m g:adm:rX   -m d:g:adm:rX   ${stateDir}/journal
 
         # Recursive over the account's OWN podman storage, which really does
         # belong to it on this host and which a uid change would otherwise
@@ -264,7 +301,38 @@ in
       # wrapper that normally sits on the SYSTEM profile PATH, so without this it
       # fails with `default OCI runtime "crun" not found: invalid argument`,
       # which reads as a missing package and is a missing PATH entry.
-      // listToAttrs (map (role: nameValuePair "podman-${role.name}" { path = [ pkgs.crun ]; }) cfg);
+      // listToAttrs (map
+        (role: nameValuePair "podman-${role.name}" {
+          path = [ pkgs.crun ];
+
+          # RESTART PACING -- this is what lets the two failure shapes be told
+          # apart, which the NixOS defaults (100ms, 10s, 5) cannot.
+          #
+          # A role now takes ITSELF down when it finds it is off the tailnet
+          # (my/network/tailscale's probe, armed in platforms/oci-variant.nix):
+          # PID 1 exits 69, conmon returns it, and nixpkgs' own
+          # `Restart=on-failure` brings the container back. That is a slow
+          # cycle -- guest boot, then the probe's start delay, then its
+          # hysteresis, on the order of four minutes -- so with a 300s window
+          # it never reaches the burst and the role SELF-HEALS for as long as
+          # the tailnet stays away.
+          #
+          # A fast crash is the other shape: a bad identity or a missing mount
+          # kills the guest at once, and at 30s a restart that is five starts
+          # inside two minutes. That trips the limit, latches `failed`, and
+          # shows up in `systemctl --failed` -- which is right, because nothing
+          # about it was going to fix itself.
+          #
+          # None of these three are set by nixpkgs or elsewhere here, so they
+          # merge rather than override, and `Restart` stays as nixpkgs set it.
+          # StartLimitAction is deliberately left at its default: it takes
+          # FailureAction's value set, and `exit` on the HOST's PID 1 fails the
+          # container check and falls through to POWEROFF.
+          serviceConfig.RestartSec = "30s";
+          startLimitIntervalSec = 300;
+          startLimitBurst = 5;
+        })
+        cfg);
 
     # Stated here rather than left to a developer-tooling flag: a host must be
     # able to run a role with my.dev.enable = false. Unpersisted, a reboot loses
