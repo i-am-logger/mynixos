@@ -193,12 +193,47 @@ in
         inherit (cfg.httpd) listenPort aliases;
       };
     };
+    my.network.tailscale = {
+      # Rendered onto networking.firewall.interfaces.tailscale0.allowedTCPPorts
+      # by my/network/tailscale.
+      allowedTCPPorts =
+        [ cfg.node.listenPort ]
+        ++ optional cfg.httpd.enable cfg.httpd.listenPort;
 
-    # Rendered onto networking.firewall.interfaces.tailscale0.allowedTCPPorts
-    # by my/network/tailscale.
-    my.network.tailscale.allowedTCPPorts =
-      [ cfg.node.listenPort ]
-      ++ optional cfg.httpd.enable cfg.httpd.listenPort;
+      # WHAT THIS NODE MUST BE ABLE TO REACH, derived from `connect` rather than
+      # restated beside it.
+      #
+      # A radicle node that cannot reach the peer it dials fetches nothing, sees
+      # no announcements and starts no build -- sitting `active`, with no failed
+      # unit and an empty CI history, which is indistinguishable from nobody
+      # having pushed. That sentence is already in the builder's own file as the
+      # cost of getting `connect` wrong; this is the check for it, and deriving
+      # it is what stops the two drifting apart.
+      #
+      # `<nid>@<host>:<port>` -> the first label of <host>, which is the tailnet
+      # node name my/network/tailscale resolves out of the netmap.
+      #
+      # An entry whose host is an ADDRESS contributes nothing instead of
+      # contributing nonsense: `z6…@100.65.29.53:8776` would otherwise yield the
+      # peer "100", which matches no node, never answers, and would report a
+      # dead datapath forever. A node dialled by address simply names no peer
+      # here, and the liveness assertion then requires someone to say what it
+      # must reach.
+      #
+      # mkBefore so the dialled peer reads first in the option and in the
+      # probe's journal lines. It changes no verdict -- the probe asks how MANY
+      # peers answered, not which came first -- but a list whose head is the
+      # peer this node exists to reach is the one a reader can check against
+      # `connect`.
+      liveness.peers = mkBefore (
+        let
+          hostOf = e: head (splitString ":" (last (splitString "@" e)));
+          isName = h: h != "" && builtins.match "[0-9.]+" h == null && !(hasInfix "[" h);
+        in
+        map (e: head (splitString "." (hostOf e)))
+          (filter (e: isName (hostOf e)) cfg.node.connect)
+      );
+    };
 
     # The upstream unit orders only against network-online.target. Binding is
     # wildcard so there is no bind race, but dialing the static peers by

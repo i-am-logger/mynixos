@@ -488,6 +488,64 @@ in
       my.infra.radicle.seedRepositories = [{ rid = "rad:z2y"; scope = "everything"; }];
     };
 
+  # --- my.network.tailscale.liveness -----------------------------------------
+  #
+  # The probe's hysteresis is its whole safety margin: `retries` attempts
+  # `retryDelay` seconds apart is what puts unbroken agreement between a silent
+  # tailnet and a container exit. Zero or a negative in either collapses that to
+  # nothing, and the unit's start timeout is DERIVED from both, so a bad value
+  # would not fail at the option -- it would fail at runtime as a start timeout,
+  # which reads like the wrong problem entirely.
+
+  liveness-peers-rejects-non-string = mustReject "liveness-peers-rejects-non-string"
+    (c: c.my.network.tailscale.liveness.peers)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.peers = [ 42 ];
+    };
+
+  liveness-peers-rejects-attrs = mustReject "liveness-peers-rejects-attrs"
+    (c: c.my.network.tailscale.liveness.peers)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.peers = { first = "seed"; };
+    };
+
+  liveness-peers-accepts-list-of-strings = mustAccept "liveness-peers-accepts-list-of-strings"
+    (c: builtins.concatStringsSep "," c.my.network.tailscale.liveness.peers)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.peers = [ "seed" "yoga" ];
+    };
+
+  liveness-retries-rejects-zero = mustReject "liveness-retries-rejects-zero"
+    (c: c.my.network.tailscale.liveness.retries)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.retries = 0;
+    };
+
+  liveness-retries-rejects-negative = mustReject "liveness-retries-rejects-negative"
+    (c: c.my.network.tailscale.liveness.retries)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.retries = -1;
+    };
+
+  liveness-retry-delay-rejects-zero = mustReject "liveness-retry-delay-rejects-zero"
+    (c: c.my.network.tailscale.liveness.retryDelay)
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness.retryDelay = 0;
+    };
+
+  liveness-hysteresis-accepts-widened-values = mustAccept "liveness-hysteresis-accepts-widened-values"
+    (c: toString (c.my.network.tailscale.liveness.retries * c.my.network.tailscale.liveness.retryDelay))
+    {
+      networking.hostName = "test";
+      my.network.tailscale.liveness = { retries = 20; retryDelay = 120; };
+    };
+
   remote-builders-rejects-missing-hostkey = mustReject'
     {
       networking.hostName = "control";

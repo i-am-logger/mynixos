@@ -170,24 +170,44 @@
       # `fileSystems` for the same reason.
       storage.impermanence.enable = lib.mkForce false;
 
-      # LET THE KERNEL PICK tailscaled's WireGuard port instead of taking the
-      # fleet-wide default of 41641.
-      #
-      # A role is its own tailnet node with its own tailscaled, and a host runs
-      # several of them beside its own. Rootless podman NATs through the host
-      # and preserves source ports where it can, so every tailscaled defaulting
-      # to 41641 means the first to claim it works and the rest do not --
-      # reporting `magicsock: network down` and `UDP: false` while looking
-      # entirely healthy: active, zero restarts, registration intact, nothing in
-      # `systemctl --failed`. The only clue is one line in a DIFFERENT
-      # container's log, `Couldn't open flow specific socket: Address already in
-      # use`, and which node loses is decided by boot order, so it moves.
-      #
-      # 0 rather than a number assigned per role, because the port is not an
-      # address: peers find a node through the control plane, and no config,
-      # `connect` entry or URL ever names it. So there is nothing to coordinate
-      # and nothing to keep in sync.
-      network.tailscale.port = lib.mkForce 0;
+      network.tailscale = {
+        # LET THE KERNEL PICK tailscaled's WireGuard port instead of taking the
+        # fleet-wide default of 41641.
+        #
+        # A role is its own tailnet node with its own tailscaled, and a host
+        # runs several of them beside its own. Rootless podman NATs through the
+        # host and preserves source ports where it can, so every tailscaled
+        # defaulting to 41641 means the first to claim it works and the rest do
+        # not -- reporting `magicsock: network down` and `UDP: false` while
+        # looking entirely healthy: active, zero restarts, registration intact,
+        # nothing in `systemctl --failed`. The only clue is one line in a
+        # DIFFERENT container's log, `Couldn't open flow specific socket:
+        # Address already in use`, and which node loses is decided by boot
+        # order, so it moves.
+        #
+        # 0 rather than a number assigned per role, because the port is not an
+        # address: peers find a node through the control plane, and no config,
+        # `connect` entry or URL ever names it. So there is nothing to
+        # coordinate and nothing to keep in sync.
+        port = lib.mkForce 0;
+
+        # PROVE THE NODE IS STILL ON THE TAILNET, and take the role down when
+        # it is not.
+        #
+        # The role this was written for sat `active (running)` with NRestarts=0
+        # for three hours while it was off the tailnet entirely: its rootless
+        # network helper had taken SIGSEGV (ANOM_ABEND sig=11, inside
+        # udp_sock_errs), conmon never exited because PID 1 never did, so the
+        # host's `Restart=on-failure` had nothing to fire on and `systemctl
+        # --failed` was empty on both sides. Eight repository revisions went by
+        # with no CI, which looks exactly like nobody having pushed.
+        #
+        # Defaulted rather than forced, on the same stance as firewall-enforced
+        # below: a role that cannot say what it must be able to reach is not
+        # claiming to be alive, so the liveness.peers assertion refuses to
+        # evaluate until the role names one.
+        liveness.enable = lib.mkDefault true;
+      };
     };
     services.openssh.enable = lib.mkForce false;
 
@@ -371,6 +391,51 @@
             exit 1
           '';
         };
+
+        # THE ONE PLACE A FAILING UNIT TAKES THE WHOLE ROLE DOWN.
+        #
+        # `tailnet-datapath-dead` is started by tailnet-liveness on exactly one
+        # verdict: tailscaled reports Running and not one configured peer
+        # answered a round trip. Everything else the probe can conclude -- a
+        # peer unreachable while others answer, NeedsLogin, a revoked node, a
+        # control-plane outage, or the probe itself failing to run under guest
+        # memory or pid pressure -- leaves a failed unit and nothing more. That
+        # split is the whole reason the escalation is a separate unit:
+        # FailureAction fires on ANY failure of the unit that carries it, and a
+        # builder runs repository-supplied shell that can produce the other
+        # failures on demand.
+        #
+        # [Unit], not [Service]. systemd.unit(5) documents FailureAction= and
+        # FailureActionExitStatus= as [Unit] keys and names this exact use --
+        # "the exit status to propagate back to an invoking container manager".
+        # In [Service] `systemctl show` still reports the value and nothing
+        # happens, which is the same species of silent non-failure as the bug
+        # above.
+        #
+        # `exit`, not `exit-force`: a role holds a git store and a keystore, and
+        # `exit` runs the ordinary shutdown so units reach their ExecStop.
+        # Legal here because guest PID 1 is a system manager inside a container
+        # (podman sets container=podman in its environment); on a host the same
+        # directive would POWEROFF the machine, which is why it lives in this
+        # file and not beside the probe.
+        #
+        # 69 (EX_UNAVAILABLE) is chosen against three traps: not 0, which
+        # Restart=on-failure reads as success -- a `podman stop` on a systemd
+        # PID 1 yields exactly that, which is why podman healthchecks are no
+        # use here; not 125-127, podman's reserved range; not 137/143, which
+        # are signals.
+        #
+        # The host end needs no change: conmon returns the status, the
+        # Type=notify unit records ExecMainStatus=69 / Result=exit-code, and
+        # nixpkgs' own Restart=on-failure restarts the container.
+        tailnet-datapath-dead = lib.mkIf
+          (config.my.network.tailscale.enable && config.my.network.tailscale.liveness.enable)
+          {
+            unitConfig = {
+              FailureAction = "exit";
+              FailureActionExitStatus = 69;
+            };
+          };
       };
     };
   };

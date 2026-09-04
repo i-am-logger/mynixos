@@ -269,6 +269,112 @@
             default = [ ];
             description = "TCP ports to allow through firewall on the tailscale interface";
           };
+
+          liveness = {
+            enable = lib.mkEnableOption ''
+              a periodic probe that this node still has a working PATH onto the
+              tailnet, rather than merely a running tailscaled.
+
+              Those are different facts and nothing else here tells them apart.
+              When the datapath underneath tailscaled dies -- a crashed
+              rootless-podman network helper is the case this was written for --
+              the process stays up, its unit stays `active`, `systemctl
+              --failed` stays empty, and the node is simply gone. The probe
+              closes that by proving a ROUND TRIP to peers it names, so
+              "reachable" is measured instead of assumed
+            '';
+
+            peers = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+              example = [ "radicle-yoga-seed" "yoga" ];
+              description = ''
+                Tailnet nodes to round-trip against, by hostname or MagicDNS
+                name.
+
+                Each is resolved OUT OF THIS NODE'S OWN NETMAP, never through
+                DNS. That is not a preference: inside a container
+                /etc/resolv.conf points at the rootless network helper's
+                forwarder, which is one of the things whose death this probe
+                exists to catch, so a probe that needed DNS to name its target
+                would fail to run on exactly the failure it is for.
+
+                THE LIST IS NOT A SET OF EQUIVALENT ALTERNATIVES, and the
+                number of entries changes what a failure means:
+
+                  * no peer answers   -- this node is off the tailnet. A
+                                         restart can fix that, so on a role it
+                                         escalates (see the oci platform).
+                  * some answer, some -- this node is ON the tailnet and one
+                    do not              named peer is unreachable. A restart
+                                        cannot fix someone else's outage, so
+                                        this only fails the unit.
+                  * all answer        -- healthy.
+
+                With ONE entry those first two collapse into each other: the
+                peer's own downtime restarts this node. A second, more
+                reliably-up peer is what separates them, so list the peer whose
+                reachability is the POINT first -- for a radicle builder, the
+                seed it fetches from -- and a broadly-reachable one after it.
+              '';
+            };
+
+            startDelay = lib.mkOption {
+              type = lib.types.str;
+              default = "3min";
+              description = ''
+                How long after boot the first probe runs. Long enough that
+                tailscaled has started, registered and built a netmap, because
+                a verdict taken before that is a verdict about boot order.
+              '';
+            };
+
+            interval = lib.mkOption {
+              type = lib.types.str;
+              default = "1min";
+              description = ''
+                How long after a probe FINISHES the next one starts
+                (`OnUnitInactiveSec`, never `OnUnitActiveSec` -- see the timer).
+              '';
+            };
+
+            retries = lib.mkOption {
+              type = lib.types.ints.positive;
+              default = 10;
+              description = ''
+                Attempts within one probe run. The verdict is the whole run's,
+                not any single attempt's: a run escalates only when EVERY
+                attempt agreed no peer answered.
+              '';
+            };
+
+            retryDelay = lib.mkOption {
+              type = lib.types.ints.positive;
+              default = 60;
+              description = ''
+                Seconds between attempts. Together with `retries` this is the
+                hysteresis, and the default pair puts ~9 minutes of unbroken
+                agreement between a silent tailnet and a container exit.
+
+                SIZED TO CLEAR THE TRANSIENT BAND, not to detect fast. The
+                round trip goes dark for reasons that fix themselves in seconds
+                to low minutes -- a DERP failover, a relay reselection, a host
+                uplink still coming up after a reboot, a suspend and resume --
+                and the two sides of this are not symmetric: a wrong escalation
+                costs a container reboot, so a builder loses ~4 minutes and
+                every CI job it had in flight, while detecting a genuine dead
+                datapath at 10 minutes instead of 1 costs nothing, because the
+                observed outage ran three hours and was never going to clear on
+                its own.
+
+                Widen these rather than weakening the predicate if cold DERP
+                handshakes turn out to exceed the 5s per-peer ping timeout. The
+                unit's start timeout is DERIVED from both, so widening them
+                cannot silently collide with it -- which is what made the 90s
+                DefaultTimeoutStartSec a ceiling on this pair before.
+              '';
+            };
+          };
         };
 
         tor = {
