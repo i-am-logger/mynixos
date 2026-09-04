@@ -85,7 +85,7 @@ in
 
     environment = {
       systemPackages = with pkgs; [
-        pinentry-gnome3
+        pinentry-qt
         gopass
         ripasso-cursive
         libsecret
@@ -161,7 +161,7 @@ in
       gnupg.agent = {
         enable = true;
         enableSSHSupport = true;
-        pinentryPackage = pkgs.pinentry-gnome3;
+        pinentryPackage = pkgs.pinentry-qt;
       };
 
       ssh.startAgent = false;

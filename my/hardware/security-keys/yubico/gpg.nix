@@ -349,9 +349,18 @@ in
           services.gpg-agent = {
             enable = true;
             enableSshSupport = true;
-            # Use GNOME pinentry for manual PIN entry
+            # Qt pinentry, not GNOME: pinentry-gnome3 draws through the Gcr
+            # System Prompter, a D-Bus service that ships with gnome-keyring --
+            # which ./default.nix switches OFF, because this profile keeps
+            # secrets in pass under the YubiKey instead. With no prompter to
+            # reach, that binary announces "No Gcr System Prompter available,
+            # falling back to curses" and takes over whichever terminal last
+            # ran `updatestartuptty`, which is not necessarily one anybody is
+            # looking at. pinentry-qt needs no prompter and has no curses
+            # fallback, so a PIN request is a window or an error, never a
+            # hijacked session.
             extraConfig = ''
-              pinentry-program /run/current-system/sw/bin/pinentry-gnome3
+              pinentry-program /run/current-system/sw/bin/pinentry-qt
             '';
             enableExtraSocket = true;
             enableScDaemon = true;
