@@ -196,13 +196,23 @@ in
           #   util-linux  unshare(1), so a recipe can TEST whether it may create a
           #               nested user namespace instead of inferring it from a nix
           #               build that dies four levels down in "cannot set host name"
+          #   openssh     ssh-keygen(1), which git shells out to for
+          #               `gpg.format = ssh` commit signing
           #
           # Contributed here rather than from ./builder.nix because that file
           # declares options and so cannot name `pkgs`; this one already renders
           # the list.
           runtimePackages = [ pkgs.nix radicle-ci-build ]
             ++ adapter.extraRuntimePackages
-            ++ optionals cfg.builder.enable [ pkgs.devenv pkgs.gnugrep pkgs.util-linux ];
+            ++ optionals cfg.builder.enable [
+            pkgs.devenv
+            pkgs.gnugrep
+            pkgs.util-linux
+            pkgs.openssh
+            # rad and git-remote-rad: `rad://` needs the remote helper, and
+            # finding a patch to update needs `rad patch list`.
+            config.services.radicle.package
+          ];
         } // optionalAttrs (cfg.ci.serveReports.publicUrl != null) {
           # What turns a failed run into something a reader can open. The
           # adapter composes `${base_url}/${run_id}/log.html` and hands it to
@@ -266,6 +276,30 @@ in
     users.users.nginx.extraGroups =
       optional (cfg.ci.serveReports.enable && cfg.ci.enable) "radicle";
 
+
+    # Signs release commits with the node's key. A radicle key is an ed25519 SSH
+    # key, so `gpg.format = ssh` uses it directly -- no keyring, no agent.
+    # ./default.nix links it to this path from the host-decrypted identity dir.
+    #
+    # The adapter runs as the radicle user and can already read that key, so a
+    # recipe reaches it either way: a builder's node identity is only as
+    # contained as the container.
+    #
+    # Fixed author, not the hostname: the signature carries who signed, so two
+    # builders produce identical release commits.
+    programs.git = mkIf cfg.builder.enable {
+      enable = true;
+      config = {
+        gpg.format = "ssh";
+        user = {
+          signingkey = "${radProfile.radHome}/keys/radicle";
+          name = "radicle-ci";
+          # The `noreply` convention, so anything parsing an author line gets a
+          # well-formed address and nothing ever tries to deliver to it.
+          email = "radicle-ci@bots.noreply.radicle.p2p";
+        };
+      };
+    };
     # tailscale0 only, like every other port this domain opens. A builder is
     # dialled by nothing except whatever fronts its reports.
     my.network.tailscale.allowedTCPPorts =
