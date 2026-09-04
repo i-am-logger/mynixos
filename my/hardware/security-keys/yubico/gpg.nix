@@ -365,11 +365,25 @@ in
             enableExtraSocket = true;
             enableScDaemon = true;
 
-            # Disable caching - require YubiKey touch for every operation
-            defaultCacheTtl = 0;
-            maxCacheTtl = 0;
-            defaultCacheTtlSsh = 0;
-            maxCacheTtlSsh = 0;
+            # THE PRESENCE CHECK LIVES ON THE KEY, NOT HERE. These four cache
+            # the PIN; touch policy is what proves a human is present, and it is
+            # set per slot with `ykman openpgp keys set-touch <sig|aut|dec>`.
+            #
+            # They were all 0, under a comment claiming that required a touch for
+            # every operation. It did not: measured on this fleet's key, sig and
+            # aut were `Touch policy: Off` and only dec was `On`, so for signing
+            # and for SSH the zero TTL was the ONLY thing asking for the human --
+            # and it asked with a PIN prompt, not a touch. A zero TTL is a
+            # retyping tax, not a security control, and it is the weaker of the
+            # two: a PIN can be watched, a touch cannot be typed remotely.
+            #
+            # So: touch enforced on all three slots (sig/aut `cached`, one touch
+            # covering a short burst, dec `on`), and the PIN cached long enough
+            # to cover a working day.
+            defaultCacheTtl = 21600; # 6h
+            maxCacheTtl = 86400; # 24h
+            defaultCacheTtlSsh = 21600;
+            maxCacheTtlSsh = 86400;
           };
         }
       )
