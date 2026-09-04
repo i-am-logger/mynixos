@@ -5,6 +5,85 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.22.0...mynixos-v0.23.0) (2026-09-04)
+
+
+### Features
+
+* **ai:** package the babysitter CLI as a per-user app ([40d2150](https://github.com/i-am-logger/mynixos/commit/40d2150e20c07c0a1c8c794b2a96f122cd51e945))
+* **bespec:** remove the visualizer and its package ([24b21d8](https://github.com/i-am-logger/mynixos/commit/24b21d83a656acfac79dd8b08bcee88fd0350788))
+* **dev:** podman as the default container backend ([961616d](https://github.com/i-am-logger/mynixos/commit/961616dfd34d68b45d83ca2fd239cf04e89e5aa2))
+* **infra:** my.infra.ociRoles — a host runs a role, written once ([5d13bea](https://github.com/i-am-logger/mynixos/commit/5d13bea7d139f62f03d66b4debda07b0bd20f48c))
+* **lib:** mkSystem gains platform = "oci" ([5dcbc33](https://github.com/i-am-logger/mynixos/commit/5dcbc33fbb99bfd2c69d2b07a80813d8da9e23e5))
+* **network:** a tailnet liveness probe that takes a dead role down ([f2f7ce7](https://github.com/i-am-logger/mynixos/commit/f2f7ce72620892dd69dbf75dd08f73524fd87056))
+* **oci:** a role's journal reaches the host that runs it ([49acdc8](https://github.com/i-am-logger/mynixos/commit/49acdc8340c9dd39c413aac4bbbc08f8c5cefc63))
+* **radicle:** a role serves its own CI reports, and the explorer proxies them ([9bde3f7](https://github.com/i-am-logger/mynixos/commit/9bde3f7f5b00911852f9174b7b1e63bc34188f13))
+* **radicle:** deliver a role's node key as a file, not through sops ([894b407](https://github.com/i-am-logger/mynixos/commit/894b4072d278774cd94065b9d6eb7b3aa1e62a97))
+* **radicle:** explorer UI over HTTPS, local avatars, and a CI report page ([8747dce](https://github.com/i-am-logger/mynixos/commit/8747dcea85e2008ac910b485a0e61f907fee397d))
+* **radicle:** give the builder openssh, rad, and a signing identity ([70f6008](https://github.com/i-am-logger/mynixos/commit/70f60086e1c205ef97c689e056989ee8dc2a1550))
+* **radicle:** make a CI failure readable, and let a builder sandbox ([463805e](https://github.com/i-am-logger/mynixos/commit/463805e940a8971f2988f0e550713dc5a6e331cd))
+* **radicle:** seed and builder become services, not system builders ([9276a01](https://github.com/i-am-logger/mynixos/commit/9276a0103638d72ab21b1da4e4f36eac3eda65d8))
+* **radicle:** tailnet-private radicle forge with multi-arch CI and GitHub mirror ([4ec3374](https://github.com/i-am-logger/mynixos/commit/4ec3374b81a38e88f10aa56ffd7351bed92e0711))
+* **radicle:** the mirror can run in a role ([6b94d7b](https://github.com/i-am-logger/mynixos/commit/6b94d7b8aa93c03bd8bcb00b5c5aa0a93b279976))
+* **secrets:** refuse sops files in /nix/store by default ([4473887](https://github.com/i-am-logger/mynixos/commit/447388726c3d8d7585ef32d9c72183ea600e8d38))
+* **security-keys:** cache the PIN, and let touch be the presence check ([70b8b26](https://github.com/i-am-logger/mynixos/commit/70b8b26ed7899a1c4c5f626cf6fce68b4126ed3e))
+* **security:** sudo can answer to the agent the caller forwarded ([e47c5fd](https://github.com/i-am-logger/mynixos/commit/e47c5fd270bf72a611129269d296e9170f4bd541))
+* **system:** fail when two accounts share a uid or gid ([eee87e9](https://github.com/i-am-logger/mynixos/commit/eee87e9b68fcf1a099c85a869506e71ad4d17d6a))
+* **tailscale:** the tailnet name follows the machine's hostname ([89f22c6](https://github.com/i-am-logger/mynixos/commit/89f22c6f495149968d131c26618824756a850906))
+* **users:** HUD wiring — per-user font size, keyboard layouts, clipboard secret filter ([687a5b2](https://github.com/i-am-logger/mynixos/commit/687a5b223bbb3711c529a0633528067c641b32ee))
+
+
+### Bug Fixes
+
+* **graphical:** re-raise the Hyprland session when the user manager restarts ([644aacc](https://github.com/i-am-logger/mynixos/commit/644aaccbf2f52f44dda5d7e727b29455853fc7e8))
+* **graphical:** touch-to-login at the greeter — non-interactive pam_u2f, password as backup ([3685440](https://github.com/i-am-logger/mynixos/commit/36854406233a6e47488ba14b0262eb2f11d46d8d))
+* **impermanence:** two features may need the same directory persisted ([b7cc632](https://github.com/i-am-logger/mynixos/commit/b7cc6329f32f194605f95fcae45142cfc405d7be))
+* **login:** SDDM wayland sessions no longer die to the VT release signal ([b6af2b9](https://github.com/i-am-logger/mynixos/commit/b6af2b97199a4616a7ea09e372f10622a27435b3))
+* **radicle:** a seed role's name is the node name, not a suffix ([5c9d9c3](https://github.com/i-am-logger/mynixos/commit/5c9d9c3634c68b1f528e9f36e3b004957994fa21))
+* **radicle:** deliver the node's RAD_HOME by symlink, not by bind mount ([7172fa5](https://github.com/i-am-logger/mynixos/commit/7172fa56634da87058a41d2658fefaa4e1d5d4de))
+* **radicle:** every unit needs the container treatment, and a builder owns its toolchain ([85aa978](https://github.com/i-am-logger/mynixos/commit/85aa978f3968fc32ecd9f95ddbae7778e1b95898))
+* **radicle:** leave PrivateUsers alone -- it stopped the broker ([5952c50](https://github.com/i-am-logger/mynixos/commit/5952c50486eb6832a05c58a597dc3db513bf53ee))
+* **radicle:** let a containerised builder sandbox its builds ([3eeb42c](https://github.com/i-am-logger/mynixos/commit/3eeb42cb3321c5fc4799ea394353e6cd602e407c))
+* **radicle:** link the node key from where the host put it, and wait for the node ([5074870](https://github.com/i-am-logger/mynixos/commit/5074870fc69ac2d0661d186d4153555526be73f4))
+* **radicle:** point the CI adapter's rad at the node profile ([83dffe9](https://github.com/i-am-logger/mynixos/commit/83dffe9c089d9784ea17d8b82960083441486ded))
+* **radicle:** proxy /raw, so a README's own images render ([77cfad4](https://github.com/i-am-logger/mynixos/commit/77cfad4756e2e14755c80197e4cb3de3e2282555))
+* **radicle:** seeding a repository now acquires it, and waits for a node that is really serving ([22d1ec2](https://github.com/i-am-logger/mynixos/commit/22d1ec23986d052bb2489d921d1fe5fc3837bfd9))
+* **radicle:** systemd confinement cannot work in a container ([c80bbd3](https://github.com/i-am-logger/mynixos/commit/c80bbd34a151c7542217aec1a7dd3ceec6f61489))
+* **radicle:** the CI broker waits for the node's socket instead of racing it ([7be95aa](https://github.com/i-am-logger/mynixos/commit/7be95aa436337272ed915d1c6f29ddacf3f7019f))
+* **security-keys:** one gpg default-key, chosen by a primary flag ([f157f03](https://github.com/i-am-logger/mynixos/commit/f157f036bec7b7c9f85402b1a7c8c917ab0f29fb))
+* **security:** sudo cannot be authorized by a key kept in the machine ([780e29f](https://github.com/i-am-logger/mynixos/commit/780e29fb3c6fdc162b60a52940a4c2683a8f19c1))
+* **system:** the id guard must not fail the rebuild that repairs the collision ([abf739e](https://github.com/i-am-logger/mynixos/commit/abf739e75aaa37027ae6f90806f582726e36d4da))
+* **system:** the unique-ids timer must re-arm from inactive ([47e3228](https://github.com/i-am-logger/mynixos/commit/47e32284f835ccd3f3a3fca5976ee78f5ca8257e))
+* **tailscale:** a role picks its own WireGuard port, and a host can relay for them ([3ac704e](https://github.com/i-am-logger/mynixos/commit/3ac704ed0f6fe2685a4deab20c8f885e77f41fc9))
+* **virtualisation:** a nix build needs SYS_ADMIN, not just an unmasked /proc ([d3a01ce](https://github.com/i-am-logger/mynixos/commit/d3a01ce38806dc430e32507b863a6392988c40ec))
+* **virtualisation:** a nix build needs two syscalls, not a capability ([03467b0](https://github.com/i-am-logger/mynixos/commit/03467b03e272d36f12d7acb27038613a38115869))
+* **virtualisation:** discriminate a bare system from an entry explicitly ([418397b](https://github.com/i-am-logger/mynixos/commit/418397b4dd44e12564428188f4d692cc2f980006))
+* **virtualisation:** patch the pasta NULL deref that kills a guest's network ([82aac98](https://github.com/i-am-logger/mynixos/commit/82aac987a1138209f24c059bcfcf17e91c1f6cf5))
+* **virtualisation:** restart pacing, and a guest journal the host can read ([bd654c2](https://github.com/i-am-logger/mynixos/commit/bd654c264a70e2a8a90a9aa397e9dc08ea46561d))
+* **vogix:** track the branch that has the option this flake sets ([cef3f64](https://github.com/i-am-logger/mynixos/commit/cef3f64adc1fff8a76c9106d33a7ee8f1149e289))
+* **yubikey:** a PIN prompt should be a window, not a captured terminal ([9c41b92](https://github.com/i-am-logger/mynixos/commit/9c41b9229b7b13713995347bff8ee44e99f5e99f))
+* **yubikey:** jj signs with the inserted card, like git already does ([d23feb4](https://github.com/i-am-logger/mynixos/commit/d23feb4a69b0eefbdd46dbeef4d61e5c3ab41420))
+
+
+### Code Refactoring
+
+* a container image is an output of a machine, not a kind of machine ([a453a96](https://github.com/i-am-logger/mynixos/commit/a453a9654764144ed1f3cd319023cdc371ed7966))
+* my.virtualisation.containers -- a host runs other mynixos systems ([1b2ee70](https://github.com/i-am-logger/mynixos/commit/1b2ee7001adb29920c892092619ed7cd3b764ef7))
+
+
+### Documentation
+
+* **radicle:** correct the claims the implementation disproved ([ec7e933](https://github.com/i-am-logger/mynixos/commit/ec7e9337c9b91e052e226002a68ecf2573573900))
+* **radicle:** say where the sops file may live ([cfad8d0](https://github.com/i-am-logger/mynixos/commit/cfad8d06795d5a5b92a888c2c93dfea47821b23b))
+* **radicle:** the host seed is retired; record what retiring one touches ([994fb47](https://github.com/i-am-logger/mynixos/commit/994fb47a21e088191c760f74ea9d72986ea13182))
+* the container architecture as built, and CLAUDE.md brought current ([1630a7d](https://github.com/i-am-logger/mynixos/commit/1630a7dc2b326ad89ea65410225b14394250ac1b))
+
+
+### Miscellaneous
+
+* **deps:** pin vogix to v0.11.0 instead of the hud-live branch ([9dcb699](https://github.com/i-am-logger/mynixos/commit/9dcb6999878052d4eb7682eccc60e453510f625f))
+* **deps:** update flake inputs ([7a2c344](https://github.com/i-am-logger/mynixos/commit/7a2c344d561a0ade64e8659171c4c5e35b7f2678))
+
 ## [0.22.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.21.1...mynixos-v0.22.0) (2026-08-29)
 
 
