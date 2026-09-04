@@ -28,12 +28,13 @@
 
     # Runtime theme management.
     #
-    # Tracks hud-live rather than master: my/theming/vogix sets
-    # programs.vogix.behavior.input.kbLayout, an option that exists only on that
-    # branch. Pinned to master this flake does not evaluate on any host. Move it
-    # back when hud-live lands.
+    # A TAG, not a branch. It tracked hud-live because
+    # programs.vogix.behavior.input.kbLayout existed only there, so a master pin
+    # did not evaluate on any host -- but a branch pin means the input moves
+    # under the lock whenever someone pushes, and what a host runs stops being
+    # what the lock says. hud-live has landed; this follows releases now.
     vogix = {
-      url = "github:i-am-logger/vogix/hud-live";
+      url = "github:i-am-logger/vogix/vogix-v0.11.0";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
@@ -295,6 +296,30 @@
             inherit lib nixpkgs system self inputs;
           };
 
+          # Which unit is allowed to take a role's PID 1 down, and which one
+          # must never be.
+          tailnetLivenessTests = import ./tests/tailnet-liveness.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
+          # The probe's verdicts, run as sequences against the generated script.
+          tailnetLivenessProbeTests = import ./tests/tailnet-liveness-probe.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
+          # my.virtualisation.containers: the restart pacing that tells a
+          # self-healing role from a crash loop, and the passt overlay.
+          virtualisationContainersTests = import ./tests/virtualisation-containers.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
+          # The pasta crash itself, INDUCED rather than asserted: the unpatched
+          # build must still die, which is how "nixpkgs carries the fix now"
+          # announces itself instead of leaving a dead overlay in the tree.
+          passtNullFlowTest = import ./tests/passt-null-flow.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
           # The darwin module set, evaluated from a Linux runner. Only `config`
           # is read, so no aarch64-darwin builder is needed.
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
@@ -315,6 +340,10 @@
         // darwinSmokeTests
         // secretsStorePolicyTests
         // ociPlatformTests
+        // tailnetLivenessTests
+        // tailnetLivenessProbeTests
+        // virtualisationContainersTests
+        // passtNullFlowTest
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays
@@ -334,6 +363,21 @@
         # network by construction), seed + CI + a workstation profile pushing:
         #   nix build .#tests.<system>.vm-radicle -L
         vm-radicle = import ./tests/vm-radicle.nix {
+          inherit self inputs system lib nixpkgs;
+        };
+        # The graphical session surviving a user-manager restart: hyprctl is
+        # stubbed, so this exercises the re-import and the re-raise without a
+        # compositor (see the file header for why the real one is out of scope):
+        #   nix build .#tests.<system>.vm-session-recovery -L
+        vm-session-recovery = import ./tests/vm-session-recovery.nix {
+          inherit self inputs system lib nixpkgs;
+        };
+        # The liveness escalation end to end: a real tailnet, a real role
+        # container, and the exit status crossing from guest PID 1 to the host's
+        # service manager -- plus the negative half, where an outage that clears
+        # inside the hysteresis costs nothing:
+        #   nix build .#tests.<system>.vm-tailnet-liveness -L
+        vm-tailnet-liveness = import ./tests/vm-tailnet-liveness.nix {
           inherit self inputs system lib nixpkgs;
         };
       });
