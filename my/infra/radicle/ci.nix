@@ -173,6 +173,10 @@ in
               env = {
                 HOME = config.services.radicle.ci.broker.stateDir;
                 XDG_CACHE_HOME = "${config.services.radicle.ci.broker.stateDir}/.cache";
+                # rad and git-remote-rad read the profile from here. HOME is the
+                # broker's state directory, so without this they look for one
+                # under /var/lib/radicle-ci and find none.
+                RAD_HOME = radProfile.radHome;
               };
             })
             cfg.ci.adapters;
