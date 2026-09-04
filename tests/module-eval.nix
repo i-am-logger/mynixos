@@ -492,6 +492,53 @@ in
       && lib.hasInfix ''hl.exec_cmd("1password --silent")'' text
       && !(hm.xdg.configFile ? "hypr/hyprland.conf"));
 
+  # Hyprland hands WAYLAND_DISPLAY and HYPRLAND_INSTANCE_SIGNATURE to the user
+  # manager from a `hyprland.start` hook that fires once per compositor
+  # process. A user manager replaced under a live compositor therefore has
+  # neither the environment nor the session target, and every Wayland user unit
+  # dies — quickshell by qFatal, because no Qt platform plugin can initialize.
+  # These two units are what makes the session recoverable, and each of the
+  # asserted properties is load-bearing rather than incidental:
+  #
+  #   - the env import is ordered before BOTH session targets, so it lands
+  #     ahead of anything that needs a display;
+  #   - it must NOT set RemainAfterExit, or it would go "active (exited)" and
+  #     never run again — reintroducing the once-only behaviour it exists to
+  #     fix;
+  #   - the recovery unit hangs off default.target and must never be reachable
+  #     from the session target, or raising the target would wait on a job
+  #     whose whole purpose is to raise the target.
+  hyprland-session-recovery = evalAssert "hyprland-session-recovery"
+    {
+      networking.hostName = "test-hypr-session";
+      my = {
+        theming = {
+          enable = false;
+          vogix.enable = false;
+        };
+        users.hypruser = {
+          fullName = "Hypr User";
+          description = "hypr";
+          email = "hypr@example.com";
+          graphical.enable = true;
+          apps.graphical.windowManagers.hyprland.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        units = config.home-manager.users.hypruser.systemd.user.services;
+        env = units.hyprland-session-env;
+        recover = units.hyprland-session-recover;
+      in
+      builtins.elem "graphical-session-pre.target" env.Unit.Before
+      && builtins.elem "graphical-session.target" env.Unit.Before
+      && env.Install.WantedBy == [ "graphical-session-pre.target" ]
+      && env.Service.Type == "oneshot"
+      && !(env.Service ? RemainAfterExit)
+      && recover.Install.WantedBy == [ "default.target" ]
+      && recover.Service.Type == "oneshot");
+
   # The vogix-generated variant of the Lua projection: with theming on, the
   # binds come from vogix's behavior overlay (rendered through its Lua
   # generator) and mynixos contributes only infrastructure — whose window
@@ -1020,6 +1067,11 @@ in
       hostname = "radicle-seed";
       my = [{
         network.tailscale.enable = true;
+        # A SEED HAS NO `connect`, so nothing derives a liveness peer for it and
+        # the assertion refuses to evaluate until one is named. That is the
+        # intended shape: a role that cannot say what it must be able to reach
+        # is not in a position to claim it is alive.
+        network.tailscale.liveness.peers = [ "yoga" ];
         infra.radicle = {
           enable = true;
           seed.enable = true;
@@ -1069,6 +1121,8 @@ in
       hostname = "radicle-yoga-seed";
       my = [{
         network.tailscale.enable = true;
+        # Named for the same reason as the fixture above: a seed dials nobody.
+        network.tailscale.liveness.peers = [ "yoga" ];
         infra.radicle = {
           enable = true;
           seed.enable = true;

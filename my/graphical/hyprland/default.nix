@@ -58,6 +58,94 @@ let
     exec ${pkgs.cliphist}/bin/cliphist store
   '';
 
+  # `hyprctl instances -j` is the only source of the compositor's identity that
+  # a systemd unit can actually read: it scans $XDG_RUNTIME_DIR/hypr and needs
+  # no session environment of its own, and /proc/<hyprland>/environ is closed
+  # to us because kernel.yama.ptrace_scope is 1.
+  #
+  # Two sharp edges are handled here rather than at each call site. With no
+  # instance running, `hyprctl instances -j` exits 0 having printed "\n]\n\n" —
+  # not valid JSON and not the empty array — so nothing may test its text; the
+  # only trustworthy signal is whether jq yielded any line at all. And a
+  # crashed compositor can leave a stale directory behind, so a signature
+  # counts as live only once its IPC socket has answered, which is what the
+  # round-trip through `hyprctl version` establishes.
+  #
+  # Emits `candidates`, newest first, one "<signature> <wl socket>" per line,
+  # and a `live` predicate. Exits 0 when there is no compositor to talk to:
+  # both callers treat that as "nothing to do", never as a failure.
+  liveInstances = ''
+    candidates=$(
+      ${config.programs.hyprland.package}/bin/hyprctl instances -j 2>/dev/null \
+        | ${pkgs.jq}/bin/jq -r 'sort_by(.time) | reverse | .[] | "\(.instance) \(.wl_socket)"' 2>/dev/null
+    ) || true
+    if [ -z "$candidates" ]; then
+      exit 0
+    fi
+    live() {
+      HYPRLAND_INSTANCE_SIGNATURE="$1" \
+        ${config.programs.hyprland.package}/bin/hyprctl version >/dev/null 2>&1
+    }
+  '';
+
+  # Hyprland exports WAYLAND_DISPLAY and HYPRLAND_INSTANCE_SIGNATURE into the
+  # user manager exactly once, from its `hyprland.start` hook. If the user
+  # manager is ever replaced while the compositor keeps running — user@<uid>
+  # exiting and a later login re-creating it, which is what happened on yoga —
+  # the new manager has neither, and every Wayland client started as a user
+  # unit dies. quickshell dies hardest: with no WAYLAND_DISPLAY the wayland
+  # plugin cannot open a display and (with no DISPLAY) xcb cannot either, so
+  # Qt's init_platform calls qFatal and the process aborts inside its own
+  # crash handler. Re-importing from the live compositor on every raise of the
+  # session makes the environment a property of the session rather than of the
+  # compositor's first second.
+  hyprlandSessionEnv = pkgs.writeShellScript "hyprland-session-env" ''
+    set -uo pipefail
+    ${liveInstances}
+    while read -r sig sock; do
+      [ -n "$sig" ] || continue
+      if live "$sig"; then
+        echo "importing WAYLAND_DISPLAY=$sock from Hyprland instance $sig" >&2
+        exec ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd \
+          "WAYLAND_DISPLAY=$sock" \
+          "HYPRLAND_INSTANCE_SIGNATURE=$sig" \
+          "XDG_CURRENT_DESKTOP=Hyprland" \
+          "XDG_SESSION_TYPE=wayland"
+      fi
+    done <<EOF
+    $candidates
+    EOF
+    echo "Hyprland instances exist but none answered on its IPC socket" >&2
+    exit 1
+  '';
+
+  # The same one-shot hook is also the only thing that ever starts
+  # hyprland-session.target, so a replaced user manager leaves the compositor
+  # running with no session behind it — on yoga that was a four-hour outage
+  # that ended only because the target was raised by hand. A fresh manager
+  # asks the question the compositor can no longer answer: is there a live
+  # Hyprland with no session? At a normal login there is not (greetd starts
+  # Hyprland after the manager), so this is a no-op on the ordinary path.
+  hyprlandSessionRecover = pkgs.writeShellScript "hyprland-session-recover" ''
+    set -uo pipefail
+    if ${config.systemd.package}/bin/systemctl --user --quiet is-active hyprland-session.target; then
+      exit 0
+    fi
+    ${liveInstances}
+    while read -r sig _; do
+      [ -n "$sig" ] || continue
+      if live "$sig"; then
+        echo "Hyprland $sig is live but hyprland-session.target is not; raising it" >&2
+        # --no-block: this runs inside the default.target transaction, and the
+        # session target must not be enqueued as something that transaction waits on.
+        exec ${config.systemd.package}/bin/systemctl --user --no-block start hyprland-session.target
+      fi
+    done <<EOF
+    $candidates
+    EOF
+    exit 0
+  '';
+
   autostart = [
     # NOTE: the Wayland/Hyprland session environment import lives in home-manager's
     # Hyprland systemd integration (it emits the complete
@@ -68,7 +156,12 @@ let
     # (only WAYLAND_DISPLAY + XDG_CURRENT_DESKTOP, backgrounded/unordered) used
     # to live in this list — it imported neither HYPRLAND_INSTANCE_SIGNATURE nor
     # DISPLAY, raced the real import, and muddied diagnosis. Removed: the HM
-    # integration is the single canonical importer.
+    # integration is the canonical importer *at compositor start*. It is not the
+    # only one: it fires once per Hyprland process, so a user manager that
+    # restarts under a live compositor inherits neither the environment nor the
+    # session target. hyprland-session-env.service below re-imports the
+    # environment on every raise of the session, and
+    # hyprland-session-recover.service raises the session when nothing else will.
     "1password --silent &"
     "wl-paste --watch ${cliphistStoreGuarded}"
   ];
@@ -555,6 +648,41 @@ in
 
               # Swappy config for screenshots
               xdg.configFile."swappy/config".text = swappyConfig;
+
+              # graphical-session-pre.target is systemd's designated slot for
+              # session environment setup, and hyprland-session.target both
+              # Wants= and is ordered After= it — so this runs on every raise of
+              # the session, ahead of anything that needs a display. Type=oneshot
+              # WITHOUT RemainAfterExit is deliberate: an "active (exited)"
+              # oneshot is never re-run, which is exactly the once-only behaviour
+              # that broke the session in the first place.
+              systemd.user.services.hyprland-session-env = {
+                Unit = {
+                  Description = "Import the running Hyprland session environment into the user manager";
+                  Before = [ "graphical-session-pre.target" "graphical-session.target" ];
+                };
+                Service = {
+                  Type = "oneshot";
+                  ExecStart = "${hyprlandSessionEnv}";
+                };
+                Install.WantedBy = [ "graphical-session-pre.target" ];
+              };
+
+              # Wanted by default.target rather than by the session, because the
+              # case it exists for is a user manager that came up with no session
+              # at all. It must not be reachable from hyprland-session.target, or
+              # raising the target would wait on a job that raises the target.
+              systemd.user.services.hyprland-session-recover = {
+                Unit = {
+                  Description = "Re-raise the Hyprland session when the user manager restarts under a live compositor";
+                  After = [ "basic.target" ];
+                };
+                Service = {
+                  Type = "oneshot";
+                  ExecStart = "${hyprlandSessionRecover}";
+                };
+                Install.WantedBy = [ "default.target" ];
+              };
 
               # Home packages
               home.packages = with pkgs; [
