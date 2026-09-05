@@ -22,7 +22,7 @@
           acceleration = lib.mkOption {
             type = lib.types.enum [ "rocm" "cuda" "cpu" "auto" ];
             default = "auto";
-            description = "GPU acceleration backend. auto = detect from my.hardware.gpu, cpu = no GPU acceleration";
+            description = "GPU acceleration backend. auto = CUDA when nixpkgs cudaSupport is on, else ROCm on an AMD GPU, else CPU";
           };
 
           models = lib.mkOption {
