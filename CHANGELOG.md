@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.23.0...mynixos-v0.24.0) (2026-09-05)
+
+
+### Features
+
+* **ai:** install opencv and unify CUDA behind cudaSupport ([#167](https://github.com/i-am-logger/mynixos/issues/167)) ([b618bcb](https://github.com/i-am-logger/mynixos/commit/b618bcb79fd9019f57092bd85e7cada9f5288e87))
+
 ## [0.23.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.22.0...mynixos-v0.23.0) (2026-09-04)
 
 
