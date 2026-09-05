@@ -5,11 +5,20 @@ with lib;
 let
   cfg = config.my.ai;
   inherit (config.my.hardware) gpu;# "amd" | "nvidia" | "intel" | null
-  # Acceleration: explicit override > auto-detect from hardware GPU
+  # cudaSupport is the system-wide "this host uses CUDA" signal, set by the
+  # NVIDIA GPU profile (my/hardware/gpu/nvidia). AI consumers follow it instead
+  # of re-deriving CUDA from the GPU vendor, so one flag governs the whole CUDA
+  # story here: ollama's package variant and opencv's build alike. AMD keeps
+  # deriving ROCm from the vendor -- there is no equivalent global rocmSupport.
+  # Read it off the resolved package set, not config.nixpkgs.config: the latter
+  # forces the nixpkgs.config option, which clashes with read-only nixpkgs
+  # (where pkgs is provided externally).
+  cudaSupport = pkgs.config.cudaSupport or false;
+  # Acceleration: explicit override > cudaSupport (CUDA) > AMD (ROCm) > CPU.
   acceleration =
     if cfg.ollama.acceleration != "auto" then cfg.ollama.acceleration
+    else if cudaSupport then "cuda"
     else if gpu == "amd" then "rocm"
-    else if gpu == "nvidia" then "cuda"
     else "cpu";
   isRocm = acceleration == "rocm";
   isCuda = acceleration == "cuda";
@@ -54,7 +63,15 @@ in
     { my.ai.enable = mkDefault anyUserAI; }
 
     (mkIf cfg.enable (mkMerge [
-      # Ollama service — GPU-agnostic (auto-detects from my.hardware.gpu)
+      # OpenCV for AI/vision workloads. Its enableCuda defaults to
+      # nixpkgs.config.cudaSupport, so this is the CUDA build wherever
+      # cudaSupport is on and the plain CPU build otherwise.
+      {
+        environment.systemPackages = [ pkgs.opencv ];
+      }
+
+      # Ollama service — package variant follows `acceleration`: CUDA when
+      # cudaSupport is on, ROCm on an AMD GPU, else CPU.
       (mkIf cfg.ollama.enable {
         services.ollama = {
           enable = true;

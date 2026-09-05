@@ -17,10 +17,15 @@ args:
     }:
     let
       vogixEnabled = userCfg.theming.vogix.enable or false;
-      # Match btop's GPU backend to the host GPU (my.hardware.gpu): ROCm for AMD,
-      # CUDA for NVIDIA, neither otherwise. The default pulls CUDA, which is
-      # unfree, large, and monitors nothing on a non-NVIDIA GPU.
+      # btop's GPU backend follows the system signals: CUDA when cudaSupport is
+      # on (the same flag ollama and opencv follow), ROCm on an AMD GPU, neither
+      # otherwise. The upstream default pulls CUDA unconditionally -- unfree,
+      # large, and monitoring nothing on a non-NVIDIA GPU.
       gpu = config.my.hardware.gpu or null;
+      # Read off the resolved package set, not config.nixpkgs.config: the latter
+      # forces the nixpkgs.config option, which clashes with read-only nixpkgs
+      # (where pkgs is provided externally).
+      cudaSupport = pkgs.config.cudaSupport or false;
     in
     lib.mkMerge [
       {
@@ -33,7 +38,7 @@ args:
           };
           package = pkgs.btop.override {
             rocmSupport = gpu == "amd";
-            cudaSupport = gpu == "nvidia";
+            inherit cudaSupport;
           };
         };
       }
