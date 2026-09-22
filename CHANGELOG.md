@@ -5,6 +5,25 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.24.1...mynixos-v0.25.0) (2026-09-22)
+
+
+### Features
+
+* **nixpkgs-fixes:** build Brave on darwin from the signed DMG ([cc4737c](https://github.com/i-am-logger/mynixos/commit/cc4737c652c627097e3c65495db098e9a8bf8931))
+
+
+### Bug Fixes
+
+* **openssh:** hand darwin's authorized keys to nix-darwin instead of writing them by hand ([854f614](https://github.com/i-am-logger/mynixos/commit/854f6141242fee972523d50eaa03db572dfa827d))
+* **systemd:** journald retention through settings.Journal, not the removed extraConfig ([2d6f1d2](https://github.com/i-am-logger/mynixos/commit/2d6f1d2be9e974da8346e04b395b6d51284f515b))
+
+
+### Miscellaneous
+
+* **deps:** update flake inputs ([4629cb9](https://github.com/i-am-logger/mynixos/commit/4629cb9e931304d9d745744407f189eaad9388c1))
+* **devenv:** the release gate as devenv tasks ([1568f56](https://github.com/i-am-logger/mynixos/commit/1568f5636c7d7d43215d156303911a60ad1628a2))
+
 ## [0.24.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.24.0...mynixos-v0.24.1) (2026-09-05)
 
 
