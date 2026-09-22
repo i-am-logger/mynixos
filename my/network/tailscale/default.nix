@@ -163,6 +163,22 @@ in
       };
     }
 
+    # With Tailscale SSH on, every session over it is a child of tailscaled:
+    # the daemon holds the pty and spawns `login` itself. Restarting it on
+    # switch therefore severs any switch that is being driven over Tailscale
+    # SSH, mid-activation. switch-to-configuration loses its caller and exits
+    # before its start phase, leaving every unit it stopped down.
+    # nixpkgs' `stopIfChanged = false` does not prevent this: the restart
+    # still lands ahead of the start phase.
+    #
+    # So a switch leaves tailscaled running, as nixpkgs does for display
+    # managers and xrdp, and for the same reason: it parents interactive
+    # sessions. A changed tailscaled is listed under "NOT restarting" and
+    # takes effect on the next boot or an explicit restart.
+    (mkIf cfg.ssh {
+      systemd.services.tailscaled.restartIfChanged = false;
+    })
+
     # LIVENESS -- prove a ROUND TRIP over the tailnet, and keep the failures a
     # restart can fix apart from the ones it cannot.
     #
