@@ -12,7 +12,10 @@ coverage.lcov
 
 # Nix
 .direnv/
-.devenv/
+# .devenv* not .devenv/: devenv also drops a .devenv.flake.nix beside it.
+.devenv*
+devenv.local.nix
+devenv.local.yaml
 
 # Editor/IDE
 .vscode/
