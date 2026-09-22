@@ -1,7 +1,7 @@
 # Linux implementation of the per-user radicle node declared in ./default.nix.
 #
-# Two units, both gated on the user's `apps.dev.tools.radicle.node.enable` and
-# both dormant until `rad auth` has created ~/.radicle/keys (rad auth owns key
+# Three units, all gated on the user's `apps.dev.tools.radicle.node.enable` and
+# all dormant until `rad auth` has created ~/.radicle/keys (rad auth owns key
 # creation and refuses to adopt a pre-existing config.json, so declarative
 # config must follow it, not precede it):
 #
@@ -20,6 +20,14 @@
 #    so docs/radicle.md recommends passphrase-less user keys on this fleet
 #    (disks are encrypted; the machine key in my.infra.radicle makes the same
 #    call).
+#
+# 3. radicle-node.socket -- the node's control socket, bound by systemd rather
+#    than by the node. ~/.radicle persists across boots, so a socket file left
+#    by a node that died uncleanly survives the reboot, and the node refuses to
+#    start while bind() finds its path taken ("another node appears to be
+#    running"). systemd replaces a stale socket file when it binds; the node
+#    takes the listener over as the fd named "control" (radicle-node's
+#    `systemd` feature, on by default) and never binds the path itself.
 args:
 
 (import ../../../../../lib/mk-app.nix).mkApp args {
@@ -57,8 +65,9 @@ args:
         radicle-node = {
           Unit = {
             Description = "Radicle node (user, outbound-only)";
-            After = [ "radicle-config-pin.service" ];
+            After = [ "radicle-config-pin.service" "radicle-node.socket" ];
             Wants = [ "radicle-config-pin.service" ];
+            Requires = [ "radicle-node.socket" ];
             ConditionPathExists = "%h/.radicle/keys/radicle";
           };
           Service = {
@@ -69,6 +78,22 @@ args:
           };
           Install.WantedBy = [ "default.target" ];
         };
+      };
+
+      systemd.user.sockets.radicle-node = {
+        Unit = {
+          Description = "Radicle node control socket";
+          # The node's own condition: a socket for a node that cannot start
+          # would activate it on every `rad` connection until systemd's trigger
+          # rate limit failed the socket.
+          ConditionPathExists = "%h/.radicle/keys/radicle";
+        };
+        Socket = {
+          ListenStream = "%h/.radicle/node/control.sock";
+          FileDescriptorName = "control";
+          SocketMode = "0600";
+        };
+        Install.WantedBy = [ "sockets.target" ];
       };
     };
 }
