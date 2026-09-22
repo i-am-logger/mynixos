@@ -156,9 +156,26 @@ in
           # my.dev.containers.backend: my/system/core has no business reading
           # my.dev, and the entries already there (cni*, flannel*, docker*)
           # are not conditional on a backend either.
+          #
+          # THIS FILE IS THE SINGLE OWNER of `unmanaged-devices`, and the cilium_*
+          # and lxc* entries are here rather than in my/infra/rke2 for that
+          # reason. NetworkManager reads conf.d in lexical order and a later file
+          # wins for one key, so a second writer does not merge -- it replaces,
+          # silently, taking the podman*/br-* exclusions that protect the live
+          # Radicle forge with it. my/infra/rke2 forces nixpkgs' own
+          # rke2-canal.conf off instead of writing a competing file
+          # (docs/k8s-fleet-constraints.md, C64/C74).
+          # NetworkManager reads conf.d only at start or on SIGHUP, and nixpkgs'
+          # own restartTriggers cover NetworkManager.conf -- NOT the drop-ins
+          # (nixos/modules/services/networking/networkmanager.nix). So without the
+          # reloadTrigger below, the switch that first brings a CNI up leaves NM
+          # running the PREVIOUS list: it would manage cilium_host, cilium_net,
+          # cilium_vxlan and the lxc* veths it has just been told to ignore. The
+          # forge's podman*/br-* exclusions are already live from the current
+          # generation, so what this protects is the new cluster, not the forge.
           etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
             [keyfile]
-            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:podman*;interface-name:br-*
+            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:podman*;interface-name:br-*;interface-name:cilium_host;interface-name:cilium_net;interface-name:cilium_vxlan;interface-name:lxc*
           '';
 
           # Linux-only half of the base set. The portable half lives in
@@ -227,6 +244,17 @@ in
 
         # Network configuration (NetworkManager is a system service, not hardware)
         networking.networkmanager.enable = lib.mkDefault true;
+
+        # Make NM actually pick up the unmanaged-devices drop-in declared above.
+        # nixpkgs triggers a restart on NetworkManager.conf only, never on the
+        # conf.d drop-ins, so a change here would otherwise sit unread until the
+        # next reboot -- and the switch that first brings a CNI up would leave NM
+        # managing the very interfaces it has just been told to ignore. Reload is
+        # SIGHUP: it re-reads conf.d without dropping connections, which matters
+        # on a machine whose network is in use while the switch runs.
+        systemd.services.NetworkManager.reloadTriggers =
+          lib.mkIf config.networking.networkmanager.enable
+            [ config.environment.etc."NetworkManager/conf.d/99-unmanaged-cni.conf".source ];
 
         # Nix configuration
         nix = {

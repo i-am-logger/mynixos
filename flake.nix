@@ -365,6 +365,13 @@
         vm-radicle = import ./tests/vm-radicle.nix {
           inherit self inputs system lib nixpkgs;
         };
+        # The RKE2 + Cilium cluster end to end: two VMs on an isolated net, the
+        # pod route MTU asserted as a number, a node rebooting back into its own
+        # identity, and Hubble actually reporting a flow:
+        #   nix build .#tests.<system>.vm-rke2-cluster -L
+        vm-rke2-cluster = import ./tests/vm-rke2-cluster.nix {
+          inherit self inputs system lib nixpkgs;
+        };
         # The graphical session surviving a user-manager restart: hyprctl is
         # stubbed, so this exercises the re-import and the re-raise without a
         # compositor (see the file header for why the real one is out of scope):

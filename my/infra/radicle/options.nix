@@ -3,7 +3,7 @@
 # one-sided domain -- so the platforms file, and nothing else, is what decides
 # that these options exist on Linux only. It lives in its own file rather than
 # inside my/infra/options.nix because the tree is several times the size of
-# k3s and github-runner combined.
+# everything left in it.
 #
 # Deliberately NOT exposed:
 #   - a freeform `services.radicle.settings` passthrough. The nixpkgs module

@@ -146,7 +146,7 @@ let
     "hardware.securityKeys" = "pcscd + udev; see docs/yubikey-on-darwin.md for the deliberate omission.";
     "hardware.storage" = "Linux block-device tuning.";
     "hardware.usb" = "Linux USB/Thunderbolt stack.";
-    "infra" = "k3s, the self-hosted GitHub runner, and the Radicle forge (node/CI/mirror are systemd-bound).";
+    "infra" = "the RKE2 cluster (a kubelet needs a Linux kernel), the self-hosted GitHub runner, and the Radicle forge (node/CI/mirror are systemd-bound).";
     "dev.remoteBuilders" = "nix.buildMachines; darwin fleet members are builders, not clients.";
     "network.headscale" = "self-hosted control server, run on the Linux boxes.";
     "network.ipv6" = "sysctl-driven privacy extensions.";

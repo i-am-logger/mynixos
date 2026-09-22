@@ -54,6 +54,7 @@ in
     (mkOptionsModule ../my/theming/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
+    (mkOptionsModule ../my/infra/rke2/options.nix { inherit lib; })
     # The two SERVICES a radicle node can be. Declarations rather than
     # implementations: each sets defaults on its own submodule, which is what
     # keeps them out of the infinite recursion a sibling module would hit -- see
@@ -195,8 +196,8 @@ in
     ../my/network/unifi
 
     ../my/infra/github-runner
-    ../my/infra/k3s
     ../my/infra/radicle
+    ../my/infra/rke2
     # How a host runs OTHER MYNIXOS SYSTEMS inside itself. Linux-only by
     # construction: podman and virtualisation.oci-containers are.
     ../my/virtualisation/containers
