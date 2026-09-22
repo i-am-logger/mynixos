@@ -11,7 +11,11 @@
 #   * EDITOR and FILE_MANAGER are TUI tools, so they key off `terminal.enable`.
 #     A terminal-only host -- a headless Linux box, or macOS -- needs helix and
 #     yazi, and gating them on `graphical.enable` would drop both silently.
-#   * TERMINAL and BROWSER are GUI apps, and both build on darwin.
+#   * TERMINAL and BROWSER are GUI apps, and both build on darwin. Building is
+#     not the whole test: brave BUILDS on darwin from nixpkgs and then dies on
+#     launch, because macOS 27 checks the code signature before letting a
+#     browser touch its own profile directory. See
+#     my/system/nixpkgs-fixes/brave.nix.
 #   * launcher and locker are Hyprland-specific and name the vogix shell's
 #     packages in the option VALUE, so they live in ./mynixos-linux.nix
 #     rather than being guarded here.
