@@ -16,11 +16,14 @@ let
     config.allowUnfree = true;
     # read-only.nix (loaded below) suppresses nixpkgs.overlays, so the module
     # my/system/nixpkgs-fixes cannot reach this pkgs -- apply it here directly.
-    # Both fixes, matching my/system/nixpkgs-fixes/default.nix. Applying only
-    # one would test a different cava than every host actually builds.
+    # All three fixes, matching my/system/nixpkgs-fixes/default.nix. Applying
+    # only some would test a different cava than every host actually builds.
+    # brave.nix is a no-op here (it is darwin-gated) but is listed so this stays
+    # a faithful mirror of the module's list.
     overlays = [
       (import ../my/system/nixpkgs-fixes/tree-sitter.nix)
       (import ../my/system/nixpkgs-fixes/cava.nix)
+      (import ../my/system/nixpkgs-fixes/brave.nix)
     ];
   };
 

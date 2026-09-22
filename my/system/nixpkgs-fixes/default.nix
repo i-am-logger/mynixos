@@ -14,6 +14,7 @@ let
   overlays = [
     (import ./tree-sitter.nix)
     (import ./cava.nix)
+    (import ./brave.nix)
   ];
 in
 {
