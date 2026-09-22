@@ -41,12 +41,15 @@ git-hooks bundle (treefmt + statix + deadnix), so `nix flake check` covers forma
 - `flake.nix` holds inputs, the `lib` export, the hardware-profile paths, checks and dev outputs — not the
   module list.
 
-`platforms/oci.nix` is a fourth file, and deliberately not a fourth *platform*: it imports `linux.nix`
-wholesale and overrides the host defaults a container cannot honour. Importing the whole thing is the point —
-`mkIf false` still requires an option to be **declared**, so a role that never boots a bootloader must still
-carry lanzaboote's and impermanence's declarations or every host module that mentions them fails to evaluate.
-What it overrides is the small set of things `linux.nix` turns on for a laptop and a container has no business
-running: openrgb, audio, sshd, systemd-oomd, the flake registry, and `/run/wrappers` as a mount.
+`platforms/oci-variant.nix` is a fourth file, and deliberately not a fourth *platform*. It is a **variant**:
+the modules a Linux system needs when it is taken as a container image, applied on top of that system rather
+than in place of it. It overrides the small set of things `linux.nix` turns on for a workstation and a
+container has no business running — openrgb, audio, sshd, systemd-oomd, the flake registry, and
+`/run/wrappers` as a mount.
+
+A variant **overrides; it does not refuse**. It is an output of whatever machine it is asked about, including
+a laptop with disks, impermanence and users — so it may not reject a configuration the way the old
+`platform = "oci"` branch did.
 
 ### Platform reach is structural
 
@@ -160,24 +163,30 @@ On `linux` and `darwin` there is no `system` argument: the hardware profile sets
 asserts that the resolved `hostPlatform` really is darwin, so a host that forgot to enable a hardware profile
 fails loudly instead of building something subtly wrong.
 
-**`platform = "oci"` emits a role as a container image.** The enum is flat even though it now carries two
-axes — `linux`/`darwin` are operating systems, `oci` is an output *format*, and `vm` will be another. A
-container is implicitly Linux, so it stays unambiguous, and one word in a host file reads better than a second
-argument. `system` is **required** here and rejected on the other two, because a container has no hardware
-profile to derive an architecture from.
+**The platform enum is the operating system, and only that.** `linux` and `darwin` are the two values
+`lib/mkSystem.nix` accepts; anything else throws. There is no `platform = "oci"`, and there will be no
+`platform = "vm"` — **adding a format is adding an output, never a platform** (`a453a96`).
 
-A role is a machine, not a service: it gets its own tailnet node and its own identity, and knows nothing about
-the host that runs it. That is what the oci branch's rejections enforce, each with a reason in the error —
-`my.filesystem` (the image *is* the filesystem), `my.storage.impermanence` (a container's root is already
-discarded; state is a bind mount the host declares), `hardware`, `users`, and `my.users` entries **carrying a
-`fullName`**. The last is subtle: `lib/active-users.nix` filters on exactly `fullName`, so such an entry reaches
-the same account and home-manager modules the `users` argument does and would pull a workstation closure into
-the image. An entry *without* one is fine — it carries settings and creates no account.
+`platform = "oci"` did exist, and its removal is worth understanding because the reasoning generalises.
+`lib/mkSystem.nix` had said what was wrong for as long as the branch existed — "`linux`/`darwin` are operating
+systems while `oci` is an output format" — and then made it a third peer of the enum anyway. So a machine
+bound for a container was **constructed** differently rather than **expressed** differently, which is why the
+old `platforms/oci.nix` had to import `linux.nix` wholesale to get back the option declarations a `mkIf false`
+still requires.
 
-`roles/` holds the role definitions (currently `roles/radicle/{default,builder,seed,identity}.nix`). A role is
-a **function** a consumer instantiates with its own keys; `packages.*` builds a *reference* fleet whose
-identities have no surviving private halves, tagged `reference` rather than `latest` so an image built for
-nobody cannot be mistaken for a deployment. `my/system/oci-image` turns the resulting system into
+**A container image is now `system.build.image`, an output of every Linux system — exactly as
+`system.build.vm` already was**, and declared the way nixpkgs declares that one: `extendModules` onto
+`platforms/oci-variant.nix`. Nothing in a base system knows a container is possible until something reads
+`system.build.image`. `my/system/oci-image` is where that lives.
+
+A role is still a machine, not a service: it gets its own tailnet node and its own identity, and knows nothing
+about the host that runs it. But that is now enforced by **what a role's configuration says**, not by a
+platform branch refusing arguments.
+
+There is no `roles/` directory. It went because it was mynixos shipping *systems*: it sat outside `my/`,
+unreachable from any `platforms/*.nix`. What it encoded is now configuration —
+`my.infra.radicle.{seed,builder}.enable` — and the machines themselves belong to the consumer flake.
+`my/system/oci-image` turns the resulting system into
 `system.build.image` via `dockerTools.streamLayeredImage`.
 
 Both branches assemble, in order: hardware modules → the platform module (`self.nixosModules.default` /
@@ -382,7 +391,8 @@ nopasswdRebuild = lib.mkEnableOption "NOPASSWD sudo for nixos-rebuild (skips Yub
 - `docs/CONTRIBUTING.md`
 - `docs/network-defense.md`
 - `docs/radicle.md` — the forge as it runs on a host today
-- `docs/radicle-containers.md` — roles as machines: the `platform = "oci"` emitter, what a role may not
-  declare, and why the seed is added-then-retired rather than migrated
+- `docs/radicle-containers.md` — roles as machines: `system.build.image` as an output of any Linux system,
+  what a role's configuration must and must not say, and why the seed is added-then-retired rather than
+  migrated
 - `docs/SECURE_BOOT_SETUP.md`
 - `docs/yubikey-on-darwin.md` — what YubiKey support on macOS would take, and why this fleet does not carry it
