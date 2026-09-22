@@ -17,11 +17,11 @@ in
     # Foundation: retain the system log across reboot, at the forensics level,
     # and provide the wheel-readable capture root.
     (mkIf f.enable {
-      services.journald.extraConfig = ''
-        Storage=persistent
-        SystemMaxUse=2G
-        MaxLevelStore=${f.level}
-      '';
+      services.journald.settings.Journal = {
+        Storage = "persistent";
+        SystemMaxUse = "2G";
+        MaxLevelStore = f.level;
+      };
       systemd.tmpfiles.rules = [ "d /var/log/forensics 2750 root wheel -" ];
     })
 
