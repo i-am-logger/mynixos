@@ -1,7 +1,7 @@
 # Tailnet-private Radicle forge: node + httpd + declarative seeding.
 #
 # Thin typed wrapper over nixpkgs' services.radicle, the same shape as
-# my/infra/k3s over services.k3s. CI and GitHub mirroring live in the sibling
+# my/infra/rke2 over services.rke2. CI and GitHub mirroring live in the sibling
 # files named in `imports` below.
 #
 # The privacy stance is layered, and none of it is `network = "test"` (which
