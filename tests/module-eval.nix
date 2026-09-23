@@ -40,6 +40,23 @@ let
         touch $out
       '';
 
+  # Like evalAssert, but the predicate returns named clauses, and a failure
+  # names every clause that did not hold.
+  evalClauses = name: testConfig: clauses:
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig testConfig ];
+      };
+      failed = builtins.attrNames (lib.filterAttrs (_: ok: !ok) (clauses eval.config));
+    in
+    if failed != [ ] then builtins.throw "FAIL: module-eval-${name} -- did not hold: ${lib.concatStringsSep ", " failed}"
+    else
+      pkgs.runCommand "module-eval-${name}" { } ''
+        echo "PASS: ${name}"
+        touch $out
+      '';
+
   # Like evalAssert, but for a whole SYSTEM mkSystem already built, rather
   # than a module list this file assembles. Such a system brings its own module set
   # and its own architecture, so baseModules/baseConfig do
@@ -674,6 +691,169 @@ in
       # selected and its package staged.
       && config.boot.plymouth.theme == "vogix"
       && lib.any (p: lib.hasInfix "vogix-plymouth" p.name) config.boot.plymouth.themePackages);
+
+  # The machine surfaces on a yoga-shaped host: the Kraken ring and the
+  # Keychron backlight come from mynixos's hardware options, the DRAM from
+  # vogix's own option, and all three follow the machine owner's published
+  # palette through the owner units. The owner is the first user, by name,
+  # whose theming.vogix is on, so alice, who opts out, never owns them.
+  vogix-machine-surfaces = evalClauses "vogix-machine-surfaces"
+    {
+      networking.hostName = "test-vogix-machine";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        hardware = {
+          cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable = true;
+          peripherals.keychron.k2-he.enable = true;
+        };
+        users = {
+          alice = {
+            fullName = "Alice";
+            description = "alice";
+            email = "alice@example.com";
+            theming.vogix.enable = false;
+          };
+          shelluser = {
+            fullName = "Shell User";
+            description = "shell";
+            email = "shell@example.com";
+            graphical.enable = true;
+          };
+        };
+      };
+      vogix.hardware.dram-rgb.enable = true;
+    }
+    (config:
+      let
+        etc = config.environment.etc;
+        # fromJSON refuses string context, and the Kraken argv carries
+        # liquidctl's store path.
+        machine = builtins.fromJSON
+          (builtins.unsafeDiscardStringContext (etc."vogix/machine.json".text or "{}"));
+        inherit (config.systemd) services;
+        openrgbOwner = services.vogix-openrgb or { };
+        krakenRing = machine.devices.kraken-ring.provider.command or { };
+      in
+      {
+        machineJsonRendered = etc ? "vogix/machine.json";
+        ownerFirstVogixUser = (machine.owner or null) == "shelluser";
+        deviceSet = builtins.attrNames (machine.devices or { })
+          == [ "dram-rgb" "keychron-k2-he" "kraken-ring" ];
+        krakenRingHotplug = (krakenRing.hotplug.hidraw or null)
+          == { vendorId = "1e71"; productId = "3012"; };
+        krakenRingLiquidctl = lib.hasSuffix "/bin/liquidctl" (builtins.head (krakenRing.argv or [ "" ]));
+        keychronOpenrgb = (machine.devices.keychron-k2-he.provider.openrgb or null)
+          == { nameContains = "Keychron K2 HE"; mode = "Static"; };
+        dramOpenrgb = (machine.devices.dram-rgb.provider.openrgb or null)
+          == { nameContains = "ENE DRAM"; mode = "Static"; };
+        openrgbEndpointPort = (machine.openrgb.port or null)
+          == config.services.hardware.openrgb.server.port;
+        # Upholds= starts the OpenRGB owner once the server listens, BindsTo=
+        # stops it with the server, and a switch restarts it only after the
+        # new machine.json is installed.
+        openrgbOwnerBound = (openrgbOwner.bindsTo or null) == [ "openrgb.service" ]
+          && (openrgbOwner.after or null) == [ "openrgb.service" ]
+          && (openrgbOwner.upheldBy or null) == [ "openrgb.service" ]
+          && (openrgbOwner.stopIfChanged or true) == false;
+        openrgbServerNotifies = (services.openrgb.serviceConfig.Type or null) == "notify"
+          && (config.services.hardware.openrgb.package.passthru.vogixReadiness or false);
+        consoleBeforeLogins = (services.vogix-machine.before or null)
+          == [ "systemd-user-sessions.service" ];
+        reappliedAfterSuspend = builtins.elem "suspend.target"
+          (services.vogix-machine-resume.wantedBy or [ ]);
+        # mynixos gives each account its own group.
+        dropZoneOwned = builtins.elem "d /var/lib/vogix/machine 0755 shelluser shelluser -"
+          config.systemd.tmpfiles.rules;
+        dropZonePersisted = builtins.elem "/var/lib/vogix/machine"
+          config.my.system.persistence.features.systemDirectories;
+        # The devices are the owner units' alone: the owner's apply hooks
+        # hold only the greeter sync.
+        ownerHooksOnlyGreeter = builtins.attrNames
+          config.home-manager.users.shelluser.programs.vogix.themeApply == [ "greeter" ];
+        # vogix refuses an owner outside its users, devices without an owner,
+        # a command outside the store and an OpenRGB build without readiness.
+        assertionsHold = lib.all (a: a.assertion) config.assertions;
+      });
+
+  # With theming on but every user opted out of vogix there is no machine
+  # owner, so there are no machine surfaces and no drop zone to persist.
+  vogix-machine-no-owner = evalClauses "vogix-machine-no-owner"
+    {
+      networking.hostName = "test-vogix-no-owner";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.alice = {
+          fullName = "Alice";
+          description = "alice";
+          email = "alice@example.com";
+          theming.vogix.enable = false;
+        };
+      };
+    }
+    (config: {
+      noOwner = config.vogix.machine.owner == null;
+      noMachineJson = !(config.environment.etc ? "vogix/machine.json");
+      noOwnerUnits = !(config.systemd.services ? vogix-machine)
+        && !(config.systemd.services ? vogix-machine-resume);
+      dropZoneNotPersisted = !(builtins.elem "/var/lib/vogix/machine"
+        config.my.system.persistence.features.systemDirectories);
+      assertionsHold = lib.all (a: a.assertion) config.assertions;
+    });
+
+  # The theme's session side: login shells run nothing from vogix, the
+  # restore runs once per graphical session that the Hyprland session
+  # raises, and the user's apply hooks (the greeter sync) render as
+  # [hooks."<name>"], never as the removed [hardware] tables.
+  vogix-session-restore = evalClauses "vogix-session-restore"
+    {
+      networking.hostName = "test-vogix-restore";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.shelluser;
+        restore = hm.systemd.user.services.vogix-theme-restore or null;
+        loginTexts = [
+          hm.programs.bash.profileExtra
+          hm.programs.zsh.profileExtra
+          hm.programs.zsh.loginExtra
+          hm.programs.fish.loginShellInit
+          config.environment.loginShellInit
+        ];
+        activation = hm.home.activation.vogixSetup.data;
+      in
+      {
+        loginShellsRunNoVogix = !(lib.any (lib.hasInfix "bin/vogix") loginTexts);
+        compositorRunsNoRefresh = !(lib.hasInfix "theme refresh" hm.xdg.configFile."hypr/hyprland.conf".text);
+        restoreUnit = restore != null
+          && restore.Service.Type == "oneshot"
+          && !(restore.Service ? RemainAfterExit)
+          && lib.toList restore.Service.ExecStart
+          == [ "${hm.programs.vogix.package}/bin/vogix theme refresh" ]
+          && builtins.elem "graphical-session.target" restore.Unit.After
+          && builtins.elem "graphical-session.target" restore.Install.WantedBy;
+        sessionRaisesTarget = builtins.elem "graphical-session.target"
+          (hm.systemd.user.targets.hyprland-session.Unit.BindsTo or [ ]);
+        hooksTables = lib.hasInfix ''[hooks."greeter"]'' activation
+          && !(lib.hasInfix "[hardware" activation);
+      });
 
   # With a security key on the host, the greeter's auth stack must carry
   # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
