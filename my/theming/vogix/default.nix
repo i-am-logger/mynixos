@@ -76,9 +76,18 @@ in
           # The machine owner's published palette survives reboots on
           # impermanent hosts, so vogix-machine and vogix-openrgb restore the
           # VT palette and the device colours at boot. vogix creates this drop
-          # zone exactly when there is a machine owner.
+          # zone exactly when there is a machine owner, owned by the owner and
+          # the owner's group; the owner publishes only into a zone it owns.
+          # The persistent copy is created the same way, because the bind
+          # mount shows it in place of the directory tmpfiles created.
           persistence.features.systemDirectories =
-            mkIf (config.vogix.machine.owner != null) [ "/var/lib/vogix/machine" ];
+            let inherit (config.vogix.machine) owner; in
+            mkIf (owner != null) [{
+              directory = "/var/lib/vogix/machine";
+              user = owner;
+              inherit (config.users.users.${owner}) group;
+              mode = "0755";
+            }];
         };
 
         # With the theme system on, the login defaults to the vogix-themed
