@@ -69,17 +69,42 @@ in
       # Add vogix overlay to make pkgs.vogix available
       nixpkgs.overlays = [ vogix.overlays.default ];
 
-      # Allow vogix unfree license
-      my.system.allowedUnfreePackages = [ "vogix" "vogix-desktop-qml" "vogix-sddm-theme" "vogix-plymouth" ];
+      my = {
+        system = {
+          # Allow vogix unfree license
+          allowedUnfreePackages = [ "vogix" "vogix-desktop-qml" "vogix-sddm-theme" "vogix-plymouth" ];
+
+          # The machine owner's published palette survives reboots on
+          # impermanent hosts, so vogix-machine and vogix-openrgb restore the
+          # VT palette and the device colours at boot. vogix creates this drop
+          # zone exactly when there is a machine owner.
+          persistence.features.systemDirectories =
+            mkIf (config.vogix.machine.owner != null) [ "/var/lib/vogix/machine" ];
+        };
+
+        # With the theme system on, the login defaults to the vogix-themed
+        # SDDM greeter — tuigreet (greetd) stays one line away as the text
+        # fallback, exactly like every other predecessor this effort retired.
+        environment.login = {
+          backend = mkDefault "sddm";
+          look = mkDefault "vogix";
+        };
+      };
 
       # Enable vogix at the NixOS level (console colors, hardware, etc.) and
       # auto-enable its hardware modules from the mynixos hardware config.
+      # Each hardware module declares its vogix.hardware.devices entry, which
+      # the machine owner units drive from the owner's published palette.
+      #
+      # vogix.machine.owner keeps vogix's default: the first user, by name,
+      # whose theming.vogix is on. mynixos has no primary user on Linux to
+      # derive it from; a host names another owner with vogix.machine.owner.
       vogix = {
         enable = true;
         hardware.kraken-elite.enable = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable;
         hardware.keychron-k2-he.enable = config.my.hardware.peripherals.keychron.k2-he.enable;
-        # The vogix greeter mechanism (SDDM theme.conf from the first vogix
-        # user's palette, the Hyprland Lua greeter compositor, the
+        # The vogix greeter mechanism (SDDM theme.conf from the machine
+        # owner's palette, the Hyprland Lua greeter compositor, the
         # /var/lib/vogix/greeter drop zone) follows the login intent.
         greeter = {
           enable = config.my.graphical.enable
@@ -90,14 +115,6 @@ in
         # Boot splash from the same palette (text-only script theme —
         # nothing to recolor). mkDefault: a host turns it off in one line.
         plymouth.enable = mkDefault config.my.graphical.enable;
-      };
-
-      # With the theme system on, the login defaults to the vogix-themed
-      # SDDM greeter — tuigreet (greetd) stays one line away as the text
-      # fallback, exactly like every other predecessor this effort retired.
-      my.environment.login = {
-        backend = mkDefault "sddm";
-        look = mkDefault "vogix";
       };
 
       # Configure home-manager for each user with vogix enabled
@@ -135,8 +152,6 @@ in
                   theme = userVogixCfg.theme or "yoga";
                   variant = userVogixCfg.variant or "night";
                 };
-                # Pass hardware theme apply commands from NixOS to home-manager
-                themeApply = config.vogix.hardware.themeApply;
 
                 # Pointer preferences belong to the person (my.users.<name>.input),
                 # not to the theme system: route them into vogix's Hyprland
