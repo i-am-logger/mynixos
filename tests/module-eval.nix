@@ -696,11 +696,19 @@ in
   # Keychron backlight come from mynixos's hardware options, the DRAM from
   # vogix's own option, and all three follow the machine owner's published
   # palette through the owner units. The owner is the first user, by name,
-  # whose theming.vogix is on, so alice, who opts out, never owns them.
+  # whose theming.vogix is on, so alice, who opts out, never owns them. The
+  # host is impermanent, with the vogix greeter, so both vogix drop zones
+  # are persisted.
   vogix-machine-surfaces = evalClauses "vogix-machine-surfaces"
     {
       networking.hostName = "test-vogix-machine";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
       my = {
+        storage.impermanence.enable = true;
         theming = {
           enable = true;
           vogix.enable = true;
@@ -736,6 +744,30 @@ in
         inherit (config.systemd) services;
         openrgbOwner = services.vogix-openrgb or { };
         krakenRing = machine.devices.kraken-ring.provider.command or { };
+
+        persisted = config.environment.persistence."/persist".directories;
+        persistedAt = path: map (d: { inherit (d) user group mode; })
+          (builtins.filter (d: d.dirPath == path) persisted);
+        # The mode, owner and group each tmpfiles `d` rule gives its path, in
+        # either tmpfiles form; "-" leaves a field unset.
+        ruleFields = rule: builtins.filter (w: builtins.isString w && w != "")
+          (builtins.split "[[:space:]]+" rule);
+        dRules = map (f: { path = builtins.elemAt f 1; fields = lib.sublist 2 3 f; })
+          (builtins.filter (f: builtins.length f >= 5 && builtins.head f == "d")
+            (map ruleFields config.systemd.tmpfiles.rules))
+        ++ lib.concatMap
+          (paths: lib.mapAttrsToList
+            (path: types: {
+              inherit path;
+              fields = [ (types.d.mode or "-") (types.d.user or "-") (types.d.group or "-") ];
+            })
+            (lib.filterAttrs (_: types: types ? d) paths))
+          (builtins.attrValues config.systemd.tmpfiles.settings);
+        persistedWithRule = builtins.filter
+          (d: builtins.any (r: r.path == d.dirPath) dRules)
+          persisted;
+        agrees = d: r: builtins.all ({ fst, snd }: fst == "-" || fst == snd)
+          (lib.zipLists r.fields [ d.mode d.user d.group ]);
       in
       {
         machineJsonRendered = etc ? "vogix/machine.json";
@@ -772,8 +804,20 @@ in
         # mynixos gives each account its own group.
         dropZoneOwned = builtins.elem "d /var/lib/vogix/machine 0755 shelluser shelluser -"
           config.systemd.tmpfiles.rules;
-        dropZonePersisted = builtins.elem "/var/lib/vogix/machine"
-          config.my.system.persistence.features.systemDirectories;
+        # A switch mounts the persistent copy over the directory tmpfiles
+        # created, so the copy is created owned by the owner.
+        dropZonePersisted = persistedAt "/var/lib/vogix/machine"
+          == [{ user = "shelluser"; group = "shelluser"; mode = "0755"; }];
+        greeterZonePersisted = persistedAt "/var/lib/vogix/greeter"
+          == [{ user = "root"; group = "vogix"; mode = "2775"; }];
+        # Every persisted system directory that a tmpfiles `d` rule creates
+        # has its persistent copy created with that rule's mode, owner and
+        # group; both vogix zones are among them.
+        persistedAsTmpfiles = lib.subtractLists (map (d: d.dirPath) persistedWithRule)
+          [ "/var/lib/vogix/greeter" "/var/lib/vogix/machine" ] == [ ]
+        && builtins.all
+          (d: builtins.all (agrees d) (builtins.filter (r: r.path == d.dirPath) dRules))
+          persistedWithRule;
         # The devices are the owner units' alone: the owner's apply hooks
         # hold only the greeter sync.
         ownerHooksOnlyGreeter = builtins.attrNames
@@ -807,7 +851,7 @@ in
       noOwnerUnits = !(config.systemd.services ? vogix-machine)
         && !(config.systemd.services ? vogix-machine-resume);
       dropZoneNotPersisted = !(builtins.elem "/var/lib/vogix/machine"
-        config.my.system.persistence.features.systemDirectories);
+        (map (d: d.directory or d) config.my.system.persistence.features.systemDirectories));
       assertionsHold = lib.all (a: a.assertion) config.assertions;
     });
 

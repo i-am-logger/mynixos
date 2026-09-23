@@ -294,6 +294,33 @@ in
     (c: c.my.storage.impermanence.persistPath)
     { networking.hostName = "test"; my.storage.impermanence.persistPath = "/mnt/persist"; };
 
+  # --- my.system.persistence.features.systemDirectories: a path, or a
+  # directory with its owner, group and octal mode ---
+
+  persisted-dir-accepts-owned = mustAccept "persisted-dir-accepts-owned"
+    (c: c.my.system.persistence.features.systemDirectories)
+    {
+      networking.hostName = "test";
+      my.system.persistence.features.systemDirectories = [
+        "/var/lib/a"
+        { directory = "/var/lib/b"; user = "nobody"; group = "nogroup"; mode = "2775"; }
+      ];
+    };
+
+  persisted-dir-rejects-relative = mustReject "persisted-dir-rejects-relative"
+    (c: c.my.system.persistence.features.systemDirectories)
+    {
+      networking.hostName = "test";
+      my.system.persistence.features.systemDirectories = [{ directory = "var/lib/b"; }];
+    };
+
+  persisted-dir-rejects-symbolic-mode = mustReject "persisted-dir-rejects-symbolic-mode"
+    (c: c.my.system.persistence.features.systemDirectories)
+    {
+      networking.hostName = "test";
+      my.system.persistence.features.systemDirectories = [{ directory = "/var/lib/b"; mode = "u=rwx,g=rx,o="; }];
+    };
+
   # --- Bool type: my.hardware.bluetooth.enable ---
 
   bluetooth-rejects-string = mustReject "bluetooth-rejects-string"

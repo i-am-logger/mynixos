@@ -156,9 +156,16 @@ in
     })
 
     # The vogix greeter's runtime-follow drop zone survives reboots on
-    # impermanent hosts (theme + wallpaper reference, not secrets).
+    # impermanent hosts (theme + wallpaper reference, not secrets). Its
+    # persistent copy has the owner, group and mode of vogix's tmpfiles rule,
+    # so members of the vogix group can sync into it.
     (mkIf (vogixLook && cfg.backend == "sddm") {
-      my.system.persistence.features.systemDirectories = [ "/var/lib/vogix/greeter" ];
+      my.system.persistence.features.systemDirectories = [{
+        directory = "/var/lib/vogix/greeter";
+        user = "root";
+        group = "vogix";
+        mode = "2775";
+      }];
     })
   ]);
 }

@@ -14,6 +14,35 @@
 
 { lib, ... }:
 
+let
+  # A persisted system directory with its owner, group and mode.
+  # impermanence creates a missing persistent copy with them during
+  # activation, and the bind mount shows that copy in place of the directory
+  # tmpfiles or a service created. A path alone is root:root 0755.
+  ownedDirectory = lib.types.submodule {
+    options = {
+      directory = lib.mkOption {
+        type = lib.types.strMatching "/.+";
+        description = "Absolute path of the directory.";
+      };
+      user = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "root";
+        description = "Owner of the persistent copy.";
+      };
+      group = lib.mkOption {
+        type = lib.types.nonEmptyStr;
+        default = "root";
+        description = "Group of the persistent copy.";
+      };
+      mode = lib.mkOption {
+        type = lib.types.strMatching "[0-7]{3,4}";
+        default = "0755";
+        description = "Mode of the persistent copy, in octal.";
+      };
+    };
+  };
+in
 {
   system = lib.mkOption {
     type = lib.types.submodule {
@@ -51,9 +80,16 @@
                 type = lib.types.submodule {
                   options = {
                     systemDirectories = lib.mkOption {
-                      type = lib.types.listOf lib.types.nonEmptyStr;
+                      type = lib.types.listOf (lib.types.either lib.types.nonEmptyStr ownedDirectory);
                       default = [ ];
-                      description = "Aggregated system directories from features";
+                      description = ''
+                        Aggregated system directories from features: a path,
+                        persisted as root:root 0755, or
+                        `{ directory; user; group; mode; }` for a directory
+                        that tmpfiles or a service gives another owner or
+                        mode, so that its persistent copy is created with
+                        them.
+                      '';
                     };
                     userDirectories = lib.mkOption {
                       type = lib.types.listOf lib.types.nonEmptyStr;

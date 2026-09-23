@@ -345,7 +345,8 @@ let
     # precisely what must NOT be persisted (C80).
     systemd.services.wipe-unpersisted-cluster-state =
       let
-        keep = lib.escapeShellArgs config.my.system.persistence.features.systemDirectories;
+        keep = lib.escapeShellArgs (map (d: d.directory or d)
+          config.my.system.persistence.features.systemDirectories);
       in
       {
         description = "Discard cluster state the cluster module did not declare persisted";
