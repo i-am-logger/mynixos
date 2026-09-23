@@ -751,12 +751,17 @@ in
           == { nameContains = "ENE DRAM"; mode = "Static"; };
         openrgbEndpointPort = (machine.openrgb.port or null)
           == config.services.hardware.openrgb.server.port;
-        # Upholds= starts the OpenRGB owner once the server listens, BindsTo=
-        # stops it with the server, and a switch restarts it only after the
-        # new machine.json is installed.
+        # Every start of the server starts the OpenRGB owner once the server
+        # listens (Wants= from wantedBy, After=), BindsTo= stops it with the
+        # server, and a switch restarts it only after the new machine.json is
+        # installed. It restarts on failure but a 78, which Upholds= would
+        # override by starting it again whatever it exited with.
         openrgbOwnerBound = (openrgbOwner.bindsTo or null) == [ "openrgb.service" ]
           && (openrgbOwner.after or null) == [ "openrgb.service" ]
-          && (openrgbOwner.upheldBy or null) == [ "openrgb.service" ]
+          && (openrgbOwner.wantedBy or null) == [ "openrgb.service" ]
+          && (openrgbOwner.upheldBy or null) == [ ]
+          && (openrgbOwner.serviceConfig.Restart or null) == "on-failure"
+          && (openrgbOwner.serviceConfig.RestartPreventExitStatus or null) == 78
           && (openrgbOwner.stopIfChanged or true) == false;
         openrgbServerNotifies = (services.openrgb.serviceConfig.Type or null) == "notify"
           && (config.services.hardware.openrgb.package.passthru.vogixReadiness or false);
