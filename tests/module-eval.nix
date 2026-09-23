@@ -779,6 +779,10 @@ in
         krakenRingLiquidctl = lib.hasSuffix "/bin/liquidctl" (builtins.head (krakenRing.argv or [ "" ]));
         keychronOpenrgb = (machine.devices.keychron-k2-he.provider.openrgb or null)
           == { nameContains = "Keychron K2 HE"; mode = "Static"; };
+        # The K2 HE is registered with OpenRGB once, by vogix.
+        keychronRegisteredByVogix = config.vogix.openrgb.qmkDevices
+          == [{ name = "Keychron K2 HE"; vid = "0x3434"; pid = "0x0E20"; }]
+          && config.my.theming.openrgb.qmkDevices == [ ];
         dramOpenrgb = (machine.devices.dram-rgb.provider.openrgb or null)
           == { nameContains = "ENE DRAM"; mode = "Static"; };
         openrgbEndpointPort = (machine.openrgb.port or null)
@@ -828,7 +832,9 @@ in
       });
 
   # With theming on but every user opted out of vogix there is no machine
-  # owner, so there are no machine surfaces and no drop zone to persist.
+  # owner, so there are no machine surfaces and no drop zone to persist. The
+  # host has the Kraken and the K2 HE: their hardware support stays, their
+  # devices do not.
   vogix-machine-no-owner = evalClauses "vogix-machine-no-owner"
     {
       networking.hostName = "test-vogix-no-owner";
@@ -836,6 +842,10 @@ in
         theming = {
           enable = true;
           vogix.enable = true;
+        };
+        hardware = {
+          cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable = true;
+          peripherals.keychron.k2-he.enable = true;
         };
         users.alice = {
           fullName = "Alice";
@@ -852,6 +862,18 @@ in
         && !(config.systemd.services ? vogix-machine-resume);
       dropZoneNotPersisted = !(builtins.elem "/var/lib/vogix/machine"
         (map (d: d.directory or d) config.my.system.persistence.features.systemDirectories));
+      noDevices = config.vogix.hardware.devices == { };
+      # vogix's Kraken module stays on without its ring.
+      krakenWithoutRing = config.vogix.hardware.kraken-elite.enable
+        && !config.vogix.hardware.kraken-elite.rgb.ring.enable
+        && builtins.elem "nzxt_kraken3" config.boot.kernelModules;
+      # The K2 HE keeps its udev rules and is registered with OpenRGB once,
+      # by mynixos.
+      k2heSupported = !config.vogix.hardware.keychron-k2-he.enable
+        && lib.any (p: lib.hasInfix "keychron-k2-he-udev-rules" (p.name or "")) config.services.udev.packages
+        && config.my.theming.openrgb.qmkDevices
+        == [{ name = "Keychron K2 HE"; vid = "0x3434"; pid = "0x0E20"; }]
+        && config.vogix.openrgb.qmkDevices == [ ];
       assertionsHold = lib.all (a: a.assertion) config.assertions;
     });
 

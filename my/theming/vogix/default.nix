@@ -101,16 +101,26 @@ in
 
       # Enable vogix at the NixOS level (console colors, hardware, etc.) and
       # auto-enable its hardware modules from the mynixos hardware config.
-      # Each hardware module declares its vogix.hardware.devices entry, which
-      # the machine owner units drive from the owner's published palette.
+      # A hardware module's vogix.hardware.devices entry is driven by the
+      # machine owner units from the owner's published palette, and vogix
+      # refuses devices without a machine owner, so the device-bearing parts
+      # are on only with an owner: the Kraken's ring, and the whole K2 HE
+      # module, which declares its device unconditionally. Without an owner
+      # the Kraken module keeps its kernel module, liquidctl and lm_sensors;
+      # the K2 HE's udev rules and OpenRGB registration come from
+      # my.hardware.peripherals.keychron.k2-he.
       #
       # vogix.machine.owner keeps vogix's default: the first user, by name,
       # whose theming.vogix is on. mynixos has no primary user on Linux to
       # derive it from; a host names another owner with vogix.machine.owner.
       vogix = {
         enable = true;
-        hardware.kraken-elite.enable = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable;
-        hardware.keychron-k2-he.enable = config.my.hardware.peripherals.keychron.k2-he.enable;
+        hardware.kraken-elite = {
+          enable = config.my.hardware.cooling.nzxt.kraken-elite-rgb.elite-240-rgb.enable;
+          rgb.ring.enable = mkDefault (config.vogix.machine.owner != null);
+        };
+        hardware.keychron-k2-he.enable = config.my.hardware.peripherals.keychron.k2-he.enable
+          && config.vogix.machine.owner != null;
         # The vogix greeter mechanism (SDDM theme.conf from the machine
         # owner's palette, the Hyprland Lua greeter compositor, the
         # /var/lib/vogix/greeter drop zone) follows the login intent.
