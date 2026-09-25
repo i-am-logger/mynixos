@@ -1193,6 +1193,36 @@ in
       !config.services.openssh.enable
       && config.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 9999 ]);
 
+  # A tailnet host resolves through systemd-resolved: NetworkManager hands it
+  # each link's DNS, and tailscaled scopes MagicDNS to tailscale0 instead of
+  # owning /etc/resolv.conf. The rendered resolved.conf keeps LLMNR and mDNS
+  # off and FallbackDNS empty.
+  tailnet-dns-resolved = evalAssert "tailnet-dns-resolved"
+    {
+      networking.hostName = "test-tailnet-dns";
+      my.network.tailscale.enable = true;
+    }
+    (config:
+      let
+        conf = lib.splitString "\n" config.environment.etc."systemd/resolved.conf".text;
+      in
+      config.services.resolved.enable
+      && config.networking.networkmanager.dns == "systemd-resolved"
+      && builtins.elem "LLMNR=false" conf
+      && builtins.elem "MulticastDNS=false" conf
+      && builtins.elem "FallbackDNS=" conf);
+
+  # A tailnet node in a container keeps the resolv.conf its runtime writes.
+  tailnet-dns-container = evalAssert "tailnet-dns-container"
+    {
+      networking.hostName = "test-tailnet-dns-container";
+      boot.isContainer = true;
+      my.network.tailscale.enable = true;
+    }
+    (config:
+      !config.services.resolved.enable
+      && config.networking.useHostResolvConf);
+
   # The nixpkgs module's checkConfig runs `rad config` against the generated
   # config.json at BUILD time. The toplevel-forcing suites can't enable
   # radicle (sops assertions, no fixture precedent), so build the configFile
