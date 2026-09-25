@@ -5,6 +5,38 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.25.0...mynixos-v0.26.0) (2026-09-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vogix:** needs a vogix with the machine module (vogix.machine, vogix.hardware.devices). With the vogix v0.11.0 pin, a host with vogix theming on fails to read my.system.persistence ("attribute 'machine' missing").
+
+### Features
+
+* **rke2:** replace k3s with RKE2 and Cilium ([4b3c2a1](https://github.com/i-am-logger/mynixos/commit/4b3c2a198654914638cb25be426522738db59844))
+* **vogix:** persist the machine owner's drop zone; hardware leaves the user apply hooks ([e0347b2](https://github.com/i-am-logger/mynixos/commit/e0347b238167b792ec64c287e5df21f41e20c0d2))
+
+
+### Bug Fixes
+
+* **persistence:** a persisted directory is created with the owner tmpfiles gives it ([1158474](https://github.com/i-am-logger/mynixos/commit/1158474473ac144c079137b227d8e532b5f92566))
+* **radicle:** systemd owns the node's control socket ([a5a496a](https://github.com/i-am-logger/mynixos/commit/a5a496a2b2016c1d41734089f34ea7cf6d81e78b))
+* **tailscale:** a switch over Tailscale SSH must not restart tailscaled ([8864669](https://github.com/i-am-logger/mynixos/commit/88646693d82bc5e16ef0a23e59d5ce700e13e209))
+* **tailscale:** resolve through systemd-resolved, so a link flap cannot strand DNS ([414470a](https://github.com/i-am-logger/mynixos/commit/414470a7b5ecba4fb0cd47ab6367debc6c1c0a28))
+* **vogix:** a host without a machine owner keeps its Kraken and K2 HE, without their devices ([13746a8](https://github.com/i-am-logger/mynixos/commit/13746a8ee319c5bab1d2dc749ea7cddcd70cb362))
+
+
+### Documentation
+
+* platforms/oci-variant is a variant, not a fourth platform ([ca0c53d](https://github.com/i-am-logger/mynixos/commit/ca0c53d052d51d6962137b1933d61d7697638c13))
+* **vogix:** the module header no longer claims it wires kanata ([547a2be](https://github.com/i-am-logger/mynixos/commit/547a2be3caa22b4b88231e30afba90031b08609f))
+
+
+### Miscellaneous
+
+* **deps:** pin vogix to v0.12.0 ([0e1176d](https://github.com/i-am-logger/mynixos/commit/0e1176d837f5d7e9737b30e1c2567b30e16eadaf))
+
 ## [0.25.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.24.1...mynixos-v0.25.0) (2026-09-22)
 
 
