@@ -179,6 +179,40 @@ in
       systemd.services.tailscaled.restartIfChanged = false;
     })
 
+    # DNS goes through systemd-resolved. With resolved, tailscaled registers
+    # MagicDNS on tailscale0 for the tailnet's own domains only. Every other
+    # name goes to the upstream NetworkManager hands resolved per link, and
+    # resolved follows that upstream as leases come and go.
+    #
+    # Without resolved, tailscaled owns /etc/resolv.conf (100.100.100.100
+    # only) and forwards everything else to the base resolvers it read at its
+    # last link change. A link flap that lands between the carrier and DHCP
+    # leaves it with no upstream, and every lookup SERVFAILs until tailscaled
+    # restarts.
+    #
+    # An exit node or the tailnet's "Override local DNS" makes tailscaled ask
+    # resolved to route every name to tailscale0, so those keep all DNS in
+    # the tunnel.
+    #
+    # resolved's defaults would widen what the host does. LLMNR and mDNS would
+    # answer and send name lookups on the LAN, and FallbackDNS would send
+    # queries to compiled-in public resolvers whenever no link has DNS. All
+    # three are off.
+    #
+    # Not in a container: its runtime writes /etc/resolv.conf from the host's
+    # resolvers, with no DHCP inside to race, and nixpkgs refuses resolved
+    # beside a host-provided resolv.conf.
+    (mkIf (!config.boot.isContainer) {
+      services.resolved = {
+        enable = true;
+        settings.Resolve = {
+          LLMNR = false;
+          MulticastDNS = false;
+          FallbackDNS = [ ];
+        };
+      };
+    })
+
     # LIVENESS -- prove a ROUND TRIP over the tailnet, and keep the failures a
     # restart can fix apart from the ones it cannot.
     #
