@@ -34,7 +34,7 @@
     # under the lock whenever someone pushes, and what a host runs stops being
     # what the lock says. hud-live has landed; this follows releases now.
     vogix = {
-      url = "github:i-am-logger/vogix/vogix-v0.12.0";
+      url = "github:i-am-logger/vogix/vogix-v0.12.2";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";
