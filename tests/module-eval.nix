@@ -123,6 +123,66 @@ let
       touch $out
     '';
 
+  # --- herdr plugins ----------------------------------------------------------
+  #
+  # pkgs is not in specialArgs (tests/lib.nix), so a nixpkgs overlay in the test
+  # config reaches the modules. Each case names its herdr version that way, in
+  # both directions, so no case depends on which herdr mynixos's own nixpkgs
+  # pin ships (0.9.0 today, below the plugins' 0.9.1 floor).
+  herdrAt = version: {
+    nixpkgs.overlays = [
+      (_: prev: { herdr = prev.herdr.overrideAttrs (_: { inherit version; __intentionallyOverridingVersion = true; }); })
+    ];
+  };
+
+  evalHerdr = version: testConfig: (lib.nixosSystem {
+    inherit specialArgs;
+    modules = baseModules ++ [ baseConfig (herdrAt version) testConfig ];
+  }).config;
+
+  # The FAILING assertions whose message contains `needle`. Only failing ones:
+  # NixOS's own assertions build their message from values that exist only
+  # when the assertion fails (filesystems.nix reads `fileSystems'.cycle`), so
+  # reading the message of one that holds is an evaluation error.
+  failing = needle: config:
+    builtins.filter (a: !a.assertion && lib.hasInfix needle a.message) config.assertions;
+
+  # Accepts: no assertion mentioning `needle` fails, and `predicate` holds.
+  # That the assertion exists at all is what each case's refusing twin proves.
+  herdrAccepts = name: version: needle: testConfig: predicate:
+    let
+      config = evalHerdr version testConfig;
+    in
+    if failing needle config != [ ] then builtins.throw "FAIL: module-eval-${name} -- '${needle}' fired"
+    else if !(predicate config) then builtins.throw "FAIL: module-eval-${name} -- config assertion did not hold"
+    else pkgs.runCommand "module-eval-${name}" { } "echo PASS: ${name}; touch $out";
+
+  # Refuses: an assertion mentioning `needle` fails. Any other failing
+  # assertion does not count, so an unrelated failure cannot pass this.
+  herdrRefuses = name: version: needle: testConfig:
+    if failing needle (evalHerdr version testConfig) == [ ]
+    then builtins.throw "FAIL: module-eval-${name} -- '${needle}' did not fire"
+    else pkgs.runCommand "module-eval-${name}" { } "echo PASS: ${name}; touch $out";
+
+  herdrUser = herdr: extra: {
+    networking.hostName = "test-herdr-plugins";
+    my.users.muxuser = {
+      fullName = "Mux User";
+      description = "mux";
+      email = "mux@example.com";
+      terminal = { enable = true; multiplexer = "herdr"; inherit herdr; };
+    } // extra;
+  };
+
+  hmOf = config: config.home-manager.users.muxuser;
+  hasPname = name: hm: builtins.any (p: (p.pname or "") == name) hm.home.packages;
+  # What config.toml is generated from. pkgs.formats.toml keeps the value on
+  # the derivation (`value`, structured attrs), so it reads without a build.
+  herdrSettings = hm: hm.xdg.configFile."herdr/config.toml".source.value;
+  activation = hm: hm.home.activation.herdrPlugins.data;
+  keysOf = hm: map (k: k.command) ((herdrSettings hm).keys.command or [ ]);
+  headMark = builtins.fromJSON ''"​"'';
+
 in
 {
   # Test 1: Module imports without errors (empty config, no my.* options set)
@@ -228,6 +288,174 @@ in
     (config:
       let user = config.my.users.muxuser; in
       user.terminal.multiplexer == "herdr");
+
+  # Off by default: no plugin package, no PATH link, nothing linked, and
+  # status_indicators at the option's default.
+  herdr-plugins-default-off = herdrAccepts "herdr-plugins-default-off" "0.9.0" "need herdr >= 0.9.1"
+    (herdrUser { } { })
+    (config:
+      let hm = hmOf config; in
+      !(hasPname "herdr-projects" hm)
+      && !(hm.home.file ? ".local/bin/herdr-projects")
+      && !(lib.hasInfix "plugin link" (activation hm))
+      # The entry still exists: it unlinks what an earlier generation linked.
+      && lib.hasInfix "plugin unlink" (activation hm)
+      && (herdrSettings hm).ui.status_indicators == "dots"
+      && !((herdrSettings hm).ui ? tab_bar_right)
+      && !((herdrSettings hm) ? keys));
+
+  herdr-status-indicators-symbols = evalAssert "herdr-status-indicators-symbols"
+    (herdrUser { statusIndicators = "symbols"; } { })
+    (config: (herdrSettings (hmOf config)).ui.status_indicators == "symbols");
+
+  # herdr-projects: the owner's rows, tab-bar entry and key, the link and the
+  # PATH link, at a herdr new enough.
+  herdr-plugins-projects = herdrAccepts "herdr-plugins-projects" "0.9.5" "need herdr >= 0.9.1"
+    (herdrUser { plugins.projects.enable = true; } { })
+    (config:
+      let
+        hm = hmOf config;
+        inherit (herdrSettings hm) ui;
+        card = builtins.elemAt (builtins.head ui.sidebar.agents.rows) 1;
+      in
+      hasPname "herdr-projects" hm
+      && hm.home.file.".local/bin/herdr-projects".force
+      && lib.hasInfix "plugin link" (activation hm)
+      && lib.hasInfix "share/herdr-plugins/herdr-projects" (activation hm)
+      && keysOf hm == [ "herdr-projects.open-popup" ]
+      && (builtins.head (herdrSettings hm).keys.command).key == "prefix+a"
+      && lib.hasInfix "needs-you --line" (builtins.head ui.tab_bar_right).command
+      && (builtins.head card.rules).contains == headMark
+      && builtins.length ui.sidebar.spaces.rows == 1
+      && !(ui.sidebar.agents ? rows_by_agent));
+
+  herdr-plugins-projects-old-herdr = herdrRefuses "herdr-plugins-projects-old-herdr" "0.9.0" "need herdr >= 0.9.1"
+    (herdrUser { plugins.projects.enable = true; } { });
+
+  # A plugin's own floor, above the module's: reviewr needs 0.9.3.
+  herdr-plugins-reviewr = herdrAccepts "herdr-plugins-reviewr" "0.9.5" "reviewr needs herdr >= 0.9.3"
+    (herdrUser { plugins.reviewr.enable = true; } { })
+    (config:
+      let hm = hmOf config; in
+      hasPname "herdr-reviewr" hm
+      && keysOf hm == [ "persiyanov.reviewr.toggle" ]
+      && lib.hasInfix "share/herdr-plugins/herdr-reviewr" (activation hm));
+
+  herdr-plugins-reviewr-old-herdr = herdrRefuses "herdr-plugins-reviewr-old-herdr" "0.9.2" "reviewr needs herdr >= 0.9.3"
+    (herdrUser { plugins.reviewr.enable = true; } { });
+
+  # clauth's plugin needs the clauth app, both directions; with herdr-projects
+  # on, the claude row is herdr-projects' card plus $clauth.
+  herdr-plugins-clauth = herdrAccepts "herdr-plugins-clauth" "0.9.5" "needs apps.ai.tools.clauth.enable"
+    (herdrUser { plugins = { projects.enable = true; clauth.enable = true; }; } { apps.ai.tools.clauth.enable = true; })
+    (config:
+      let
+        hm = hmOf config;
+        claudeRows = (herdrSettings hm).ui.sidebar.agents.rows_by_agent.claude;
+      in
+      hasPname "clauth" hm
+      && keysOf hm == [ "herdr-projects.open-popup" "clauth.open" ]
+      && lib.last (builtins.head claudeRows) == "$clauth"
+      && builtins.length claudeRows == 2
+      && lib.hasInfix "share/herdr-plugins/clauth" (activation hm));
+
+  herdr-plugins-clauth-needs-app = herdrRefuses "herdr-plugins-clauth-needs-app" "0.9.5" "needs apps.ai.tools.clauth.enable"
+    (herdrUser { plugins.clauth.enable = true; } { });
+
+  # Two plugins on one key, and a plugin on a herdr built-in.
+  herdr-plugins-key-collision = herdrRefuses "herdr-plugins-key-collision" "0.9.5" "two plugins bind one key"
+    (herdrUser
+      { plugins = { projects.enable = true; clauth = { enable = true; popupKey = "prefix+a"; }; }; }
+      { apps.ai.tools.clauth.enable = true; });
+
+  herdr-plugins-key-builtin = herdrRefuses "herdr-plugins-key-builtin" "0.9.5" "is a herdr built-in binding"
+    (herdrUser { plugins.projects = { enable = true; popupKey = "prefix+s"; }; } { });
+
+  herdr-plugins-key-builtin-indexed = herdrRefuses "herdr-plugins-key-builtin-indexed" "0.9.5" "is a herdr built-in binding"
+    (herdrUser { plugins.usage = { enable = true; popupKey = "prefix+3"; }; } { });
+
+  # Every plugin on at its default keys: no key assertion fires.
+  herdr-plugins-all-keys-distinct = herdrAccepts "herdr-plugins-all-keys-distinct" "0.9.5" "bind"
+    (herdrUser
+      { plugins = { projects.enable = true; clauth.enable = true; radar.enable = true; usage.enable = true; reviewr.enable = true; }; }
+      { apps.ai.tools.clauth.enable = true; })
+    (config: builtins.length (keysOf (hmOf config)) == 4);
+
+  # radar: its tab-bar entry beside herdr-projects', its own config, and no
+  # sidebar rows of its own.
+  herdr-plugins-radar = herdrAccepts "herdr-plugins-radar" "0.9.5" "radar needs herdr"
+    (herdrUser { plugins = { projects.enable = true; radar.enable = true; }; } { })
+    (config:
+      let
+        hm = hmOf config;
+        inherit (herdrSettings hm) ui;
+        radarCfg = hm.xdg.configFile."herdr/plugins/config/hhdebb.herdr-radar/config.toml".source.value;
+      in
+      builtins.length ui.tab_bar_right == 2
+      && lib.hasInfix "/herdr/plugins/hhdebb.herdr-radar/tabbar\${HERDR_SESSION:+-$HERDR_SESSION}.txt" (lib.last ui.tab_bar_right).command
+      && ui.tab_bar_right_separator == " · "
+      && radarCfg == { follow_appearance = false; variant = "text"; }
+      && builtins.length ui.sidebar.agents.rows == 2);
+
+  herdr-plugins-radar-off = evalAssert "herdr-plugins-radar-off"
+    (herdrUser { plugins.projects.enable = true; } { })
+    (config:
+      let hm = hmOf config; in
+      !(hm.xdg.configFile ? "herdr/plugins/config/hhdebb.herdr-radar/config.toml")
+      && !((herdrSettings hm).ui ? tab_bar_right_separator));
+
+  # usage: the gauge rows after herdr-projects' Space card. No account roster:
+  # the plugin reads the global login, the one clauth switches.
+  herdr-plugins-usage = herdrAccepts "herdr-plugins-usage" "0.9.5" "usage needs herdr"
+    (herdrUser { plugins = { projects.enable = true; usage.enable = true; }; } {
+      apps.ai.tools.claude-code.enable = true;
+    })
+    (config:
+      let
+        hm = hmOf config;
+        spaces = (herdrSettings hm).ui.sidebar.spaces.rows;
+      in
+      builtins.length spaces == 5
+      && (builtins.head (builtins.elemAt spaces 1)).token == "$cu"
+      && !(hm.xdg.configFile ? "herdr/plugins/config/houser.claude-usage/accounts.json"));
+
+  # usage alone: the gauges without herdr-projects' row.
+  herdr-plugins-usage-alone = evalAssert "herdr-plugins-usage-alone"
+    (herdrUser { plugins.usage.enable = true; } { })
+    (config:
+      let hm = hmOf config; in
+      !(hm.xdg.configFile ? "herdr/plugins/config/houser.claude-usage/accounts.json")
+      && builtins.length (herdrSettings hm).ui.sidebar.spaces.rows == 4);
+
+  # The clauth app on its own.
+  clauth-app = evalAssert "clauth-app"
+    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
+    (config: hasPname "clauth" (hmOf config));
+
+  clauth-app-off = evalAssert "clauth-app-off"
+    (herdrUser { } { })
+    (config: !(hasPname "clauth" (hmOf config)));
+
+  # clauth's daemon: a user service only when asked for, run through the
+  # starter script.
+  clauth-daemon = evalAssert "clauth-daemon"
+    (herdrUser { } { apps.ai.tools.clauth = { enable = true; daemon.enable = true; }; })
+    (config:
+      let svc = (hmOf config).systemd.user.services.clauth-daemon; in
+      svc.Service.KillMode == "process"
+      && svc.Service.Restart == "on-failure"
+      && lib.hasSuffix "-clauth-daemon" (toString svc.Service.ExecStart));
+
+  clauth-daemon-off = evalAssert "clauth-daemon-off"
+    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
+    (config: !((hmOf config).systemd.user.services ? clauth-daemon));
+
+  # Claude Code is upstream's package: no account wrapper.
+  claude-code-plain = evalAssert "claude-code-plain"
+    (herdrUser { } { apps.ai.tools.claude-code.enable = true; })
+    (config:
+      let package = (hmOf config).programs.claude-code.package; in
+      (package.pname or "") == "claude-code" && !(package ? paths));
 
   user-features = evalTest "user-features" {
     networking.hostName = "test-user-features";

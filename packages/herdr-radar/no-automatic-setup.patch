@@ -1,0 +1,17 @@
+--- a/lib/setup.js
++++ b/lib/setup.js
+@@ -32,6 +32,14 @@
+ 
+ // Returns the notes of what was done; an empty list means nothing was needed.
+ function ensure({ force = false } = {}) {
++  // Nix build: the daemon launcher calls this on every start until a stamp
++  // is written. Under Nix the managed config.toml blocks, the icon font and
++  // the terminal codepoint maps belong to the Nix configuration: config.toml
++  // is a read-only store link, and a ghostty/kitty config is either one too
++  // (the write throws, no stamp, so it retries on every start) or a user
++  // file edited behind the configuration's back. Only an explicit
++  // `node bin/setup.js --force` still runs the setup below.
++  if (!force) return [];
+   const notes = [];
+   const managed = require('./managed-config');
+   const font = require('./font');

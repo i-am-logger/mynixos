@@ -125,6 +125,7 @@ let
 
   darwinOnly = {
     "apps.graphical.utils.keepingyouawake" = "Drives macOS IOKit power assertions.";
+    "terminal.herdr.plugins.focusNotify" = "herdr-focus-notify's manifest declares macOS only; it drives lsappinfo, open -b and alerter.";
   };
 
   # ---------------------------------------------------------------------------

@@ -24,7 +24,7 @@ let
 
   # The Apple hardware profile is what sets nixpkgs.hostPlatform, exactly as a
   # motherboard profile does on NixOS -- so this asserts that wiring too.
-  darwinConfig = myConfig: (self.lib.mkSystem {
+  darwinConfigWith = extraModules: myConfig: (self.lib.mkSystem {
     platform = "darwin";
     hostname = "darwin-smoke";
     users = [{ name = "smoke"; homeManager = { home.stateVersion = "24.11"; }; }];
@@ -43,8 +43,18 @@ let
     extraModules = [{
       system.stateVersion = 7;
       system.primaryUser = "smoke";
-    }];
+    }] ++ extraModules;
   }).config;
+
+  darwinConfig = darwinConfigWith [ ];
+
+  # herdr at a named version, so the plugin cases do not depend on the one
+  # mynixos's nixpkgs pin ships.
+  herdrAt = version: {
+    nixpkgs.overlays = [
+      (_: prev: { herdr = prev.herdr.overrideAttrs (_: { inherit version; __intentionallyOverridingVersion = true; }); })
+    ];
+  };
 
   check = name: cond: detail:
     pkgs.runCommand "darwin-smoke-${name}" { }
@@ -177,6 +187,39 @@ in
       (c.programs._1password.enable
         && builtins.any (p: (p.pname or "") == "1password") c.environment.systemPackages)
       "the darwin 1Password module should install the app and enable the CLI";
+
+  # herdr-focus-notify is darwin-only (its option is declared by
+  # platforms/darwin.nix alone): on, it is installed and linked; off, the
+  # activation only ever unlinks a store-rooted entry.
+  darwin-smoke-herdr-focus-notify =
+    let
+      c = darwinConfigWith [ (herdrAt "0.9.5") ] { users.smoke.terminal.herdr.plugins.focusNotify.enable = true; };
+      hm = c.home-manager.users.smoke;
+    in
+    check "herdr-focus-notify"
+      (builtins.any (p: (p.pname or "") == "herdr-focus-notify") hm.home.packages
+        && lib.hasInfix "plugin link" hm.home.activation.herdrPluginsDarwin.data
+        && lib.hasInfix "share/herdr-plugins/herdr-focus-notify" hm.home.activation.herdrPluginsDarwin.data
+        # Only failing assertions' messages are read: some of nix-darwin's
+        # own are only evaluable when they fail.
+        && !(builtins.any (a: !a.assertion && lib.hasInfix "focusNotify" a.message) c.assertions))
+      "focusNotify on should install and link herdr-focus-notify";
+
+  darwin-smoke-herdr-focus-notify-off =
+    let hm = (darwinConfigWith [ (herdrAt "0.9.5") ] { }).home-manager.users.smoke;
+    in
+    check "herdr-focus-notify-off"
+      (!(builtins.any (p: (p.pname or "") == "herdr-focus-notify") hm.home.packages)
+        && !(lib.hasInfix "plugin link" hm.home.activation.herdrPluginsDarwin.data)
+        && lib.hasInfix "plugin unlink" hm.home.activation.herdrPluginsDarwin.data)
+      "focusNotify off should neither install nor link herdr-focus-notify";
+
+  darwin-smoke-herdr-focus-notify-old-herdr =
+    let c = darwinConfigWith [ (herdrAt "0.9.0") ] { users.smoke.terminal.herdr.plugins.focusNotify.enable = true; };
+    in
+    check "herdr-focus-notify-old-herdr"
+      (builtins.any (a: !a.assertion && lib.hasInfix "focusNotify needs herdr" a.message) c.assertions)
+      "focusNotify should refuse a herdr older than 0.9.1";
 
   # The portable base CLI set must actually reach a Mac -- that split is what
   # my/system/base-packages exists for.

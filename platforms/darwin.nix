@@ -41,6 +41,10 @@ in
     # my.dev.builderHost: accepting remote nix builds is a nix-darwin account
     # plus a nix.conf drop-in, so the option exists here only.
     (mkOptionsModule ../my/dev/remote-builders/options-darwin.nix { inherit lib; })
+
+    # terminal.herdr.plugins.focusNotify: the plugin's manifest declares
+    # macOS only. Declares options.my.users directly, so no wrapper.
+    ../my/users/apps/multiplexers/herdr/options-darwin.nix
   ]
 
   # -----------------------------------------------------------------------
@@ -122,5 +126,8 @@ in
     # signature and makes macOS refuse to launch it -- see the file for the
     # codesign output.
     ../my/users/apps/communication/discord/darwin.nix
+
+    # herdr-focus-notify: clickable notifications that focus the agent pane.
+    ../my/users/apps/multiplexers/herdr/darwin.nix
   ];
 }

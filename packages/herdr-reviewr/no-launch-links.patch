@@ -1,0 +1,58 @@
+diff --git a/src/actions.rs b/src/actions.rs
+index 57b503a..8b327fa 100644
+--- a/src/actions.rs
++++ b/src/actions.rs
+@@ -103,9 +103,6 @@ fn act(action: Action) -> Result<Option<String>, Stop> {
+     // The whole config validates before any workspace read or pane write.
+     let config = crate::config::plugin_config_from_herdr().map_err(Stop::Config)?;
+ 
+-    #[cfg(unix)]
+-    repoint_launch_links();
+-
+     // Event policy gates only the event, before any read.
+     let event = if action == Action::AutoOpen {
+         if !config.auto_open()
+@@ -419,43 +416,3 @@ fn launch(pane: &str) -> Launch {
+         thread::sleep(VISIBLE_POLL);
+     }
+ }
+-
+-/// Re-point the stable launch links at the live plugin root; best effort, symlinks only.
+-#[cfg(unix)]
+-fn repoint_launch_links() {
+-    let (Some(root), Some(home)) = (herdr::var_os("HERDR_PLUGIN_ROOT"), dirs::home_dir()) else {
+-        return;
+-    };
+-    let binary = Path::new(&root).join("bin").join(BINARY);
+-    if which::which(&binary).is_err() {
+-        return;
+-    }
+-    // The installer's own path, which it writes without herdr's environment.
+-    let state_bin = home.join(".local/state/herdr/plugins").join(herdr::PLUGIN_ID).join("bin");
+-    let local_bin = home.join(".local/bin");
+-    // `~/.local/bin` only when it already exists: reviewr never creates a PATH directory.
+-    let dirs = [Some(state_bin), local_bin.is_dir().then_some(local_bin)];
+-    for dir in dirs.into_iter().flatten() {
+-        if std::fs::create_dir_all(&dir).is_err() {
+-            continue;
+-        }
+-        let link = dir.join(BINARY);
+-        match std::fs::symlink_metadata(&link) {
+-            Ok(meta) if meta.file_type().is_symlink() => {
+-                if std::fs::read_link(&link).is_ok_and(|target| target == binary) {
+-                    continue;
+-                }
+-            }
+-            Ok(_) => continue,
+-            Err(_) => {}
+-        }
+-        // A fresh link renamed over the old one, so the path is never missing.
+-        let fresh = dir.join(format!(".{BINARY}.{}", std::process::id()));
+-        let _ = std::fs::remove_file(&fresh);
+-        if std::os::unix::fs::symlink(&binary, &fresh).is_ok()
+-            && std::fs::rename(&fresh, &link).is_err()
+-        {
+-            let _ = std::fs::remove_file(&fresh);
+-        }
+-    }
+-}
