@@ -99,6 +99,8 @@ in
             "*.img"
             ".direnv"
             "result"
+            # Claude Code's worktrees (<repo>/.claude/worktrees/<name>)
+            ".claude/worktrees/"
           ];
         };
       })
