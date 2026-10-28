@@ -421,7 +421,11 @@ let
     #kb_options = caps:escape
     #kb_rules =
     #repeat_rate = 30
-    repeat_delay = 200;
+    # Milliseconds a key must be held before auto-repeat starts. An ordinary
+    # keypress runs 70-150ms, so a delay anywhere near that turns a slower-than-
+    # usual press into a repeat and the character lands twice. 600 is Hyprland's
+    # own default and leaves clear headroom above the typing range.
+    repeat_delay = 600;
     left_handed = userInput.leftHanded;
     #follow_mouse = 2 # 0|1|2|3
     float_switch_override_focus = 2;
