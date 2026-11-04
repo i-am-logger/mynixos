@@ -254,7 +254,11 @@ in
             options = mkDefault "--delete-older-than 7d";
           };
 
-          package = pkgs.nixVersions.latest;
+          # The stale-lock test from ../nixpkgs-fixes/devenv.nix: every Nix sharing
+          # a lock folder must agree, or one still spins on what another accepts.
+          package = pkgs.nixVersions.latest.appendPatches [
+            ../nixpkgs-fixes/nix-lock-stale-nlink.patch
+          ];
 
           extraOptions = ''
             experimental-features = nix-command flakes auto-allocate-uids

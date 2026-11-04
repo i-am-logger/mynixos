@@ -35,7 +35,7 @@ _final: prev: {
         overrideSource = src:
           prev.nixVersions.nixComponents_git.overrideSource (prev.applyPatches {
             inherit src;
-            patches = [ ./devenv-lock-stale-nlink.patch ];
+            patches = [ ./nix-lock-stale-nlink.patch ];
           });
       };
     };

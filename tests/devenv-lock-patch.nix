@@ -1,6 +1,6 @@
-# devenv's Nix libraries, built from a source that tells a stale lock by its link
-# count (my/system/nixpkgs-fixes/devenv.nix), for pkgs.devenv and for the package a
-# user's devenv app installs.
+# devenv's and the system's Nix libraries, built from a source that tells a stale lock by its link
+# count (my/system/nixpkgs-fixes/devenv.nix), for pkgs.devenv, for the package a
+# user's devenv app installs, and for the system Nix.
 #
 # Reads the source devenv's nix-store is really built from, so it compiles nothing.
 # When a devenv update moves to a Nix the patch no longer applies to, building
@@ -36,6 +36,9 @@ let
         nixpkgs.hostPlatform = system;
         networking.hostName = "devenv-lock-patch";
 
+        # The system Nix is set by my/system/core, which this switches on.
+        my.system.enable = true;
+
         my.users.alice = {
           fullName = "Alice";
           apps.dev.tools.devenv.enable = true;
@@ -60,10 +63,11 @@ let
     "${store.src}/src/libstore/unix/pathlocks.cc";
 
   homeDevenv = byPname "devenv" eval.config.home-manager.users.alice.home.packages;
+  systemNix = "${eval.config.nix.package.libs.nix-store.src}/src/libstore/unix/pathlocks.cc";
 in
 {
   devenv-lock-patch = hostPkgs.runCommand "devenv-lock-patch" { } ''
-    for f in ${lockSource eval.pkgs.devenv} ${lockSource homeDevenv}; do
+    for f in ${lockSource eval.pkgs.devenv} ${lockSource homeDevenv} ${systemNix}; do
       grep -qF 'if (st.st_nlink == 0)' "$f"
       if grep -qF 'if (st.st_size != 0)' "$f"; then
         echo "$f still tests the lock file's size" >&2
