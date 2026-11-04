@@ -1,0 +1,11 @@
+--- a/src/libstore/unix/pathlocks.cc
++++ b/src/libstore/unix/pathlocks.cc
+@@ -111,7 +111,7 @@
+             /* Check that the lock file hasn't become stale (i.e.,
+                hasn't been unlinked). */
+             auto st = nix::fstat(fd.get());
+-            if (st.st_size != 0)
++            if (st.st_nlink == 0)
+                 /* This lock file has been unlinked, so we're holding
+                    a lock on a deleted file.  This means that other
+                    processes may create and acquire a lock on

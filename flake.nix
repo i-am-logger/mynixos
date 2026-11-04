@@ -337,6 +337,12 @@
             inherit lib nixpkgs system self inputs;
           };
 
+          # devenv's Nix libraries carry the stale-lock patch, where a user's app
+          # installs them from, without compiling them.
+          devenvLockPatchTest = import ./tests/devenv-lock-patch.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
           # The darwin module set, evaluated from a Linux runner. Only `config`
           # is read, so no aarch64-darwin builder is needed.
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
@@ -361,6 +367,7 @@
         // userOptionReachTest
         // mkSystemTests
         // darwinSmokeTests
+        // devenvLockPatchTest
         // secretsStorePolicyTests
         // ociPlatformTests
         // tailnetLivenessTests

@@ -17,6 +17,7 @@ let
     (import ./cava.nix)
     (import ./brave.nix)
     (import ./lean.nix)
+    (import ./devenv.nix)
   ];
 in
 {
