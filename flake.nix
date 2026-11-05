@@ -348,6 +348,11 @@
             inherit lib nixpkgs system self inputs;
           };
 
+          # A signing service: its key delivery, account, socket and refusals.
+          signingServiceTests = import ./tests/signing-service.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
           # The darwin module set, evaluated from a Linux runner. Only `config`
           # is read, so no aarch64-darwin builder is needed.
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
@@ -374,6 +379,7 @@
         // darwinSmokeTests
         // devenvLockPatchTest
         // secretsStorePolicyTests
+        // signingServiceTests
         // ociPlatformTests
         // tailnetLivenessTests
         // tailnetLivenessProbeTests
@@ -406,6 +412,12 @@
         # The locked audit rules load at boot and survive a switch (S3):
         #   nix build .#tests.<system>.vm-audit-rules -L
         vm-audit-rules = import ./tests/vm-audit-rules.nix {
+          inherit self inputs system lib nixpkgs;
+        };
+        # A signing service end to end: git signs through its socket, and every
+        # other way to the key refuses a client:
+        #   nix build .#tests.<system>.vm-signing-service -L
+        vm-signing-service = import ./tests/vm-signing-service.nix {
           inherit self inputs system lib nixpkgs;
         };
         # The Radicle forge end to end: two VMs on an isolated net (a private

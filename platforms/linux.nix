@@ -64,6 +64,7 @@ in
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/rke2/options.nix { inherit lib; })
+    (mkOptionsModule ../my/infra/signing/options.nix { inherit lib; })
     # The two SERVICES a radicle node can be. Declarations rather than
     # implementations: each sets defaults on its own submodule, which is what
     # keeps them out of the infinite recursion a sibling module would hit -- see
@@ -219,6 +220,7 @@ in
     ../my/infra/github-runner
     ../my/infra/radicle
     ../my/infra/rke2
+    ../my/infra/signing
     # my.virtualisation on Linux: the container engines (rootless podman and
     # docker), the guests run on podman (other mynixos systems and plain
     # images), Incus, and full VMs (libvirt, quickemu).
