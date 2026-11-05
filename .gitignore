@@ -12,6 +12,8 @@ coverage.lcov
 
 # Nix
 .direnv/
+# Written by the git-hooks.nix shell hook: a link into this machine's store.
+.pre-commit-config.yaml
 # .devenv* not .devenv/: devenv also drops a .devenv.flake.nix beside it.
 .devenv*
 devenv.local.nix
