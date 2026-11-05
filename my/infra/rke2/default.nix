@@ -372,12 +372,20 @@ in
         ${cfg.tokenSecret} = { mode = "0400"; };
       };
 
+      # The airgap archives, each linked straight into agent/images. RKE2 looks
+      # for its runtime image only among the files directly in that folder, and
+      # services.rke2.images links them one level down, under agent/images/nixos.
+      systemd.tmpfiles.settings."10-rke2-airgap-images" = listToAttrs (map
+        (image: nameValuePair
+          "/var/lib/rancher/rke2/agent/images/${builtins.unsafeDiscardStringContext (baseNameOf image)}"
+          { "L+".argument = "${image}"; })
+        airgapImages);
+
       services.rke2 = {
         enable = true;
         package = rke2Package;
         inherit (cfg) role nodeName nodeIP serverAddr cni;
         tokenFile = tokenPath;
-        images = airgapImages;
 
         # C87. The unit sets KillMode = process, deliberately leaving containerd
         # and every pod running when it stops; graceful node shutdown is the
@@ -818,6 +826,17 @@ in
             # systemd-sysctl. The same keys are declared in boot.kernel.sysctl
             # above, which is the configuration that owns host mutations.
             sysctlfix.enabled = false;
+
+            # The host's own cgroup2 mount rather than a second one. Left to
+            # autoMount, an init container mounts cgroup2 again at
+            # /run/cilium/cgroupv2 on the host, nothing unmounts it before the
+            # filesystems go, and shutdown fails it as busy. It is the same
+            # hierarchy either way, so this changes where Cilium finds the root,
+            # not which cgroup it is.
+            cgroup = {
+              autoMount.enabled = false;
+              hostRoot = "/sys/fs/cgroup";
+            };
 
             # Deliberately NOT set, each for a reason:
             #   kubeProxyReplacement -- upstream's `false` stands and RKE2 keeps

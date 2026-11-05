@@ -297,7 +297,7 @@ let
     services = {
       # The previous boot's journal is where the clean-shutdown assertion reads,
       # and a volatile journal would take it with the reboot.
-      journald.extraConfig = "Storage=persistent";
+      journald.settings.Journal.Storage = "persistent";
 
       rke2 = {
         # No internet in here, so the workload image is imported from a tarball

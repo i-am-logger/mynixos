@@ -2418,6 +2418,43 @@ in
       assertions-hold = lib.all (a: a.assertion) config.assertions;
     });
 
+  # An RKE2 server's airgap archives and Cilium's cgroup root. RKE2 finds its
+  # runtime image only among the files directly in agent/images, so each archive
+  # is linked there and none goes through services.rke2.images, which links one
+  # level down. Cilium runs on the host's cgroup2 mount rather than mounting its
+  # own, which shutdown could not unmount.
+  rke2-airgap-layout = evalClauses "rke2-airgap-layout"
+    {
+      networking.hostName = "test-rke2";
+      my = {
+        secrets.enable = true;
+        network.tailscale.enable = true;
+        infra.rke2 = {
+          enable = true;
+          role = "server";
+          nodeName = "test-rke2";
+          nodeIP = "100.64.0.1";
+          tokenFile = "/run/rke2-token";
+        };
+      };
+    }
+    (config:
+      let
+        imageDir = "/var/lib/rancher/rke2/agent/images/";
+        links = lib.filterAttrs (path: _: lib.hasPrefix imageDir path)
+          (config.systemd.tmpfiles.settings."10-rke2-airgap-images" or { });
+        cilium = builtins.fromJSON config.services.rke2.manifests.rke2-cilium-config.content.spec.valuesContent;
+      in
+      {
+        images-not-nested = config.services.rke2.images == [ ];
+        archives-linked-at-top = links != { }
+          && lib.all (path: !(lib.hasInfix "/" (lib.removePrefix imageDir path))) (builtins.attrNames links);
+        runtime-archive-linked = lib.any (path: lib.hasInfix "images-core" path) (builtins.attrNames links);
+        # Unset keys read as the chart's defaults: autoMount on, /run/cilium/cgroupv2.
+        cilium-no-own-cgroup-mount = !(cilium.cgroup.autoMount.enabled or true)
+          && (cilium.cgroup.hostRoot or "/run/cilium/cgroupv2") == "/sys/fs/cgroup";
+      });
+
   # Workstation shape: node only, block policy, no CI/mirror/httpd -- and the
   # per-user app: rad CLI in home packages plus the outbound-only user node
   # with a pinned private-net config.
