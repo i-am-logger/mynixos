@@ -6,7 +6,8 @@
 # handler. The handler gets the key through LoadCredential, in a directory only
 # its account can open.
 #
-# This separates accounts, and root is on the other side of that line: anything
+# This separates accounts, and root and raw disk access are on the other side of
+# that line: an account in the `disk` group can read the key off the device, and anything
 # that can deploy a system configuration on this host can reach the key.
 { config, lib, pkgs, ... }:
 
