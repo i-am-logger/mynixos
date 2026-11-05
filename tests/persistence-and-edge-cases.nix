@@ -20,7 +20,7 @@ let
       (import ../my/system/nixpkgs-fixes/tree-sitter.nix)
       (import ../my/system/nixpkgs-fixes/cava.nix)
       (import ../my/system/nixpkgs-fixes/brave.nix)
-      (import ../my/system/nixpkgs-fixes/devenv.nix)
+      (import ../my/system/nixpkgs-fixes/nix-lock-stale.nix)
     ];
   };
 

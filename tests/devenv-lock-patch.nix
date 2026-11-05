@@ -1,6 +1,7 @@
-# devenv's and the system's Nix libraries, built from a source that tells a stale lock by its link
-# count (my/system/nixpkgs-fixes/devenv.nix), for pkgs.devenv, for the package a
-# user's devenv app installs, and for the system Nix.
+# devenv's and the system's Nix libraries, built from a source that tells a stale lock by what
+# its path names (my/system/nixpkgs-fixes/nix-lock-stale.nix), for pkgs.devenv, for
+# the package a user's devenv app installs, for the system Nix, and as nix-direnv's
+# fallback Nix.
 #
 # Reads the source devenv's nix-store is really built from, so it compiles nothing.
 # When a devenv update moves to a Nix the patch no longer applies to, building
@@ -42,6 +43,7 @@ let
         my.users.alice = {
           fullName = "Alice";
           apps.dev.tools.devenv.enable = true;
+          apps.dev.tools.direnv.enable = true;
         };
         home-manager = {
           useUserPackages = true;
@@ -64,16 +66,21 @@ let
 
   homeDevenv = byPname "devenv" eval.config.home-manager.users.alice.home.packages;
   systemNix = "${eval.config.nix.package.libs.nix-store.src}/src/libstore/unix/pathlocks.cc";
+  homeDirenv = eval.config.home-manager.users.alice.programs.direnv.nix-direnv.package;
+  # Asks whether the package is what it would be with the system Nix as its fallback,
+  # because the path itself sits in a file that only exists once Nix is built.
+  direnvFallback = homeDirenv.outPath == (homeDirenv.override { nix = eval.config.nix.package; }).outPath;
 in
 {
   devenv-lock-patch = hostPkgs.runCommand "devenv-lock-patch" { } ''
     for f in ${lockSource eval.pkgs.devenv} ${lockSource homeDevenv} ${systemNix}; do
-      grep -qF 'if (st.st_nlink == 0)' "$f"
+      grep -qF 'isLockFileStale(fd.get(), lockPath)' "$f"
       if grep -qF 'if (st.st_size != 0)' "$f"; then
         echo "$f still tests the lock file's size" >&2
         exit 1
       fi
     done
+    ${lib.optionalString (!direnvFallback) "echo nix-direnv does not fall back to the system Nix >&2; exit 1"}
     touch $out
   '';
 }

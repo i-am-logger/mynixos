@@ -1,0 +1,54 @@
+--- a/src/libstore/unix/pathlocks.cc
++++ b/src/libstore/unix/pathlocks.cc
+@@ -68,6 +68,32 @@
+     return true;
+ }
+ 
++/**
++ * Whether a lock file we have just locked is no longer at `lockPath`, so
++ * that other processes may create and acquire a lock on `lockPath`.
++ */
++static bool isLockFileStale(Descriptor fd, const std::filesystem::path & lockPath)
++{
++    auto st = nix::fstat(fd);
++    if (st.st_nlink == 0)
++        return true;
++
++    /* deleteLockFile() writes its token after trying to unlink, so an empty
++       file with a link is live. */
++    if (st.st_size == 0)
++        return false;
++
++    /* A token alone doesn't mean the file was removed, since deleteLockFile()
++       allows the unlink to fail, and such a file is a usable lock.  The link
++       count can't tell the two apart: an NFS client renames a file that is
++       still open rather than removing it.  So see what the path names. */
++    auto atPath = openLockFile(lockPath, false);
++    if (!atPath)
++        return true;
++    auto stAtPath = nix::fstat(atPath.get());
++    return stAtPath.st_dev != st.st_dev || stAtPath.st_ino != st.st_ino;
++}
++
+ bool PathLocks::lockPaths(const std::set<std::filesystem::path> & paths, const std::string & waitMsg, bool wait)
+ {
+     assert(fds.empty());
+@@ -108,14 +134,10 @@
+ 
+             debug("lock acquired on %1%", PathFmt(lockPath));
+ 
+-            /* Check that the lock file hasn't become stale (i.e.,
+-               hasn't been unlinked). */
+-            auto st = nix::fstat(fd.get());
+-            if (st.st_size != 0)
+-                /* This lock file has been unlinked, so we're holding
+-                   a lock on a deleted file.  This means that other
+-                   processes may create and acquire a lock on
+-                   `lockPath', and proceed.  So we must retry. */
++            /* If this lock file has been unlinked, we're holding a lock on a
++               deleted file while other processes may proceed with a new one.
++               So we must retry. */
++            if (isLockFileStale(fd.get(), lockPath))
+                 debug("open lock file %1% has become stale", PathFmt(lockPath));
+             else
+                 break;

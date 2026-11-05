@@ -1,4 +1,5 @@
-# devenv, with its Nix libraries patched to tell a stale lock by its link count.
+# The Nix in devenv and nix-direnv, patched to tell a stale lock by what its path
+# names.
 #
 # WHY THIS EXISTS
 #
@@ -13,11 +14,13 @@
 # SIGTERM does not stop it. The fetcher locks are keyed by input, so one such
 # file hangs every evaluation that needs the input.
 #
-# With `st_nlink == 0` a deleted lock is still retried, and a non-empty file at
-# its path is an ordinary lock whose next release removes it. Lix makes the same
-# test.
+# With the patch, a file with no links is stale, an empty file is live, and a
+# non-empty file is stale unless its path still names it. So a non-empty file at
+# its path is an ordinary lock whose next release removes it. The link count alone
+# is not enough: an NFS client renames a file that is still open rather than
+# removing it, so a deleted lock keeps a link, and two holders would overlap.
 #
-# WHY THE OVERRIDE LOOKS LIKE THIS
+# WHY THE DEVENV OVERRIDE LOOKS LIKE THIS
 #
 # devenv does not use pkgs.nix. It builds its own components from a pinned
 # revision of cachix/nix, in a `let` inside its package, which no argument can
@@ -26,18 +29,24 @@
 # own `appendPatches` is not usable here: it appends "+1" to their version, and
 # the build script of devenv's Rust bindings fails to parse that.
 #
+# nix-direnv takes its fallback Nix as an argument, and gets the system's.
+#
 # DROP THIS FILE when devenv's pinned Nix stops testing `st.st_size` in
 # src/libstore/unix/pathlocks.cc. The patch failing to apply is that signal.
-_final: prev: {
+final: prev: {
   devenv = prev.devenv.override {
     nixVersions = prev.nixVersions // {
       nixComponents_git = prev.nixVersions.nixComponents_git // {
         overrideSource = src:
           prev.nixVersions.nixComponents_git.overrideSource (prev.applyPatches {
             inherit src;
-            patches = [ ./nix-lock-stale-nlink.patch ];
+            patches = [ ./nix-lock-stale-reopen.patch ];
           });
       };
     };
+  };
+
+  nix-direnv = prev.nix-direnv.override {
+    nix = final.nixVersions.latest.appendPatches [ ./nix-lock-stale-reopen.patch ];
   };
 }

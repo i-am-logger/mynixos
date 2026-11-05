@@ -254,10 +254,10 @@ in
             options = mkDefault "--delete-older-than 7d";
           };
 
-          # The stale-lock test from ../nixpkgs-fixes/devenv.nix: every Nix sharing
+          # The stale-lock test from ../nixpkgs-fixes/nix-lock-stale.nix: every Nix sharing
           # a lock folder must agree, or one still spins on what another accepts.
           package = pkgs.nixVersions.latest.appendPatches [
-            ../nixpkgs-fixes/nix-lock-stale-nlink.patch
+            ../nixpkgs-fixes/nix-lock-stale-reopen.patch
           ];
 
           extraOptions = ''
