@@ -62,6 +62,15 @@ in
         wantedBy = [ "multi-user.target" ];
       };
 
+      # pcscd.service has Requires=polkit.service, so stopping polkit stops pcscd,
+      # and a card loses its verified PIN when its reader session ends. nixpkgs
+      # restarts polkit on any change to the system packages so that it sees new
+      # actions, and a reload does that too.
+      services.polkit = {
+        restartTriggers = mkForce [ ];
+        reloadTriggers = [ config.system.path ];
+      };
+
       # YubiKey touch detector service
       user.services.yubikey-touch-detector = {
         enable = true;

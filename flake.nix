@@ -392,6 +392,11 @@
         vm-login = import ./tests/vm-login.nix {
           inherit self inputs system lib nixpkgs;
         };
+        # A switch that only changes the system packages leaves pcscd running:
+        #   nix build .#tests.<system>.vm-pcscd-switch -L
+        vm-pcscd-switch = import ./tests/vm-pcscd-switch.nix {
+          inherit self inputs system lib nixpkgs;
+        };
         # The Radicle forge end to end: two VMs on an isolated net (a private
         # network by construction), seed + CI + a workstation profile pushing:
         #   nix build .#tests.<system>.vm-radicle -L
