@@ -2386,6 +2386,38 @@ in
       && builtins.elem "/var/lib/radicle-ci" config.my.system.persistence.features.systemDirectories
       && builtins.elem "/var/lib/radicle-mirror" config.my.system.persistence.features.systemDirectories);
 
+  # CI with nothing served over nginx: no explorer, no reports. Nothing enables
+  # nginx, so nothing may declare its account either; a stray
+  # `users.users.nginx` attribute is an account with no group, which the users
+  # module refuses.
+  radicle-ci-without-reports = evalClauses "radicle-ci-without-reports"
+    {
+      networking.hostName = "test-radicle-ci";
+      my = {
+        secrets.enable = true;
+        network.tailscale.enable = true;
+        infra.radicle = {
+          enable = true;
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBgFMhajUng+Rjj/sCFXI9PzG8BQjru2n7JgUVF1Kbv5";
+          node.defaultSeedingPolicy = "allow";
+          httpd.enable = true;
+          ci = {
+            enable = true;
+            trustedNids = [ "z6MkTrusted" ];
+          };
+        };
+      };
+      # Every assertion is read, so the key is a fixed path rather than a
+      # sops secret with no file behind it.
+      services.radicle.privateKey = lib.mkForce "/run/radicle-node.key";
+      sops.secrets = lib.mkForce { };
+    }
+    (config: {
+      nginx-off = !config.services.nginx.enable;
+      no-nginx-account = !(config.users.users ? nginx);
+      assertions-hold = lib.all (a: a.assertion) config.assertions;
+    });
+
   # Workstation shape: node only, block policy, no CI/mirror/httpd -- and the
   # per-user app: rad CLI in home packages plus the outbound-only user node
   # with a pinned private-net config.

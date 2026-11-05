@@ -276,9 +276,11 @@ in
     };
 
     # The report dir belongs to the radicle user; nginx needs group read to
-    # serve it. Read-only -- nginx never writes there.
-    users.users.nginx.extraGroups =
-      optional (cfg.ci.serveReports.enable && cfg.ci.enable) "radicle";
+    # serve it. Read-only -- nginx never writes there. Only when nginx runs: the
+    # attribute alone would declare an nginx account with no group.
+    users.users.nginx = mkIf cfg.ci.serveReports.enable {
+      extraGroups = [ "radicle" ];
+    };
 
 
     # Signs release commits with the node's key. A radicle key is an ed25519 SSH
