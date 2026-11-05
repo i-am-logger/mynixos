@@ -12,20 +12,14 @@
         default = { };
         type = lib.types.attrsOf (lib.types.submodule ({ name, ... }: {
           options = {
-            secret = lib.mkOption {
-              type = lib.types.nonEmptyStr;
-              default = "signing/${name}/key";
-              description = ''
-                The sops secret holding the private key. It must exist in the
-                sops file before this service is declared, because activation
-                fails on a secret it cannot decrypt.
-              '';
-            };
-
             user = lib.mkOption {
               type = lib.types.nonEmptyStr;
               default = "signing-${name}";
-              description = "The account the handler runs as. Nothing else should use it.";
+              description = ''
+                The account that generates the key and runs the handler. Nothing else
+                should use it. The key is at /var/lib/<user>/key, readable only by this
+                account, and the public key beside it at key.pub, readable by anyone.
+              '';
             };
 
             clients = lib.mkOption {

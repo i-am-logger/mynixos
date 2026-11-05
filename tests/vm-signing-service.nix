@@ -2,7 +2,7 @@
 # other way to the key is closed to the accounts on the machine.
 #
 # tests/signing-service.nix proves the unit's shape. This proves what only a
-# running system can: sops-install-secrets really delivers the key, LoadCredential
+# running system can: the machine really generates and keeps the key, LoadCredential
 # really hands it to the handler, the confinement leaves a handler able to read a
 # repository under a home directory it can't otherwise reach, and the paths a
 # client would try really refuse it. Each refusal has a control showing the path
@@ -22,25 +22,6 @@ let
 
   socket = "/run/signing/tool.sock";
   repo = "/home/alice/repo";
-
-  # Made at build time and used only here. It sits in the store, which is what
-  # allowSecretsInStore is set for below.
-  keys = pkgs.runCommand "signing-service-test-keys"
-    { nativeBuildInputs = [ pkgs.age pkgs.openssh pkgs.sops ]; } ''
-    export HOME=$TMPDIR
-    mkdir -p $out
-    age-keygen -o $out/age.key
-    ssh-keygen -q -t ed25519 -N "" -C "" -f key
-    cp key.pub $out/key.pub
-    {
-      echo "signing:"
-      echo "  tool:"
-      echo "    key: |"
-      sed 's/^/      /' key
-    } > plain.yaml
-    sops --encrypt --age "$(age-keygen -y $out/age.key)" \
-      --input-type yaml --output-type yaml plain.yaml > $out/secrets.yaml
-  '';
 
   # Signs a tag only if the repository holds the object it points at.
   handler = pkgs.writeShellApplication {
@@ -115,24 +96,11 @@ pkgs.testers.runNixOSTest {
     };
 
     environment.systemPackages = [ client pkgs.acl pkgs.git pkgs.openssh pkgs.socat ];
-    # sops-nix refuses a store path for the age key, so it is placed at a runtime
-    # path before sops-install-secrets runs.
-    system.activationScripts = {
-      placeAgeKey.text = "install -D -m 0400 ${keys}/age.key /var/lib/sops-test/age.key";
-      setupSecrets.deps = [ "placeAgeKey" ];
-    };
-
 
     my = {
       system.enable = true;
       system.hostname = "machine";
       theming.enable = false;
-      secrets = {
-        enable = true;
-        allowSecretsInStore = true;
-        defaultSopsFile = "${keys}/secrets.yaml";
-        ageKeyFile = "/var/lib/sops-test/age.key";
-      };
       infra.signing.services.tool = {
         inherit handler;
         clients = [ "alice" ];
@@ -144,6 +112,7 @@ pkgs.testers.runNixOSTest {
   testScript = ''
     machine.wait_for_unit("multi-user.target")
     machine.wait_for_unit("signing-tool.socket")
+    machine.wait_for_unit("signing-tool-keygen.service")
 
     alice = lambda c: f"su - alice -c '{c}'"
     bob = lambda c: f"su - bob -c '{c}'"
@@ -158,10 +127,10 @@ pkgs.testers.runNixOSTest {
             "git config user.email alice@example.test",
             "git config gpg.format ssh",
             "git config gpg.ssh.program fixture-client",
-            "git config user.signingkey ${keys}/key.pub",
+            "git config user.signingkey /var/lib/signing-tool/key.pub",
             "git commit -q --allow-empty -m first",
             "git tag -s -m one v1",
-            "(printf \"alice@example.test \"; cat ${keys}/key.pub) > ~/signers",
+            "(printf \"alice@example.test \"; cat /var/lib/signing-tool/key.pub) > ~/signers",
             "git config gpg.ssh.allowedSignersFile ~/signers",
         ])))
         out = machine.succeed(alice("cd repo && git verify-tag v1 2>&1"))
@@ -169,7 +138,7 @@ pkgs.testers.runNixOSTest {
 
     with subtest("the handler decides: it refuses an object the repository lacks"):
         machine.succeed(alice("printf \"object 0000000000000000000000000000000000000000\\n\" > ~/bogus"))
-        machine.fail(alice("fixture-client -Y sign -n git -f ${keys}/key.pub ~/bogus"))
+        machine.fail(alice("fixture-client -Y sign -n git -f /var/lib/signing-tool/key.pub ~/bogus"))
         machine.succeed("journalctl --no-pager | grep -F 'refused: no such object'")
 
     with subtest("the handler runs as its own account and sees only what is listed"):
@@ -183,11 +152,12 @@ pkgs.testers.runNixOSTest {
         assert "user:alice:rw-" in acl and "user:bob" not in acl, acl
         machine.fail(bob("printf x | socat - UNIX-CONNECT:${socket}"))
 
-    with subtest("the key at rest is closed to a client"):
-        secret = machine.succeed("readlink -f /run/secrets/signing/tool/key").strip()
-        machine.succeed(f"grep -q 'OPENSSH PRIVATE KEY' {secret}")
-        machine.fail(alice(f"cat {secret}"))
-        machine.fail(alice("cat /run/secrets/signing/tool/key"))
+    with subtest("the key at rest is closed to a client, and its public half isn't"):
+        machine.succeed("grep -q 'OPENSSH PRIVATE KEY' /var/lib/signing-tool/key")
+        assert machine.succeed("stat -c '%a %U' /var/lib/signing-tool/key").strip() == "400 signing-tool"
+        machine.fail(alice("cat /var/lib/signing-tool/key"))
+        machine.fail(bob("cat /var/lib/signing-tool/key"))
+        machine.succeed(bob("ssh-keygen -lf /var/lib/signing-tool/key.pub"))
 
     with subtest("the key in use is closed to a client"):
         # An open connection keeps one handler alive, holding its credential.
@@ -212,8 +182,21 @@ pkgs.testers.runNixOSTest {
         machine.fail(alice(f"ls /proc/{pid}/fd/"))
         machine.succeed("systemctl stop held-connection")
 
-    with subtest("the key reached no world-readable place"):
-        body = machine.succeed("sed -n 2p /run/secrets/signing/tool/key").strip()
-        machine.fail(f"grep -rFl -- '{body}' /etc /var/lib /tmp /var/tmp /home")
+    with subtest("the key reached no other place"):
+        body = machine.succeed("sed -n 2p /var/lib/signing-tool/key").strip()
+        machine.fail(f"grep -rFl --exclude-dir=signing-tool -- '{body}' /etc /var/lib /tmp /var/tmp /home")
+
+    with subtest("the machine keeps one key, across a restart and a reboot"):
+        fingerprint = lambda: machine.succeed("ssh-keygen -lf /var/lib/signing-tool/key.pub").strip()
+        first = fingerprint()
+        machine.succeed("systemctl restart signing-tool-keygen.service")
+        assert fingerprint() == first, "restarting the generator made a new key"
+        machine.shutdown()
+        machine.start()
+        machine.wait_for_unit("signing-tool-keygen.service")
+        assert fingerprint() == first, "a reboot made a new key"
+        machine.succeed(alice("cd repo && git tag -s -m three v3"))
+        out = machine.succeed(alice("cd repo && git verify-tag v3 2>&1"))
+        assert 'Good "git" signature' in out, out
   '';
 }

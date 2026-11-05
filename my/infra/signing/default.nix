@@ -1,9 +1,10 @@
 # Signing services: see ./options.nix for the interface.
 #
-# The key is root-owned at rest and reaches the handler through LoadCredential,
-# in a directory only the service's account can open. A client gets a connection
-# and nothing else, so it can ask for a signature but cannot read the key or sign
-# without the handler.
+# The machine generates each key, as the service's own account, the first time it
+# is needed, and keeps it under /var/lib. A client gets a connection and nothing
+# else, so it can ask for a signature but cannot read the key or sign without the
+# handler. The handler gets the key through LoadCredential, in a directory only
+# its account can open.
 #
 # This separates accounts, and root is on the other side of that line: anything
 # that can deploy a system configuration on this host can reach the key.
@@ -16,14 +17,54 @@ let
 
   socketPath = name: "/run/signing/${name}.sock";
   clientAcl = svc: concatMapStringsSep " " (client: "-m u:${client}:rw") svc.clients;
+
+  confinement = {
+    UMask = "0077";
+    LimitCORE = 0;
+    CapabilityBoundingSet = "";
+    NoNewPrivileges = true;
+    PrivateNetwork = true;
+    RestrictAddressFamilies = "AF_UNIX";
+    ProtectSystem = "strict";
+    ProtectHome = "tmpfs";
+    PrivateTmp = true;
+    PrivateDevices = true;
+    PrivateIPC = true;
+    ProtectProc = "invisible";
+    ProcSubset = "pid";
+    ProtectClock = true;
+    ProtectControlGroups = true;
+    ProtectHostname = true;
+    ProtectKernelLogs = true;
+    ProtectKernelModules = true;
+    ProtectKernelTunables = true;
+    KeyringMode = "private";
+    LockPersonality = true;
+    MemoryDenyWriteExecute = true;
+    RestrictNamespaces = true;
+    RestrictRealtime = true;
+    RestrictSUIDSGID = true;
+    SystemCallArchitectures = "native";
+    SystemCallFilter = [ "@system-service" "~@privileged @resources" ];
+  };
+
+  # The public half is moved into place first, so a key at its path always has one.
+  keygen = name: pkgs.writeShellScript "signing-${name}-keygen" ''
+    set -eu
+    cd "$STATE_DIRECTORY"
+    if [ ! -e key ]; then
+      ${pkgs.coreutils}/bin/rm -f key.new key.new.pub
+      ${pkgs.openssh}/bin/ssh-keygen -q -t ed25519 -N "" -C ${escapeShellArg name} -f key.new
+      ${pkgs.coreutils}/bin/chmod 0644 key.new.pub
+      ${pkgs.coreutils}/bin/chmod 0400 key.new
+      ${pkgs.coreutils}/bin/mv key.new.pub key.pub
+      ${pkgs.coreutils}/bin/mv key.new key
+    fi
+  '';
 in
 {
   config = mkIf (cfg.services != { }) {
     assertions = [
-      {
-        assertion = config.my.secrets.enable;
-        message = "my.infra.signing delivers its keys through sops and requires my.secrets.enable = true.";
-      }
       {
         # LoadCredential builds its directory by mounting, which a rootless
         # container has no capability for; see my/infra/radicle/default.nix.
@@ -50,9 +91,8 @@ in
       groups = mapAttrs' (_: svc: nameValuePair svc.user { }) cfg.services;
     };
 
-    # Root-owned, mode 0400: systemd reads LoadCredential sources as root before
-    # User= drops privileges.
-    sops.secrets = mapAttrs' (_: svc: nameValuePair svc.secret { mode = "0400"; }) cfg.services;
+    my.system.persistence.features.systemDirectories =
+      mapAttrsToList (_: svc: "/var/lib/${svc.user}") cfg.services;
 
     systemd = {
       sockets = mapAttrs'
@@ -72,53 +112,45 @@ in
         })
         cfg.services;
 
-      services = mapAttrs'
-        (name: svc: nameValuePair "signing-${name}@" {
-          description = "Signing service ${name}, one connection";
-          # A switch must not cut a signature off; the next connection gets the
-          # new configuration anyway.
-          restartIfChanged = false;
-          stopIfChanged = false;
-          serviceConfig = {
-            ExecStart = escapeShellArgs ([ (getExe svc.handler) ] ++ svc.handlerArgs);
-            User = svc.user;
-            Group = svc.user;
-            StandardInput = "socket";
-            StandardOutput = "socket";
-            StandardError = "journal";
-            LoadCredential = "signing-key:${config.sops.secrets.${svc.secret}.path}";
-            BindReadOnlyPaths = svc.readOnlyPaths;
+      services = mkMerge (mapAttrsToList
+        (name: svc: {
+          "signing-${name}-keygen" = {
+            description = "Signing service ${name}, generates its key once";
+            wantedBy = [ "multi-user.target" ];
+            restartIfChanged = false;
+            serviceConfig = confinement // {
+              Type = "oneshot";
+              RemainAfterExit = true;
+              ExecStart = keygen name;
+              User = svc.user;
+              Group = svc.user;
+              StateDirectory = svc.user;
+              # The public key is for anyone; the private key is 0400.
+              StateDirectoryMode = "0755";
+            };
+          };
 
-            UMask = "0077";
-            LimitCORE = 0;
-            CapabilityBoundingSet = "";
-            NoNewPrivileges = true;
-            PrivateNetwork = true;
-            RestrictAddressFamilies = "AF_UNIX";
-            ProtectSystem = "strict";
-            ProtectHome = "tmpfs";
-            PrivateTmp = true;
-            PrivateDevices = true;
-            PrivateIPC = true;
-            ProtectProc = "invisible";
-            ProcSubset = "pid";
-            ProtectClock = true;
-            ProtectControlGroups = true;
-            ProtectHostname = true;
-            ProtectKernelLogs = true;
-            ProtectKernelModules = true;
-            ProtectKernelTunables = true;
-            KeyringMode = "private";
-            LockPersonality = true;
-            MemoryDenyWriteExecute = true;
-            RestrictNamespaces = true;
-            RestrictRealtime = true;
-            RestrictSUIDSGID = true;
-            SystemCallArchitectures = "native";
-            SystemCallFilter = [ "@system-service" "~@privileged @resources" ];
+          "signing-${name}@" = {
+            description = "Signing service ${name}, one connection";
+            requires = [ "signing-${name}-keygen.service" ];
+            after = [ "signing-${name}-keygen.service" ];
+            # A switch must not cut a signature off; the next connection gets the
+            # new configuration anyway.
+            restartIfChanged = false;
+            stopIfChanged = false;
+            serviceConfig = confinement // {
+              ExecStart = escapeShellArgs ([ (getExe svc.handler) ] ++ svc.handlerArgs);
+              User = svc.user;
+              Group = svc.user;
+              StandardInput = "socket";
+              StandardOutput = "socket";
+              StandardError = "journal";
+              LoadCredential = "signing-key:/var/lib/${svc.user}/key";
+              BindReadOnlyPaths = svc.readOnlyPaths;
+            };
           };
         })
-        cfg.services;
+        cfg.services);
     };
   };
 }
