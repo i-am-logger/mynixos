@@ -277,5 +277,10 @@ pkgs.testers.runNixOSTest {
         machine.succeed(alice("cd repo && git tag -s -m three v3"))
         out = machine.succeed(alice("cd repo && git verify-tag v3 2>&1"))
         assert 'Good "git" signature' in out, out
+
+    with subtest("a stopped socket leaves no file behind"):
+        machine.succeed("test -S /run/signing/beta.sock")
+        machine.succeed("systemctl stop signing-beta.socket")
+        machine.fail("test -e /run/signing/beta.sock")
   '';
 }

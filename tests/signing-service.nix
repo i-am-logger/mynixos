@@ -93,6 +93,10 @@ in
       && lib.hasSuffix "setfacl -m u:alice:rw /run/signing/tool.sock" socket.ExecStartPost)
     "the socket is not closed to everyone but the named clients";
 
+  signing-service-socket-removed-on-stop = check "socket-removed-on-stop"
+    (socket.RemoveOnStop or false)
+    "a stopped socket, as when its instance leaves the configuration, keeps its file";
+
   signing-service-confined = check "confined"
     (unit.PrivateNetwork && unit.ProtectHome == "tmpfs" && unit.ProtectSystem == "strict"
       && unit.CapabilityBoundingSet == "" && unit.NoNewPrivileges)

@@ -119,6 +119,8 @@ in
             SocketUser = "root";
             SocketGroup = "root";
             SocketMode = "0600";
+            # An instance taken out of the configuration leaves no socket file behind.
+            RemoveOnStop = true;
             ExecStartPost = mkIf (svc.clients != [ ])
               "${pkgs.acl}/bin/setfacl ${clientAcl svc} ${socketPath instance}";
           };
