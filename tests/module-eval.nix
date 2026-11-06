@@ -9,6 +9,9 @@ let
   testLib = import ./lib.nix { inherit lib nixpkgs system self inputs; };
   inherit (testLib) pkgs specialArgs baseModules baseConfig;
 
+  herdrSession = import ../my/users/apps/multiplexers/herdr/session.nix { inherit lib pkgs; };
+  plain = builtins.unsafeDiscardStringContext;
+
   # Helper: evaluate a NixOS system with the mynixos module and given config.
   #
   # These checks used to force `networking.hostName` alone, which is set by the
@@ -357,8 +360,34 @@ in
       let hm = config.home-manager.users.muxuser; in
       builtins.any (p: (p.pname or "") == "herdr") hm.home.packages
       && hm.xdg.configFile ? "herdr/config.toml"
+      && lib.all (init: lib.hasInfix (plain herdrSession.shellInit) (plain init))
+        [ hm.programs.bash.initExtra hm.programs.zsh.initContent ]
       && !hm.programs.zellij.enable
       && !hm.programs.tmux.enable);
+
+  # What bash and zsh run at start, run: in a herdr pane it exports the workspace
+  # id and label, or the id alone where herdr answers nothing; outside one, nothing.
+  herdr-releasable-session =
+    let
+      init = pkgs.writeText "herdr-shell-init" herdrSession.shellInit;
+      labelled = pkgs.writeShellScript "fake-herdr" ''
+        [ "$1 $2 $3" = "workspace get w7" ] || exit 2
+        echo '{"result":{"workspace":{"workspace_id":"w7","label":"two words"}}}'
+      '';
+      silent = pkgs.writeShellScript "fake-herdr-down" "exit 1";
+      run = shell: env: "env -i ${env} ${shell} -c '. ${init}; printf %s \"\${RELEASABLE_SESSION-unset}\"'";
+    in
+    pkgs.runCommand "module-eval-herdr-releasable-session" { } ''
+      for sh in ${pkgs.bash}/bin/bash ${pkgs.zsh}/bin/zsh; do
+        got=$(${run "$sh" "HERDR_WORKSPACE_ID=w7 HERDR_BIN_PATH=${labelled}"})
+        [ "$got" = "w7 two words" ] || { echo "FAIL: $sh in a pane: $got"; exit 1; }
+        got=$(${run "$sh" "HERDR_WORKSPACE_ID=w7 HERDR_BIN_PATH=${silent}"})
+        [ "$got" = "w7" ] || { echo "FAIL: $sh, herdr answering nothing: $got"; exit 1; }
+        got=$(${run "$sh" ""})
+        [ "$got" = "unset" ] || { echo "FAIL: $sh outside herdr: $got"; exit 1; }
+      done
+      echo "PASS: herdr-releasable-session" > $out
+    '';
 
   # The point of the whole arrangement: terminal.multiplexer is declared in four
   # files (my/users/terminal/options.nix plus one per multiplexer), and only

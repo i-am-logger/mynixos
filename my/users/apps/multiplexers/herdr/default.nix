@@ -227,6 +227,9 @@ let
   configFor = paths: userCfg:
     (pkgs.formats.toml { }).generate "herdr-config.toml" (settingsFor paths userCfg);
 
+
+  # RELEASABLE_SESSION for shells in a herdr pane: see ./session.nix.
+  inherit (import ./session.nix { inherit lib pkgs; }) shellInit;
 in
 {
   config = {
@@ -289,6 +292,9 @@ in
             # own settings screen cannot save to it, and neither can a plugin's
             # installer. Settings changes come back here as Nix.
             xdg.configFile."herdr/config.toml".source = configFor { inherit home stateHome; } userCfg;
+
+            programs.bash.initExtra = shellInit;
+            programs.zsh.initContent = shellInit;
 
             # Runs after linkGeneration so a new config.toml is in place first.
             # Every plugin is listed, on or off, so turning one off unlinks it.
