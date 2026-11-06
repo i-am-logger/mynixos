@@ -142,6 +142,32 @@ in
     )
     "two checkouts did not become two instances of the one pre-release key, each with its own socket and history";
 
+  # The machine declares its signer to releasable: one entry per repository, and
+  # nothing else, read back as releasable reads it.
+  signing-service-releasable-signer-file = check "releasable-signer-file"
+    (
+      let
+        cfg = withReleasable { alpha = "/home/alice/src/alpha"; beta = "/srv/b\"eta"; };
+        file = cfg.environment.etc."xdg/releasable/signing.toml";
+      in
+      builtins.fromTOML file.text == {
+        format = "ssh";
+        key = "/var/lib/signing-pre-release/key.pub";
+        repository = [
+          { git-common-dir = "/home/alice/src/alpha/.git"; socket = "/run/signing/alpha.sock"; }
+          { git-common-dir = "/srv/b\"eta/.git"; socket = "/run/signing/beta.sock"; }
+        ];
+      }
+      && file.target == "xdg/releasable/signing.toml"
+    )
+    "the signer file does not declare exactly the key and each repository's git directory and socket";
+
+  # releasable refuses a signer file that names one git directory twice.
+  signing-service-releasable-checkout-once = check "releasable-checkout-once"
+    (lib.any (lib.hasInfix "named more than once")
+      (ourFailures (withReleasable { one = "/srv/tool"; two = "/srv/tool"; })))
+    "a checkout named twice raised no assertion";
+
   # An instance name becomes a unit name and a socket file name.
   signing-service-instance-names = check "instance-names"
     (
@@ -167,6 +193,7 @@ in
       !(plain.users.users ? signing-tool)
       && !(plain.systemd.sockets ? signing-tool)
       && plain.my.infra.signing.services == { }
+      && !(plain.environment.etc ? "xdg/releasable/signing.toml")
     )
     "a host declaring no signing service still gained part of one";
 }
