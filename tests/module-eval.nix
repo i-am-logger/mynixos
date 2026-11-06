@@ -2525,7 +2525,7 @@ in
         enable = true;
         allowedTCPPorts = [ 9999 ];
       };
-      # What platforms/oci.nix does to every role.
+      # What platforms/oci-variant.nix does to every role.
       services.openssh.enable = lib.mkForce false;
     }
     (config:

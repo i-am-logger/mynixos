@@ -48,7 +48,7 @@ in
 
     # The port belongs to the feature that needs it: sshd's reachability on the
     # tailnet is opened HERE, not in my/network/tailscale, and only while sshd is
-    # actually running. A role that switches sshd off (platforms/oci.nix) then
+    # actually running. A role that switches sshd off (platforms/oci-variant.nix) then
     # advertises nothing on tailscale0 — which is what the container roles want.
     #
     # THE GATE MATTERS. Contributing to `my.network.tailscale.allowedTCPPorts`

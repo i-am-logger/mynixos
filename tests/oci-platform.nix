@@ -1,4 +1,4 @@
-# What platforms/oci.nix has to undo, and the guard that makes a silent failure
+# What platforms/oci-variant.nix has to undo, and the guard that makes a silent failure
 # loud.
 #
 # tests/mksystem.nix covers the DISPATCH -- which evaluator runs, which
@@ -27,7 +27,7 @@ let
       (if cond then "echo 'PASS: ${name}' > $out"
       else builtins.throw "FAIL: ${name} -- ${detail}");
 
-  # A role takes no extraModules: platforms/oci.nix supplies the stateVersion
+  # A role takes no extraModules: platforms/oci-variant.nix supplies the stateVersion
   # and the docker-container profile relaxes the `fileSystems."/"` requirement.
   # A role needing a prelude here would be a role a consumer could not write.
   # A machine seen AS ITS CONTAINER IMAGE. `virtualisation.ociVariant` is the
@@ -84,7 +84,7 @@ in
       )
       ("the guard must exist in a role, run after firewall.service, be pulled in by "
         + "multi-user.target and actually check something -- and must NOT be a nixpkgs "
-        + "default, or this check is measuring upstream rather than platforms/oci.nix");
+        + "default, or this check is measuring upstream rather than platforms/oci-variant.nix");
 
   # Not disabled, enforced. Switching the firewall off would make the guard
   # pointless and was explicitly rejected: if a role needs a port, the feature

@@ -26,7 +26,7 @@
 # and nothing afterwards is different. A failed unit is visible in
 # `systemctl --failed` and stays visible.
 #
-# Modelled on platforms/oci.nix's `firewall-enforced`, which exists for the
+# Modelled on platforms/oci-variant.nix's `firewall-enforced`, which exists for the
 # same reason: systemd SKIPS a unit whose condition is unmet, and that silence
 # read as success.
 { pkgs, ... }:

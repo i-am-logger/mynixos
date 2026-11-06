@@ -291,7 +291,7 @@
             inherit lib nixpkgs system self inputs;
           };
 
-          # What platforms/oci.nix has to undo, and the guard that turns a
+          # What platforms/oci-variant.nix has to undo, and the guard that turns a
           # silently-skipped firewall into a failure.
           ociPlatformTests = import ./tests/oci-platform.nix {
             inherit lib nixpkgs system self inputs;

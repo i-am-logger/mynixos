@@ -12,14 +12,9 @@
 # here: nothing knows a container is possible until someone reads
 # `system.build.image`.
 #
-# WHAT THIS REPLACED. `oci` used to be a third value of mkSystem's `platform`,
-# beside `linux` and `darwin` -- so a machine destined for a container was
-# CONSTRUCTED differently rather than EXPRESSED differently, and
-# platforms/oci.nix had to import platforms/linux.nix wholesale to get back the
-# option declarations a `mkIf false` still requires. lib/mkSystem.nix said so
-# itself: "'linux'/'darwin' are operating systems while 'oci' is an output
-# format". Under a variant the base already IS the Linux system, so the
-# wholesale import and the reasoning that justified it are both gone.
+# The variant is applied on top of the Linux system this machine already is, so
+# every option it sets is already declared, and a container is expressed by
+# what the variant overrides rather than constructed as a platform of its own.
 { config, lib, extendModules, ... }:
 
 let

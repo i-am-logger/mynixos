@@ -1,6 +1,6 @@
 # `system.build.image`: the role system, streamed as an OCI image.
 #
-# Imported only by platforms/oci.nix, so it exists exactly where it makes
+# Imported only by platforms/oci-variant.nix, so it exists exactly where it makes
 # sense -- the same rule that keeps my.security off darwin.
 #
 # streamLayeredImage rather than buildImage or the docker-container profile's

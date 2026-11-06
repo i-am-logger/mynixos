@@ -188,7 +188,7 @@
               Address already in use`. Which node loses is decided by boot
               order, so it moves.
 
-              Roles therefore default to 0 (see platforms/oci.nix) rather than
+              Roles therefore default to 0 (see platforms/oci-variant.nix) rather than
               being assigned numbers by hand: there is nothing to coordinate and
               nothing to remember.
             '';

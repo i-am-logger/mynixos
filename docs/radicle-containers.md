@@ -119,7 +119,7 @@ build a *reference* fleet whose identities have no surviving private halves,
 tagged `reference` rather than `latest` so an image built for nobody cannot be
 mistaken for a deployment.
 
-### What `platforms/oci.nix` has to undo
+### What `platforms/oci-variant.nix` has to undo
 
 It imports `platforms/linux.nix` **wholesale**. That is deliberate and not
 wasteful: `mkIf false` still requires an option to be *declared*, so a role that
@@ -195,7 +195,7 @@ role without that capability therefore comes up reporting `running`, with zero
 failed units, and an empty ruleset. Nothing anywhere says the packet filter did
 not load.
 
-`platforms/oci.nix` adds a `firewall-enforced.service` that asserts the filter
+`platforms/oci-variant.nix` adds a `firewall-enforced.service` that asserts the filter
 actually loaded, so the silence becomes a failure. The container is given
 `--cap-add=NET_ADMIN` for this reason as much as for `tailscaled`.
 
