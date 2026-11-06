@@ -16,8 +16,14 @@ with lib;
 let
   cfg = config.my.infra.signing;
 
-  socketPath = name: "/run/signing/${name}.sock";
+  socketPath = instance: "/run/signing/${instance}.sock";
   clientAcl = svc: concatMapStringsSep " " (client: "-m u:${client}:rw") svc.clients;
+
+  # Every instance of every service, with the service it is a way to.
+  instances = concatLists (mapAttrsToList
+    (name: svc: mapAttrsToList (instance: inst: { inherit name svc instance inst; }) svc.instances)
+    cfg.services);
+  instanceNames = map (i: i.instance) instances;
 
   confinement = {
     UMask = "0077";
@@ -64,6 +70,8 @@ let
   '';
 in
 {
+  imports = [ ./releasable.nix ];
+
   config = mkIf (cfg.services != { }) {
     assertions = [
       {
@@ -79,7 +87,11 @@ in
           message = "my.infra.signing.services.${name}.clients names `${client}`, which is not an account on this host.";
         })
         svc.clients)
-      cfg.services);
+      cfg.services)
+    ++ [{
+      assertion = length (unique instanceNames) == length instanceNames;
+      message = "my.infra.signing: an instance name is used by more than one service: ${concatStringsSep ", " instanceNames}.";
+    }];
 
     users = {
       users = mapAttrs'
@@ -96,22 +108,22 @@ in
       mapAttrsToList (_: svc: "/var/lib/${svc.user}") cfg.services;
 
     systemd = {
-      sockets = mapAttrs'
-        (name: svc: nameValuePair "signing-${name}" {
-          description = "Signing service ${name}";
+      sockets = listToAttrs (map
+        ({ name, svc, instance, ... }: nameValuePair "signing-${instance}" {
+          description = "Signing service ${name}, instance ${instance}";
           wantedBy = [ "sockets.target" ];
           socketConfig = {
-            ListenStream = socketPath name;
+            ListenStream = socketPath instance;
             # One handler per connection, so a request sees no state from another.
             Accept = true;
             SocketUser = "root";
             SocketGroup = "root";
             SocketMode = "0600";
             ExecStartPost = mkIf (svc.clients != [ ])
-              "${pkgs.acl}/bin/setfacl ${clientAcl svc} ${socketPath name}";
+              "${pkgs.acl}/bin/setfacl ${clientAcl svc} ${socketPath instance}";
           };
         })
-        cfg.services;
+        instances);
 
       services = mkMerge (mapAttrsToList
         (name: svc: {
@@ -130,9 +142,12 @@ in
               StateDirectoryMode = "0755";
             };
           };
-
-          "signing-${name}@" = {
-            description = "Signing service ${name}, one connection";
+        })
+        cfg.services
+      ++ map
+        ({ name, svc, instance, inst }: {
+          "signing-${instance}@" = {
+            description = "Signing service ${name}, instance ${instance}, one connection";
             requires = [ "signing-${name}-keygen.service" ];
             after = [ "signing-${name}-keygen.service" ];
             # A switch must not cut a signature off; the next connection gets the
@@ -141,18 +156,18 @@ in
             stopIfChanged = false;
             inherit (svc) path;
             serviceConfig = confinement // {
-              ExecStart = escapeShellArgs ([ (getExe svc.handler) ] ++ svc.handlerArgs);
+              ExecStart = escapeShellArgs ([ (getExe svc.handler) ] ++ inst.handlerArgs);
               User = svc.user;
               Group = svc.user;
               StandardInput = "socket";
               StandardOutput = "socket";
               StandardError = "journal";
               LoadCredential = "signing-key:/var/lib/${svc.user}/key";
-              BindReadOnlyPaths = svc.readOnlyPaths;
+              BindReadOnlyPaths = inst.readOnlyPaths;
             };
           };
         })
-        cfg.services);
+        instances);
     };
   };
 }

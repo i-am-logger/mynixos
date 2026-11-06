@@ -3,12 +3,71 @@
 # key. An options FRAGMENT loaded through mkOptionsModule from platforms/linux.nix.
 { lib, ... }:
 
+let
+  # Checked whenever the attribute set is read: a name becomes a unit name and
+  # a socket file name, so it can't hold a `/` or an `@`.
+  names = what: attrs:
+    let
+      bad = lib.filter (name: builtins.match "[a-z][a-z0-9-]*" name == null) (lib.attrNames attrs);
+    in
+    if bad == [ ] then attrs
+    else throw "${what}: ${lib.concatStringsSep ", " bad}: a name is lower case letters, digits and `-`, starting with a letter.";
+in
 {
   # Type-only second declaration of `my.infra`; see my/infra/radicle/options.nix.
   infra = lib.mkOption {
     type = lib.types.submodule {
+      options.signing.releasable = lib.mkOption {
+        description = ''
+          Pre-release signing for repositories released with releasable: the
+          signing service `pre-release`, whose one key signs for every repository
+          named here, each through an instance of its own. A repository's policy
+          signs with key `/var/lib/signing-pre-release/key.pub` and program
+          `releasable signing client --socket /run/signing/<name>.sock`.
+        '';
+        default = { };
+        type = lib.types.submodule {
+          options = {
+            # No default: the handler decides what a signature means, and this
+            # repository has no flake input to take it from.
+            package = lib.mkOption {
+              type = lib.types.package;
+              description = ''
+                The releasable package. Each instance runs
+                `releasable signing handle --repo <checkout>/.git`, which signs
+                only a pre-release, or a release commit, made from a commit that
+                checkout's release loop recorded green.
+              '';
+            };
+
+            repositories = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.strMatching "/.*[^/]");
+              default = { };
+              apply = names "my.infra.signing.releasable.repositories";
+              example = { tool = "/home/alice/src/tool"; };
+              description = ''
+                Each repository's instance name and its main checkout, by
+                absolute path: a checkout whose `.git` is a directory, not a
+                linked worktree, whose `.git` is a file. An instance reads only
+                its own checkout's `.git`, read-only.
+              '';
+            };
+
+            clients = lib.mkOption {
+              type = lib.types.listOf lib.types.nonEmptyStr;
+              default = [ ];
+              example = [ "alice" ];
+              description = "Accounts that may connect to every repository's socket.";
+            };
+          };
+        };
+      };
+
       options.signing.services = lib.mkOption {
-        description = "Signing services, each with its own account, key and socket at /run/signing/<name>.sock";
+        description = ''
+          Signing services, each with its own account and key, used through the
+          sockets of its instances, at /run/signing/<instance>.sock.
+        '';
         default = { };
         type = lib.types.attrsOf (lib.types.submodule ({ name, ... }: {
           options = {
@@ -27,9 +86,9 @@
               default = [ ];
               example = [ "alice" ];
               description = ''
-                Accounts that may connect to the socket. Access is a named ACL
-                entry rather than a group, so it reaches a client's running
-                processes without a new login.
+                Accounts that may connect to every instance's socket. Access is a
+                named ACL entry rather than a group, so it reaches a client's
+                running processes without a new login.
               '';
             };
 
@@ -46,12 +105,6 @@
               '';
             };
 
-            handlerArgs = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ ];
-              description = "Arguments passed to the handler.";
-            };
-
             path = lib.mkOption {
               type = lib.types.listOf lib.types.package;
               default = [ ];
@@ -63,13 +116,33 @@
               '';
             };
 
-            readOnlyPaths = lib.mkOption {
-              type = lib.types.listOf lib.types.nonEmptyStr;
-              default = [ ];
+            instances = lib.mkOption {
               description = ''
-                Paths the handler can read. /home is empty to it and it has no
-                network, so what it checks before signing has to be listed here.
+                The ways to the key: each instance is a socket at
+                /run/signing/<instance>.sock whose connections run the handler
+                with that instance's arguments, seeing only that instance's
+                paths. An instance name is unique across every service.
               '';
+              default = { };
+              apply = names "my.infra.signing.services.${name}.instances";
+              type = lib.types.attrsOf (lib.types.submodule {
+                options = {
+                  handlerArgs = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    description = "Arguments passed to the handler.";
+                  };
+
+                  readOnlyPaths = lib.mkOption {
+                    type = lib.types.listOf lib.types.nonEmptyStr;
+                    default = [ ];
+                    description = ''
+                      Paths the handler can read. /home is empty to it and it has no
+                      network, so what it checks before signing has to be listed here.
+                    '';
+                  };
+                };
+              });
             };
           };
         }));

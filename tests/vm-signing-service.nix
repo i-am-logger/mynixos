@@ -9,6 +9,9 @@
 # exists, so a typo can't pass as a refusal.
 #
 # The handler is a fixture: what a signature should require belongs to the tool.
+# Two checkouts under my.infra.signing.releasable show one key serving two
+# repositories, each through an instance of its own: its own socket, and a
+# handler that sees only that repository's history.
 #
 # Heavy (boots a VM, needs /dev/kvm) => `tests` output:
 #   nix build .#tests.<sys>.vm-signing-service -L
@@ -43,9 +46,9 @@ let
   };
 
   # What git runs as gpg.ssh.program: -Y sign -n <namespace> -f <key> <file>.
-  client = pkgs.writeShellApplication {
-    name = "fixture-client";
-    runtimeInputs = [ pkgs.openssh pkgs.socat ];
+  mkClient = name: socket: pkgs.writeShellApplication {
+    inherit name;
+    runtimeInputs = [ pkgs.netcat-openbsd pkgs.openssh ];
     text = ''
       # git runs this program to verify as well, and that needs no key.
       if [ "$2" != sign ]; then
@@ -53,10 +56,40 @@ let
       fi
       namespace=$4
       file=''${*: -1}
-      { echo "$namespace"; cat "$file"; } | socat - UNIX-CONNECT:${socket} > "$file.sig"
+      # -N ends the request at the end of input, then the reply is read until the
+      # handler closes the connection, however long the handler takes to start.
+      { echo "$namespace"; cat "$file"; } | nc -N -U ${socket} > "$file.sig"
       test -s "$file.sig"
     '';
   };
+  client = mkClient "fixture-client" socket;
+
+  # my.infra.signing.releasable runs `<package> signing handle --repo <checkout>/.git`.
+  # This stands in for releasable, with the same object check as the handler
+  # above against the repository it is given. It carries no git of its own:
+  # the service's PATH has to.
+  releasable = pkgs.writeShellApplication {
+    name = "releasable";
+    runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.openssh ];
+    text = ''
+      [ "$1 $2 $3" = "signing handle --repo" ] || { echo "unexpected arguments: $*" >&2; exit 2; }
+      gitdir=$4
+      readable=$(for key in /var/lib/signing-*/key; do if [ -r "$key" ]; then echo "$key"; fi; done)
+      echo "releasable-view repo=$gitdir home=[$(ls -A /home/alice)] uid=$(id -un) readable=[$readable]" >&2
+      work=$(mktemp -d)
+      IFS= read -r namespace
+      cat > "$work/payload"
+      object=$(awk '$1 == "object" { print $2; exit }' "$work/payload")
+      if ! git -c safe.directory='*' -C "$gitdir" cat-file -e "$object"; then
+        echo "refused: $gitdir has no such object" >&2
+        exit 1
+      fi
+      ssh-keygen -q -Y sign -n "$namespace" -f "$CREDENTIALS_DIRECTORY/signing-key" "$work/payload"
+      cat "$work/payload.sig"
+    '';
+  };
+  alphaClient = mkClient "alpha-client" "/run/signing/alpha.sock";
+  betaClient = mkClient "beta-client" "/run/signing/beta.sock";
 in
 pkgs.testers.runNixOSTest {
   name = "vm-signing-service";
@@ -95,7 +128,7 @@ pkgs.testers.runNixOSTest {
       bob = { isNormalUser = true; };
     };
 
-    environment.systemPackages = [ client pkgs.acl pkgs.git pkgs.openssh pkgs.socat ];
+    environment.systemPackages = [ client alphaClient betaClient pkgs.acl pkgs.git pkgs.openssh pkgs.socat ];
 
     my = {
       system.enable = true;
@@ -104,7 +137,12 @@ pkgs.testers.runNixOSTest {
       infra.signing.services.tool = {
         inherit handler;
         clients = [ "alice" ];
-        readOnlyPaths = [ "${repo}/.git" ];
+        instances.tool.readOnlyPaths = [ "${repo}/.git" ];
+      };
+      infra.signing.releasable = {
+        package = releasable;
+        repositories = { alpha = "/home/alice/alpha"; beta = "/home/alice/beta"; };
+        clients = [ "alice" ];
       };
     };
   };
@@ -147,6 +185,42 @@ pkgs.testers.runNixOSTest {
         out = machine.succeed("journalctl --no-pager | grep -F handler-view | tail -n 1")
         assert "home=[repo]" in out and "uid=signing-tool" in out, out
 
+    with subtest("each releasable checkout signs through its own socket, with the one pre-release key"):
+        machine.wait_for_unit("signing-pre-release-keygen.service")
+        for name in ["alpha", "beta"]:
+            machine.wait_for_unit(f"signing-{name}.socket")
+            machine.succeed(alice(" && ".join([
+                "umask 022",
+                f"git init -q {name}",
+                f"cd {name}",
+                "git config user.name alice",
+                "git config user.email alice@example.test",
+                "git config gpg.format ssh",
+                f"git config gpg.ssh.program {name}-client",
+                "git config user.signingkey /var/lib/signing-pre-release/key.pub",
+                f"git commit -q --allow-empty -m {name}",
+                "git tag -s -m one v1",
+                "(printf \"alice@example.test \"; cat /var/lib/signing-pre-release/key.pub) > ~/pre-release-signers",
+                "git config gpg.ssh.allowedSignersFile ~/pre-release-signers",
+            ])))
+            out = machine.succeed(alice(f"cd {name} && git verify-tag v1 2>&1"))
+            assert 'Good "git" signature' in out, out
+        machine.fail("test -e /var/lib/signing-alpha || test -e /var/lib/signing-beta")
+
+    with subtest("a releasable checkout's handler sees only its own history, and no other service's key"):
+        commit = machine.succeed(alice("git -C alpha rev-parse HEAD")).strip()
+        machine.succeed(alice(f"printf \"object {commit}\\n\" > ~/alpha-object"))
+        machine.fail(alice("beta-client -Y sign -n git -f /var/lib/signing-pre-release/key.pub ~/alpha-object"))
+        machine.succeed("journalctl --no-pager | grep -F 'refused: /home/alice/beta/.git has no such object'")
+        machine.succeed(alice("alpha-client -Y sign -n git -f /var/lib/signing-pre-release/key.pub ~/alpha-object"))
+        for name in ["alpha", "beta"]:
+            view = machine.succeed(
+                f"journalctl --no-pager | grep -F 'releasable-view repo=/home/alice/{name}/.git' | tail -n 1"
+            )
+            assert f"home=[{name}]" in view and "uid=signing-pre-release" in view, view
+            # signing-tool's key is on the machine and closed to it.
+            assert "readable=[/var/lib/signing-pre-release/key]" in view, view
+
     with subtest("a client can connect and an account not listed can't"):
         acl = machine.succeed("getfacl -p ${socket}")
         assert "user:alice:rw-" in acl and "user:bob" not in acl, acl
@@ -183,8 +257,13 @@ pkgs.testers.runNixOSTest {
         machine.succeed("systemctl stop held-connection")
 
     with subtest("the key reached no other place"):
-        body = machine.succeed("sed -n 2p /var/lib/signing-tool/key").strip()
-        machine.fail(f"grep -rFl --exclude-dir=signing-tool -- '{body}' /etc /var/lib /tmp /var/tmp /home")
+        # The key's first body line is the same in every unencrypted ed25519 key,
+        # and the next holds the public key; lines 4 and 5 are its own secret.
+        for line in [4, 5]:
+            body = machine.succeed(f"sed -n {line}p /var/lib/signing-tool/key").strip()
+            assert len(body) == 70, body
+            machine.succeed(f"grep -qF -- '{body}' /var/lib/signing-tool/key")
+            machine.fail(f"grep -rFl --exclude-dir=signing-tool -- '{body}' /etc /var/lib /tmp /var/tmp /home")
 
     with subtest("the machine keeps one key, across a restart and a reboot"):
         fingerprint = lambda: machine.succeed("ssh-keygen -lf /var/lib/signing-tool/key.pub").strip()

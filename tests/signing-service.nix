@@ -31,9 +31,19 @@ let
       my.infra.signing.services.tool = {
         inherit handler;
         clients = [ "alice" ];
+        instances.tool = { };
       };
     }
     extra);
+
+  withReleasable = repositories: evalWith {
+    users.users.alice = { isNormalUser = true; };
+    my.infra.signing.releasable = {
+      package = handler;
+      inherit repositories;
+      clients = [ "alice" ];
+    };
+  };
 
   ourFailures = cfg:
     map (a: a.message)
@@ -100,11 +110,59 @@ in
     )
     "a package listed in path did not reach the handler's PATH, or one not listed did";
 
+  # One key for every releasable repository, and an instance per repository: its
+  # own socket, running the handler against that repository's history alone.
+  signing-service-releasable-per-repository = check "releasable-per-repository"
+    (
+      let
+        cfg = withReleasable { alpha = "/home/alice/src/alpha"; beta = "/srv/beta"; };
+        svc = name: cfg.systemd.services."signing-${name}@";
+        args = name: (svc name).serviceConfig.ExecStart;
+        plain = builtins.unsafeDiscardStringContext;
+      in
+      lib.attrNames cfg.my.infra.signing.services == [ "pre-release" ]
+      && lib.hasSuffix "signing handle --repo /home/alice/src/alpha/.git" (args "alpha")
+      && lib.hasSuffix "signing handle --repo /srv/beta/.git" (args "beta")
+      && (svc "alpha").serviceConfig.BindReadOnlyPaths == [ "/home/alice/src/alpha/.git" ]
+      && (svc "beta").serviceConfig.BindReadOnlyPaths == [ "/srv/beta/.git" ]
+      && lib.all
+        (name: (svc name).serviceConfig.User == "signing-pre-release"
+        && (svc name).serviceConfig.LoadCredential == "signing-key:/var/lib/signing-pre-release/key"
+        && (svc name).requires == [ "signing-pre-release-keygen.service" ]) [ "alpha" "beta" ]
+      && cfg.systemd.sockets.signing-alpha.socketConfig.ListenStream == "/run/signing/alpha.sock"
+      && cfg.systemd.sockets.signing-beta.socketConfig.ListenStream == "/run/signing/beta.sock"
+      && lib.hasSuffix "setfacl -m u:alice:rw /run/signing/beta.sock" cfg.systemd.sockets.signing-beta.socketConfig.ExecStartPost
+      && !(cfg.systemd.services ? "signing-pre-release@")
+      && lib.hasInfix (plain "${pkgs.git}/bin") (plain (svc "beta").environment.PATH)
+      && ourFailures cfg == [ ]
+    )
+    "two checkouts did not become two instances of the one pre-release key, each with its own socket and history";
+
+  # An instance name becomes a unit name and a socket file name.
+  signing-service-instance-names = check "instance-names"
+    (
+      let
+        services = name: (withReleasable { ${name} = "/srv/tool"; }).my.infra.signing.services;
+        refused = name: !(builtins.tryEval (lib.attrNames (services name).pre-release.instances)).success;
+      in
+      refused "Tool" && refused "1tool" && refused "tool.x" && refused "a/b" && refused "a@b"
+      && !(refused "tool-2")
+    )
+    "an instance name a unit or socket cannot have was not refused, or one it can have was";
+
+  # An instance name is one socket and one handler template, so two services
+  # cannot share it.
+  signing-service-instance-unique = check "instance-unique"
+    (lib.any (lib.hasInfix "used by more than one service")
+      (ourFailures (withService { my.infra.signing.services.other = { inherit handler; instances.tool = { }; }; })))
+    "an instance name used by two services raised no assertion";
+
   signing-service-absent-is-inert = check "absent-is-inert"
     (
       let plain = evalWith { }; in
       !(plain.users.users ? signing-tool)
       && !(plain.systemd.sockets ? signing-tool)
+      && plain.my.infra.signing.services == { }
     )
     "a host declaring no signing service still gained part of one";
 }
