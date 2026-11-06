@@ -52,6 +52,17 @@
               description = "Arguments passed to the handler.";
             };
 
+            path = lib.mkOption {
+              type = lib.types.listOf lib.types.package;
+              default = [ ];
+              example = lib.literalExpression "[ pkgs.git ]";
+              description = ''
+                Packages whose programs the handler runs by name, put on its PATH.
+                A service's PATH holds only the coreutils, findutils, grep, sed and
+                systemd, so a handler that runs `git` lists it here.
+              '';
+            };
+
             readOnlyPaths = lib.mkOption {
               type = lib.types.listOf lib.types.nonEmptyStr;
               default = [ ];

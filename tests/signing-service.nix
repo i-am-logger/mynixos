@@ -88,6 +88,18 @@ in
       && unit.CapabilityBoundingSet == "" && unit.NoNewPrivileges)
     "the handler's confinement was loosened";
 
+  signing-service-path = check "path"
+    (
+      let
+        plain = builtins.unsafeDiscardStringContext;
+        onPath = cfg: lib.hasInfix (plain "${pkgs.git}/bin")
+          (plain cfg.systemd.services."signing-tool@".environment.PATH);
+      in
+      onPath (withService { my.infra.signing.services.tool.path = [ pkgs.git ]; })
+      && !(onPath service)
+    )
+    "a package listed in path did not reach the handler's PATH, or one not listed did";
+
   signing-service-absent-is-inert = check "absent-is-inert"
     (
       let plain = evalWith { }; in

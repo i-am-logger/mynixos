@@ -139,6 +139,7 @@ in
             # new configuration anyway.
             restartIfChanged = false;
             stopIfChanged = false;
+            inherit (svc) path;
             serviceConfig = confinement // {
               ExecStart = escapeShellArgs ([ (getExe svc.handler) ] ++ svc.handlerArgs);
               User = svc.user;
