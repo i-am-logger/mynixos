@@ -189,6 +189,7 @@
       hardware = {
         motherboards = {
           gigabyte = {
+            trx50-aero-d = ./my/hardware/motherboards/gigabyte/trx50-aero-d;
             x870e-aorus-elite-wifi7 = ./my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7;
           };
         };

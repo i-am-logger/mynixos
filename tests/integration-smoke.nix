@@ -56,6 +56,7 @@ let
           boot.loader.grub.device = "/dev/sda";
           system.stateVersion = "24.11";
 
+
           # home-manager base config
           home-manager = {
             useUserPackages = true;
@@ -379,5 +380,38 @@ in
       && config.my.users.testuser.environment.EDITOR != null
       # System graphical should be auto-derived
       && config.my.graphical.enable;
+  };
+
+  # Test 7: The second motherboard profile establishes the same facts.
+  # This board has NO integrated GPU and no drivers/ directory, so the only
+  # thing that can set hostPlatform and gpu for it is default.nix itself --
+  # which is exactly what a copy-paste-and-delete-the-quirks profile is most
+  # likely to get wrong.
+  smoke-motherboard-trx50 = mkSmokeTest {
+    name = "test-motherboard-trx50";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-motherboard-trx50";
+      hardware.motherboards.gigabyte.trx50-aero-d.enable = true;
+    };
+    assertions = config:
+      # NOT hostPlatform: this harness provides pkgs externally and loads
+      # read-only.nix, so READING config.nixpkgs.hostPlatform forces a
+      # read-only-set-multiple-times error from every profile that defines it.
+      # The architecture is asserted in the consumer flake instead, where
+      # nixpkgs is not read-only (nix eval .#nixosConfigurations.ads-dev1
+      # .config.nixpkgs.hostPlatform.system).
+      config.my.hardware.cpu == "amd"
+      && config.my.hardware.gpu == "amd"
+      # SATA defaults on for this board, unlike the X870E profile.
+      && config.my.hardware.storage.sata.enable
+      # ssd follows nvme, which gives periodic fstrim.
+      && config.my.hardware.storage.ssd.enable
+      # Thunderbolt 4 (two Maple Ridge controllers) -> boltd.
+      && config.services.hardware.bolt.enable
+      # THE REGRESSION THIS GUARDS. The X870E profile force-disables
+      # systemd-boot "for lanzaboote"; copied here it would beat
+      # my/hardware/boot/uefi and leave a non-secure-boot host unbootable.
+      && config.boot.loader.systemd-boot.enable;
   };
 }

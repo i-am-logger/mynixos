@@ -166,6 +166,7 @@ in
 
     ../my/hardware/memory/optimization
 
+    ../my/hardware/motherboards/gigabyte/trx50-aero-d
     ../my/hardware/motherboards/gigabyte/x870e-aorus-elite-wifi7
 
     ../my/hardware/peripherals/apple
