@@ -106,6 +106,27 @@
     #   * channel.nix installs a nixos channel a role never updates from.
     installer.cloneConfig = false;
 
+    # A ROLE HAS NO ACCOUNTS, AND THAT IS NOT A LOCKOUT.
+    #
+    # my/users/users defaults `users.mutableUsers = false` fleet-wide, because
+    # every password this DSL knows is declarative and a mutable /etc/shadow on
+    # a tmpfs root is a lie with no error. nixpkgs then asserts that SOMETHING
+    # can still log in -- root or a wheel user with a password or an authorized
+    # key -- and for a role the honest answer is that nothing can and nothing
+    # should. A role carries no `my.users` at all: its services run as system
+    # accounts under systemd's own confinement, sshd is forced off a few lines
+    # below, and it is replaced by rebuilding its image rather than logged into.
+    #
+    # Without this, `users.mutableUsers = true` would be the only way to build a
+    # role -- which would mean asking for a WRITABLE account database in the one
+    # machine shape whose root is an immutable image, to satisfy a check about
+    # logins that cannot happen. The assertion is answered where it is actually
+    # false rather than disarmed fleet-wide.
+    #
+    # Note what this does NOT do: it grants no login and creates no account. It
+    # states that having none is intended.
+    users.allowNoPasswordLogin = true;
+
     # WHAT A CONTAINER OVERRIDES RATHER THAN REFUSES.
     #
     # This variant must be applicable to ANY machine -- including a laptop with

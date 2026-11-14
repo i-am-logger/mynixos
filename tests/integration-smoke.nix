@@ -56,6 +56,18 @@ let
           boot.loader.grub.device = "/dev/sda";
           system.stateVersion = "24.11";
 
+          # These fixtures are EVALUATED, never booted and never logged into:
+          # the harness forces config.system.build.toplevel and throws the
+          # closure away. my/users/users defaults users.mutableUsers = false
+          # fleet-wide, at which point nixpkgs asserts that something can still
+          # log in -- and most fixtures declare no user at all, or one with
+          # neither a password nor an authorized key, because what they are
+          # testing is persistence aggregation or option reach.
+          #
+          # Stated here rather than by giving every fixture a fake password:
+          # a fixture carrying credentials it does not need would be inviting
+          # the next reader to copy them into something real.
+          users.allowNoPasswordLogin = true;
 
           # home-manager base config
           home-manager = {

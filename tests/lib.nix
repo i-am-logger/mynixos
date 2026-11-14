@@ -28,6 +28,19 @@ let
       fsType = "tmpfs";
     };
     system.stateVersion = "24.11";
+
+    # Test configs are EVALUATED, never booted and never logged into.
+    # my/users/users defaults users.mutableUsers = false fleet-wide -- every
+    # password this DSL knows is declarative -- and nixpkgs then asserts that
+    # root or some wheel user still has a password or an authorized key. Test
+    # fixtures have neither: they exist to check option reach, persistence
+    # aggregation and module output, and several assert over config.assertions
+    # themselves, so an unanswered lockout guard fails them from a distance.
+    #
+    # Stated once here rather than by handing every fixture a fake credential:
+    # a fixture carrying a password it does not need invites the next reader to
+    # copy it somewhere real.
+    users.allowNoPasswordLogin = true;
     nixpkgs.hostPlatform = system;
 
     # home-manager requires this of every user it manages and provides no

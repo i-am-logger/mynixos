@@ -34,6 +34,31 @@ let
 in
 {
   config = mkMerge [
+    # ACCOUNTS ARE DATA, SO THE ACCOUNT DATABASE IS AN OUTPUT.
+    #
+    # Every password this DSL knows about is declarative: a sops
+    # hashedPasswordFile, or a hashedPassword stated in the user's own
+    # profile. `mutableUsers = true` -- nixpkgs' default, and what this was
+    # before -- says the opposite: that /etc/shadow is authoritative and
+    # `passwd` is how you change a password.
+    #
+    # On a host whose root is a tmpfs that is a LIE WITH NO ERROR. `passwd`
+    # succeeds, prints nothing alarming, and update-users-groups.pl
+    # regenerates /etc/shadow from this config at the next activation --
+    # so the change is gone at the next boot and nothing ever said so.
+    # Persisting /etc/shadow is the obvious-looking fix and it is worse: it
+    # makes a second source of truth that a rotated sops secret no longer
+    # overrides, so the OLD password keeps working after you rotate it.
+    #
+    # So the database is stated to be derived. `passwd` now fails outright,
+    # which is the honest answer, and a host that genuinely keeps mutable
+    # accounts says so by setting this back to true -- see
+    # systems/skyspy-dev in the consumer flake, whose root is real ext4.
+    #
+    # mkDefault, not a hard definition: this is an opinion, and it is the
+    # one place where being wrong locks every account out of a machine.
+    { users.mutableUsers = mkDefault false; }
+
     # Define sops secrets for user passwords when secrets are enabled and user opts in
     (mkIf (secretsCfg.enable && usersWithSopsPassword != { }) {
       sops.secrets = listToAttrs (

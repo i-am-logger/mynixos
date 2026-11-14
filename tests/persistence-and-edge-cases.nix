@@ -46,6 +46,14 @@ let
           boot.loader.grub.device = "/dev/sda";
           system.stateVersion = "24.11";
 
+          # Evaluated, never booted, never logged into -- same scaffolding
+          # reason as fileSystems and grub.device above. my/users/users
+          # defaults users.mutableUsers = false fleet-wide, and nixpkgs then
+          # asserts that something can still log in; these fixtures exist to
+          # test persistence aggregation and declare no credentials at all.
+          # See the fuller note in ./integration-smoke.nix.
+          users.allowNoPasswordLogin = true;
+
           home-manager = {
             useUserPackages = true;
             backupFileExtension = "backup";
