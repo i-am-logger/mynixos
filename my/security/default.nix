@@ -211,8 +211,8 @@ in
           "-w /etc/sudoers -p wa -k sudoers"
           "-w /etc/sudoers.d/ -p wa -k sudoers"
 
-          # System configuration (NixOS specific)
-          "-w /etc/nixos/ -p wa -k nixos_config"
+          # System configuration (NixOS specific): the /etc/nixos watch is
+          # appended below, only where /etc/nixos is a directory of its own.
           "-w /boot/ -p wa -k boot"
 
           # Login/logout events
@@ -223,7 +223,12 @@ in
           "-w /var/log/wtmp -p wa -k session"
           "-w /var/log/btmp -p wa -k session"
           # Note: -e 2 (immutable) is added automatically by NixOS when enable = "lock"
-        ];
+        ]
+        # With my.system.etcNixos.link, /etc/nixos is a link to a checkout the
+        # user owns and edits by design, so a write watch there is either the
+        # link itself (a dir watch does not follow it) or every git and editor
+        # write; the checkout's git history is the audit trail instead.
+        ++ optional (config.my.system.etcNixos.link == null) "-w /etc/nixos/ -p wa -k nixos_config";
 
         sudo.extraConfig = ''
           Defaults timestamp_timeout=0

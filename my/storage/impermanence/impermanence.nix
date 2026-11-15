@@ -9,6 +9,7 @@ with lib;
 let
   cfg = config.my.storage.impermanence;
   inherit (cfg) persistPath;
+  etcNixosLink = config.my.system.etcNixos.link;
 
   # Get all user names from my.features.users
   userNames = attrNames config.my.users;
@@ -27,6 +28,11 @@ in
       {
         assertion = hasPrefix "/" persistPath;
         message = "my.storage.impermanence.persistPath must be an absolute path, got: ${persistPath}";
+      }
+      {
+        # The clone's tests would follow the link and act on the checkout.
+        assertion = cfg.cloneFlakeRepo == null || etcNixosLink == null;
+        message = "my.storage.impermanence.cloneFlakeRepo clones into /etc/nixos, which my.system.etcNixos.link makes a link to an existing checkout; set one or the other.";
       }
     ];
 
@@ -99,14 +105,19 @@ in
       #
       # The per-user path already does exactly this (aggregation.nix), so this
       # makes the system list agree with it rather than introducing a new rule.
-      directories = unique ([
-        "/etc/nixos"
+      #
+      # With my.system.etcNixos.link set, /etc/nixos is a link to a checkout
+      # (my/system/etc-nixos) and is not persisted here: a bind mount would sit
+      # where the link goes. The link's TARGET is not added in its place --
+      # that is the user path the paragraph above keeps out of this list; a
+      # checkout under /home is persisted as that person's own directory.
+      directories = unique ((optional (etcNixosLink == null) "/etc/nixos") ++ [
         "/var/lib/nixos"
         "/var/lib/systemd"
         "/var/log"
       ]
-      ++ cfg.extraSystemDirectories # Allow custom additions
-      ++ config.my.system.persistence.features.systemDirectories); # Feature-declared system directories
+        ++ cfg.extraSystemDirectories # Allow custom additions
+        ++ config.my.system.persistence.features.systemDirectories); # Feature-declared system directories
 
       # Per-user persistence
       users = mkMerge (

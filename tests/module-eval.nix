@@ -1212,6 +1212,131 @@ in
         otherUntouched = !config.home-manager.users.other.i18n.inputMethod.enable;
       });
 
+  # my.system.etcNixos.link: /etc/nixos leaves the SYSTEM persistence list and
+  # its target does not enter it; the link is an activation step that can only
+  # make, re-point or replace an empty directory (no tmpfiles L+, no rm).
+  etc-nixos-link = evalClauses "etc-nixos-link"
+    {
+      networking.hostName = "test-etc-nixos-link";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my = {
+        storage.impermanence.enable = true;
+        system.etcNixos.link = "/home/alice/Code/flake";
+      };
+    }
+    (config:
+      let
+        dirs = map (d: d.directory or d) config.environment.persistence."/persist".directories;
+        script = config.system.activationScripts.etcNixosLink.text;
+      in
+      {
+        notPersisted = !(builtins.elem "/etc/nixos" dirs);
+        targetNotPersisted = !(lib.any (lib.hasPrefix "/home") dirs);
+        linkStep = lib.hasInfix "/home/alice/Code/flake" script
+          && lib.hasInfix "rmdir /etc/nixos" script
+          && !(lib.hasInfix "rm -" script);
+        noTmpfilesLink = !(lib.any (lib.hasInfix "/etc/nixos") config.systemd.tmpfiles.rules);
+      });
+
+  # The audit watch on /etc/nixos follows the link decision: dropped when
+  # /etc/nixos is a link to a user's checkout, kept when it is a directory.
+  etc-nixos-audit-linked = evalClauses "etc-nixos-audit-linked"
+    {
+      networking.hostName = "test-etc-nixos-audit-linked";
+      my = {
+        security = {
+          enable = true;
+          auditRules.enable = true;
+        };
+        system.etcNixos.link = "/home/alice/Code/flake";
+      };
+    }
+    (config: {
+      noNixosWatch = !(lib.any (lib.hasInfix "/etc/nixos") config.security.audit.rules);
+      otherWatchesKept = builtins.elem "-w /boot/ -p wa -k boot" config.security.audit.rules;
+    });
+
+  etc-nixos-audit-default = evalClauses "etc-nixos-audit-default"
+    {
+      networking.hostName = "test-etc-nixos-audit-default";
+      my.security = {
+        enable = true;
+        auditRules.enable = true;
+      };
+    }
+    (config: {
+      nixosWatch = builtins.elem "-w /etc/nixos/ -p wa -k nixos_config" config.security.audit.rules;
+    });
+
+  # Without the option, today's behaviour: /etc/nixos persisted, no link step.
+  etc-nixos-default = evalClauses "etc-nixos-default"
+    {
+      networking.hostName = "test-etc-nixos-default";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my.storage.impermanence.enable = true;
+    }
+    (config: {
+      persisted = builtins.elem "/etc/nixos"
+        (map (d: d.directory or d) config.environment.persistence."/persist".directories);
+      noLinkStep = !(config.system.activationScripts ? etcNixosLink);
+    });
+
+  # The link step itself, run against a scratch directory in place of /etc:
+  # absent and empty become the link, a link is re-pointed, and a populated
+  # directory is left exactly as it was.
+  etc-nixos-link-step =
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [
+          baseConfig
+          {
+            networking.hostName = "test-etc-nixos-link-step";
+            my.system.etcNixos.link = "/home/alice/Code/flake";
+          }
+        ];
+      };
+      # escapeShellArg leaves a plain path unquoted; the scratch target is
+      # swapped in double-quoted, so it expands.
+      step = target: builtins.replaceStrings [ "/etc/nixos" "/home/alice/Code/flake" ] [ "$root/etc/nixos" "\"${target}\"" ]
+        eval.config.system.activationScripts.etcNixosLink.text;
+    in
+    pkgs.runCommand "module-eval-etc-nixos-link-step" { } ''
+      set -eu
+      fresh() { root=$(mktemp -d); mkdir -p "$root/etc" "$root/flake"; }
+
+      # absent
+      fresh
+      ${step "$root/flake"}
+      [ "$(readlink "$root/etc/nixos")" = "$root/flake" ]
+
+      # already a link elsewhere: re-pointed, old target intact
+      fresh; mkdir "$root/old"; touch "$root/old/keep"; ln -s "$root/old" "$root/etc/nixos"
+      ${step "$root/flake"}
+      [ "$(readlink "$root/etc/nixos")" = "$root/flake" ] && [ -e "$root/old/keep" ]
+
+      # empty directory
+      fresh; mkdir "$root/etc/nixos"
+      ${step "$root/flake"}
+      [ "$(readlink "$root/etc/nixos")" = "$root/flake" ]
+
+      # populated directory: untouched
+      fresh; mkdir "$root/etc/nixos"; echo data > "$root/etc/nixos/flake.nix"
+      ${step "$root/flake"} 2>/dev/null
+      [ ! -L "$root/etc/nixos" ] && [ "$(cat "$root/etc/nixos/flake.nix")" = data ]
+
+      echo "PASS: etc-nixos-link-step"
+      touch $out
+    '';
+
   # apps.graphical.terminals.baud: a vogix user's config.toml names vogix's
   # two theme links, replaces baud's first-launch file, and installs nothing
   # unless a package is given. With nothing to say -- no vogix, no settings --

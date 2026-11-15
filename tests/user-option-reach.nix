@@ -164,6 +164,7 @@ let
     "storage" = "impermanence and disko.";
     "streaming" = "OBS plus the v4l2loopback virtual camera.";
     "system.architecture" = "read by my/system/kernel to set hostPlatform; the Apple profile does that itself.";
+    "system.etcNixos" = "/etc/nixos is the NixOS configuration path; nix-darwin has no such convention (my.system.flakeDir is how a Mac finds its flake).";
     "system.dualBoot" = "NTFS + local-time clock for a Windows dual-boot.";
     "system.kernel" = "there is no kernel to choose on macOS.";
     "system.ociImage" = "names the container image a Linux system can be built as (system.build.image); nix-darwin has no such output, and an OCI image is a Linux closure regardless.";

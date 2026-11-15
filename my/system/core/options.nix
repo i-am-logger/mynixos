@@ -85,6 +85,28 @@
             description = "Master switch for mynixos-managed systemd configuration (journald, coredump). When false, the host keeps NixOS defaults.";
           };
         };
+
+        # Read by my/system/etc-nixos (the link) and my/storage/impermanence
+        # (which then stops persisting /etc/nixos).
+        etcNixos.link = lib.mkOption {
+          type = lib.types.nullOr lib.types.nonEmptyStr;
+          default = null;
+          example = "/home/logger/Code/logger/flake";
+          description = ''
+            Make /etc/nixos a symbolic link to this checkout of the host's
+            flake, instead of a directory of its own. Null keeps /etc/nixos a
+            directory, persisted on an impermanence host.
+
+            The link is created only where nothing would be lost: when
+            /etc/nixos is absent, already a link, or an empty directory.
+            Anything else (a populated clone, a live bind mount) is left
+            alone with a warning, and the link appears after the next boot
+            on a tmpfs root.
+
+            The target is never persisted by the system: a checkout in a
+            home directory is that person's to persist.
+          '';
+        };
       };
     };
   };
