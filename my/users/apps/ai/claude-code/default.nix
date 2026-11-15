@@ -58,6 +58,33 @@ in
                   fi
                 '';
               })
+
+              # mergedSettings deep-merged into Claude Code's own
+              # settings.json, not the file handed to home-manager: a store
+              # link would leave Claude Code unable to save its settings
+              # (/config, theme, permissions). Copied over in place (cp writes
+              # through a link), so a settings.json that is a link -- a cloned
+              # config repo's -- stays one. Unchanged settings are not
+              # rewritten; a file that is not JSON is left as it is.
+              (lib.mkIf (cfg.mergedSettings != { }) {
+                home.activation.claudeMergedSettings = lib.hm.dag.entryAfter
+                  ([ "writeBoundary" ] ++ lib.optional (cfg.cloneConfigRepo != null) "cloneClaudeConfig")
+                  ''
+                    _settings="$HOME/.claude/settings.json"
+                    _jq=${pkgs.jq}/bin/jq
+                    _new=$(mktemp)
+                    if [ -s "$_settings" ]; then _cur=$(cat "$_settings"); else _cur='{}'; fi
+                    if printf '%s' "$_cur" | $_jq --argjson m ${escapeShellArg (builtins.toJSON cfg.mergedSettings)} '. * $m' > "$_new" 2>/dev/null; then
+                      if [ "$($_jq -S . "$_new")" != "$(printf '%s' "$_cur" | $_jq -S .)" ]; then
+                        run mkdir -p "$HOME/.claude"
+                        run cp "$_new" "$_settings"
+                      fi
+                    else
+                      echo "WARNING: $_settings is not JSON; mynixos's Claude Code settings not merged" >&2
+                    fi
+                    rm -f "$_new"
+                  '';
+              })
             ])
         )
         (activeUsers config.my.users);

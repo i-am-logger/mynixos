@@ -457,6 +457,54 @@ in
       let package = (hmOf config).programs.claude-code.package; in
       (package.pname or "") == "claude-code" && !(package ? paths));
 
+  # mergedSettings: the real activation step, run against a scratch home.
+  # The defaults (history kept, no commit attribution) land in settings.json
+  # beside Claude Code's own keys, deep-merged; the file stays a plain
+  # writable file (no store link), a link to a config repo's file stays a
+  # link with its target updated, and a file that is not JSON is left
+  # byte-for-byte.
+  claude-code-merged-settings-step =
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig (herdrUser { } { apps.ai.tools.claude-code.enable = true; }) ];
+      };
+      hm = eval.config.home-manager.users.muxuser;
+      step = hm.home.activation.claudeMergedSettings.data;
+    in
+    assert !(hm.home.file ? ".claude/settings.json");
+    pkgs.runCommand "module-eval-claude-code-merged-settings-step" { nativeBuildInputs = [ pkgs.jq ]; } ''
+      set -eu
+      run() { "$@"; }
+      fresh() { export HOME=$(mktemp -d); mkdir -p "$HOME/.claude"; }
+      s() { echo "$HOME/.claude/settings.json"; }
+      defaults='{"attribution":{"commit":"","pr":""},"cleanupPeriodDays":365000,"includeCoAuthoredBy":false}'
+
+      # absent: created with the defaults alone
+      fresh; rm -r "$HOME/.claude"
+      ${step}
+      [ "$(jq -c -S . "$(s)")" = "$defaults" ]
+
+      # Claude Code's own keys survive, nested ones too (a deep merge)
+      fresh; echo '{"theme":"dark","cleanupPeriodDays":30,"attribution":{"x":1}}' > "$(s)"
+      ${step}
+      [ "$(jq -c -S . "$(s)")" = '{"attribution":{"commit":"","pr":"","x":1},"cleanupPeriodDays":365000,"includeCoAuthoredBy":false,"theme":"dark"}' ]
+
+      # a link into a config repo stays a link; its target is updated
+      fresh; mkdir "$HOME/repo"; echo '{"model":"x"}' > "$HOME/repo/settings.json"
+      ln -s "$HOME/repo/settings.json" "$(s)"
+      ${step}
+      [ -L "$(s)" ] && [ "$(jq -r .cleanupPeriodDays "$HOME/repo/settings.json")" = 365000 ]
+
+      # not JSON: untouched
+      fresh; echo 'not json' > "$(s)"
+      ${step} 2>/dev/null
+      [ "$(cat "$(s)")" = 'not json' ]
+
+      echo "PASS: claude-code-merged-settings-step"
+      touch $out
+    '';
+
   user-features = evalTest "user-features" {
     networking.hostName = "test-user-features";
     my.users.testuser = {
