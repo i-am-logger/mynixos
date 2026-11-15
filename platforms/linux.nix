@@ -250,6 +250,7 @@ in
     ../my/users/apps/file-managers/yazi/linux.nix
     ../my/users/apps/multiplexers/zellij/linux.nix
     ../my/users/apps/multiplexers/herdr/linux.nix
+    ../my/users/input/linux.nix # input method server (fcitx5): a home-manager user unit
     # Discord: the nixpkgs derivation. macOS gets a Homebrew cask instead,
     # because nixpkgs breaks the bundle's code signature -- the darwin half of
     # this app explains why at length

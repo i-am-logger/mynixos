@@ -60,6 +60,32 @@
                 be driven from this list.
               '';
             };
+
+            # Composing text (preedit, candidates) rather than typing it: an
+            # input method server the compositor hands keys to over
+            # input-method-v2, and apps read back over text-input-v3. XKB
+            # layouts above stay the layout switch; this is for what a layout
+            # cannot type. Implemented in ./linux.nix.
+            inputMethod = {
+              type = lib.mkOption {
+                type = lib.types.enum [ "none" "fcitx5" ];
+                default = "none";
+                description = ''
+                  The input method server for this person's graphical session.
+                  `fcitx5` runs it as a user unit on graphical-session.target,
+                  with the Wayland frontend.
+
+                  Linux-only: macOS input sources are the system's own.
+                '';
+              };
+
+              addons = lib.mkOption {
+                type = lib.types.listOf lib.types.package;
+                default = [ ];
+                example = lib.literalExpression "[ pkgs.fcitx5-mozc ]";
+                description = "Input method engines added to the server, e.g. fcitx5-rime or fcitx5-mozc.";
+              };
+            };
           };
         };
       };

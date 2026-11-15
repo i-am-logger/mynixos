@@ -112,6 +112,7 @@ let
     "apps.media.players.qobine" = "packages/qobine builds against alsa-lib; upstream's own macOS build is not packaged here.";
     "input.accelSpeed" = "libinput's acceleration scale and com.apple.mouse.scaling have no common ground.";
     "input.keyboardLayouts" = "XKB layout list rendered into Hyprland's kb_layout; macOS input sources are not XKB.";
+    "input.inputMethod" = "an input-method-v2 server (fcitx5) in the Wayland session; macOS input sources are the system's own.";
 
     # The per-user flags that DRIVE the one-sided apps above. graphical.enable
     # is deliberately NOT here -- it means the same thing on both platforms and

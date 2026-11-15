@@ -1154,6 +1154,64 @@ in
           && !(lib.hasInfix "[hardware" activation);
       });
 
+  # input.inputMethod = "fcitx5": the server is a user unit raised with the
+  # graphical session, on the Wayland frontend; mynixos owns classicui.conf
+  # alone (Theme=vogix for a vogix user), never the whole ~/.config/fcitx5,
+  # which stays fcitx5's and persisted. A user who did not ask gets nothing.
+  input-method-fcitx5 = evalClauses "input-method-fcitx5"
+    {
+      networking.hostName = "test-fcitx5";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical.enable = true;
+          input.inputMethod.type = "fcitx5";
+        };
+        users.other = {
+          fullName = "Other User";
+          description = "other";
+          email = "other@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.shelluser;
+        unit = hm.systemd.user.services.fcitx5-daemon or null;
+        classicui = hm.xdg.configFile."fcitx5/conf/classicui.conf".text or "";
+        userDirs = config.my.system.persistence.features.userDirectories;
+      in
+      {
+        fcitx5Type = hm.i18n.inputMethod.enable && hm.i18n.inputMethod.type == "fcitx5";
+        waylandFrontend = hm.i18n.inputMethod.fcitx5.waylandFrontend
+          && !(hm.home.sessionVariables ? GTK_IM_MODULE)
+          && !(hm.home.sessionVariables ? QT_IM_MODULE);
+        unitWithSession = unit != null
+          && builtins.elem "graphical-session.target" unit.Install.WantedBy;
+        themeIsVogix = lib.hasInfix "Theme=vogix" classicui
+          && lib.hasInfix "UseDarkTheme=False" classicui
+          && lib.hasInfix ''Font="Fira Code Nerd Font 16"'' classicui;
+        noTriggerKeys = lib.hasInfix "[Hotkey/TriggerKeys]"
+          (hm.xdg.configFile."fcitx5/config".text or "");
+        restartsOnConfig = builtins.length (unit.Unit.X-Restart-Triggers or [ ]) == 4;
+        noTrayItem = lib.hasInfix "0=notificationitem"
+          (hm.xdg.configFile."fcitx5/config".text or "");
+        xkbNotOverridden = lib.all
+          (f: lib.hasInfix "Allow Overriding System XKB Settings=False" (hm.xdg.configFile."fcitx5/conf/${f}.conf".text or ""))
+          [ "wayland" "xcb" ];
+        configDirNotLinked = !(hm.xdg.configFile ? fcitx5);
+        persisted = builtins.elem ".config/fcitx5" userDirs
+          && builtins.elem ".local/share/fcitx5" userDirs;
+        otherUntouched = !config.home-manager.users.other.i18n.inputMethod.enable;
+      });
+
   # With a security key on the host, the greeter's auth stack must carry
   # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
   # interactive "press ENTER" conversation), ordered AFTER unix so a typed
