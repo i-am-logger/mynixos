@@ -5,6 +5,34 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.27.0...mynixos-v0.28.0) (2026-11-15)
+
+
+### Features
+
+* **claude-code:** merge settings into ~/.claude/settings.json ([b1a745d](https://github.com/i-am-logger/mynixos/commit/b1a745d1c2836c7eff703c4ef458e306cff5f1a1))
+* **hardware:** add the Gigabyte TRX50 AERO D motherboard profile ([5ef7de3](https://github.com/i-am-logger/mynixos/commit/5ef7de3fe52d0de25d3ef19313bdccfc7e740493))
+* **input:** per-user fcitx5 input method ([179f5b3](https://github.com/i-am-logger/mynixos/commit/179f5b33acb1f02937efb44b4347197e2017616c))
+* **system:** /etc/nixos as a link to the flake checkout ([7d692fb](https://github.com/i-am-logger/mynixos/commit/7d692fbb9f6f492fdcaed16a61b245d189786edf))
+* **terminals:** baud config module ([567cb83](https://github.com/i-am-logger/mynixos/commit/567cb83bb0d0e7f801d951c694c8af72d0ab8efb))
+* **terminals:** baud is the default terminal ([b1b7c9f](https://github.com/i-am-logger/mynixos/commit/b1b7c9f8e79a05a2b5c337239998bc4b3648d3a8))
+* **theming:** follow the vogix polarity in the GNOME color-scheme ([98caed3](https://github.com/i-am-logger/mynixos/commit/98caed300e4e162dd7b9a6adba2e80845c43f355))
+* **users:** state the account database as derived, not writable ([191f4de](https://github.com/i-am-logger/mynixos/commit/191f4ded31611cad028d73693311735e003e2800))
+* **yubico:** cache the PIN for 400 days ([ce30e60](https://github.com/i-am-logger/mynixos/commit/ce30e608c2886f925d5646262aef2fdf18e91782))
+
+
+### Bug Fixes
+
+* **environment:** install the selected terminal ([99ee8c6](https://github.com/i-am-logger/mynixos/commit/99ee8c6dde4ab350d0ddd53a7800a10a5a6376df))
+* **impermanence:** adopt an identical machine-id on a live switch ([08f69c0](https://github.com/i-am-logger/mynixos/commit/08f69c00321dd41f43404cfc6e581f1fff63d9c8))
+* **impermanence:** keep boot state across reboots ([2a50f05](https://github.com/i-am-logger/mynixos/commit/2a50f05f55275a908b5bf1dec05088aebb133ad3))
+
+
+### Miscellaneous
+
+* **deps:** vogix 0.14.0; theme fcitx5 and baud per user ([6b14221](https://github.com/i-am-logger/mynixos/commit/6b14221791c65140f4165e1f82567d0da3ebb475))
+* **deps:** vogix 0.14.1 ([19b207c](https://github.com/i-am-logger/mynixos/commit/19b207ca2e6b30d4b92d3456f0a87448eafe9fae))
+
 ## [0.27.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.26.1...mynixos-v0.27.0) (2026-10-28)
 
 
