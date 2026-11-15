@@ -377,13 +377,16 @@ in
             # retyping tax, not a security control, and it is the weaker of the
             # two: a PIN can be watched, a touch cannot be typed remotely.
             #
-            # So: touch enforced on all three slots (sig/aut `cached`, one touch
-            # covering a short burst, dec `on`), and the PIN cached long enough
-            # to cover a working day.
-            defaultCacheTtl = 21600; # 6h
-            maxCacheTtl = 86400; # 24h
-            defaultCacheTtlSsh = 21600;
-            maxCacheTtlSsh = 86400;
+            # So the owner's policy is the PIN once per power-up of the key, then
+            # no more prompts for as long as it stays plugged in: every TTL is
+            # 400 days. These cover the agent's own caches (passphrases, SSH
+            # keys); the card's PIN, once given, lasts until the key is
+            # unplugged regardless. Unplugging the key is the lock. Kept well
+            # under gpg-agent's 2^31-1 second ceiling.
+            defaultCacheTtl = 34560000; # 400 days
+            maxCacheTtl = 34560000;
+            defaultCacheTtlSsh = 34560000;
+            maxCacheTtlSsh = 34560000;
           };
         }
       )

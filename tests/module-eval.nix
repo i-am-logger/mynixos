@@ -1575,6 +1575,38 @@ in
           && defaulted.xdg.configFile."baud/config.toml".source.value.palette.dark == "vogix-dark";
       });
 
+  # The PIN is asked once per power-up of the key: every gpg-agent cache is
+  # 400 days, within gpg-agent's 2^31-1 second ceiling.
+  gpg-agent-pin-once = evalClauses "gpg-agent-pin-once"
+    {
+      networking.hostName = "test-gpg-agent-ttl";
+      my = {
+        hardware.securityKeys.yubico.enable = true;
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          # The agent is configured for a user with keys; a placeholder one,
+          # never read (this is evaluation only).
+          yubikeys = [{
+            serial = "1";
+            keyId = "AAAAAAAA";
+            fingerprint = "AAAA";
+            sshKeygrip = "GRIP";
+            publicKeyPath = ./module-eval.nix;
+            u2fKeyHandle = "HANDLE";
+            u2fPublicKey = "PUB";
+          }];
+        };
+      };
+    }
+    (config:
+      let a = config.home-manager.users.shelluser.services.gpg-agent; in
+      {
+        fourHundredDays = lib.all (t: t == 34560000)
+          [ a.defaultCacheTtl a.maxCacheTtl a.defaultCacheTtlSsh a.maxCacheTtlSsh ];
+      });
+
   # With a security key on the host, the greeter's auth stack must carry
   # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
   # interactive "press ENTER" conversation), ordered AFTER unix so a typed
