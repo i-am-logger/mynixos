@@ -1210,6 +1210,8 @@ in
         persisted = builtins.elem ".config/fcitx5" userDirs
           && builtins.elem ".local/share/fcitx5" userDirs;
         otherUntouched = !config.home-manager.users.other.i18n.inputMethod.enable;
+        vogixThemesIt = hm.programs.vogix.fcitx5.enable
+          && !config.home-manager.users.other.programs.vogix.fcitx5.enable;
       });
 
   # my.system.etcNixos.link: /etc/nixos leaves the SYSTEM persistence list and
@@ -1435,7 +1437,9 @@ in
         noPackage = !(lib.any (p: (p.pname or "") == "baud")
           config.home-manager.users.shelluser.home.packages);
         nothingToSay = !(config.home-manager.users.other.xdg.configFile ? "baud/config.toml");
-        onByDefault = defaulted.xdg.configFile."baud/config.toml".source.value.palette.dark == "vogix-dark";
+        vogixThemesIt = config.home-manager.users.shelluser.programs.vogix.baud.enable;
+        onByDefault = defaulted.programs.vogix.baud.enable
+          && defaulted.xdg.configFile."baud/config.toml".source.value.palette.dark == "vogix-dark";
       });
 
   # With a security key on the host, the greeter's auth stack must carry

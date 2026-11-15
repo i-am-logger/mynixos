@@ -219,6 +219,14 @@ in
                 # Chromium-family browsers and GTK apps. The dconf write needs
                 # the host's programs.dconf, which my.graphical turns on.
                 colorScheme.enable = mkDefault (userCfg.graphical.enable or false);
+
+                # vogix themes an app it is told about by default; these two
+                # are themed only for the person who runs them, so no stray
+                # theme links land in anyone else's home. fcitx5's popup
+                # reads themes/vogix through classicui.conf (my/users/input),
+                # baud its [palette] (apps.graphical.terminals.baud).
+                fcitx5.enable = mkDefault (userCfg.input.inputMethod.type == "fcitx5");
+                baud.enable = mkDefault userCfg.apps.graphical.terminals.baud.enable;
               };
             }
         )
