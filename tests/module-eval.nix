@@ -1212,6 +1212,65 @@ in
         otherUntouched = !config.home-manager.users.other.i18n.inputMethod.enable;
       });
 
+  # apps.graphical.terminals.baud: a vogix user's config.toml names vogix's
+  # two theme links, replaces baud's first-launch file, and installs nothing
+  # unless a package is given. With nothing to say -- no vogix, no settings --
+  # no file is written and baud's own stays.
+  baud-config = evalClauses "baud-config"
+    {
+      networking.hostName = "test-baud";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users = {
+          shelluser = {
+            fullName = "Shell User";
+            description = "shell";
+            email = "shell@example.com";
+            graphical.enable = true;
+            apps.graphical.terminals.baud = {
+              enable = true;
+              settings.screen.notifications = "on";
+            };
+          };
+          other = {
+            fullName = "Other User";
+            description = "other";
+            email = "other@example.com";
+            graphical.enable = true;
+            theming.vogix.enable = false;
+            apps.graphical.terminals.baud.enable = true;
+          };
+          # Says nothing about baud: a graphical vogix user gets it by default.
+          defaulted = {
+            fullName = "Defaulted User";
+            description = "defaulted";
+            email = "defaulted@example.com";
+            graphical.enable = true;
+          };
+        };
+      };
+    }
+    (config:
+      let
+        file = config.home-manager.users.shelluser.xdg.configFile."baud/config.toml";
+        defaulted = config.home-manager.users.defaulted;
+        # The generator's input, carried on the derivation: reading the built
+        # file would be import-from-derivation.
+        toml = file.source.value;
+      in
+      {
+        paletteIsVogix = toml.palette == { dark = "vogix-dark"; light = "vogix-light"; };
+        settingsKept = toml.screen.notifications == "on";
+        replacesFirstLaunchFile = file.force;
+        noPackage = !(lib.any (p: (p.pname or "") == "baud")
+          config.home-manager.users.shelluser.home.packages);
+        nothingToSay = !(config.home-manager.users.other.xdg.configFile ? "baud/config.toml");
+        onByDefault = defaulted.xdg.configFile."baud/config.toml".source.value.palette.dark == "vogix-dark";
+      });
+
   # With a security key on the host, the greeter's auth stack must carry
   # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
   # interactive "press ENTER" conversation), ordered AFTER unix so a typed

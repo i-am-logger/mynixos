@@ -247,6 +247,7 @@ in
     ../my/users/apps/media/pipewire-tools # PipeWire
     ../my/users/apps/browsers/brave/linux.nix
     ../my/users/apps/terminals/wezterm/linux.nix
+    ../my/users/apps/terminals/baud # config.toml; its palette names vogix's theme links
     ../my/users/apps/file-managers/yazi/linux.nix
     ../my/users/apps/multiplexers/zellij/linux.nix
     ../my/users/apps/multiplexers/herdr/linux.nix
