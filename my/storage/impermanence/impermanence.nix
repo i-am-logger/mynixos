@@ -1,6 +1,7 @@
 { config
 , lib
 , pkgs
+, utils
 , ...
 }:
 
@@ -177,39 +178,72 @@ in
     };
 
     # Optional: Clone NixOS config on first boot
-    system.activationScripts = mkIf (cfg.cloneFlakeRepo != null) {
-      cloneRepoIfEmpty = {
-        text = ''
-          if [ ! -e /etc/nixos ] || [ -z "$(ls -A /etc/nixos 2>/dev/null)" ]; then
-            echo "Cloning flake repository into /etc/nixos..."
-            mkdir -p /etc/nixos
-            if ! ${pkgs.git}/bin/git clone ${cfg.cloneFlakeRepo} /etc/nixos; then
-              echo "ERROR: Failed to clone ${cfg.cloneFlakeRepo} into /etc/nixos" >&2
+    system.activationScripts = mkMerge [
+      (mkIf (cfg.cloneFlakeRepo != null) {
+        cloneRepoIfEmpty = {
+          text = ''
+            if [ ! -e /etc/nixos ] || [ -z "$(ls -A /etc/nixos 2>/dev/null)" ]; then
+              echo "Cloning flake repository into /etc/nixos..."
+              mkdir -p /etc/nixos
+              if ! ${pkgs.git}/bin/git clone ${cfg.cloneFlakeRepo} /etc/nixos; then
+                echo "ERROR: Failed to clone ${cfg.cloneFlakeRepo} into /etc/nixos" >&2
+              fi
             fi
-          fi
-        '';
-        deps = [
-          "users"
-          "groups"
-        ];
-      };
+          '';
+          deps = [
+            "users"
+            "groups"
+          ];
+        };
 
-      createFlakeSymlink = mkIf cfg.symlinkFlakeToHome {
-        text = ''
-          # Create ~/.flake symlink for all users (auto-detected from my.users)
-          ${concatMapStringsSep "\n" (userName: ''
-            if [ ! -L /home/${userName}/.flake ]; then
-              ln -sfn /etc/nixos /home/${userName}/.flake
-              chown ${userName}:users /home/${userName}/.flake
+        createFlakeSymlink = mkIf cfg.symlinkFlakeToHome {
+          text = ''
+            # Create ~/.flake symlink for all users (auto-detected from my.users)
+            ${concatMapStringsSep "\n" (userName: ''
+              if [ ! -L /home/${userName}/.flake ]; then
+                ln -sfn /etc/nixos /home/${userName}/.flake
+                chown ${userName}:users /home/${userName}/.flake
+              fi
+            '') userNames}
+          '';
+          deps = [
+            "users"
+            "groups"
+            "cloneRepoIfEmpty"
+          ];
+        };
+      })
+
+      # The switch that first persists /etc/machine-id runs on a root whose
+      # /etc/machine-id is already a regular file -- the one systemd made at
+      # boot -- and impermanence refuses to replace a non-empty file ("A file
+      # already exists"), failing its persist unit on every switch until the
+      # next boot. When the persisted copy holds the SAME id, bind it over the
+      # live file: nothing is removed, impermanence finds the mount and keeps
+      # it, and the running system's id does not change. A different id is
+      # left alone: swapping a machine's identity under a running systemd is
+      # a reboot's business, not a switch's.
+      {
+        machineIdAdopt = {
+          text = ''
+            _live=/etc/machine-id
+            _kept=${escapeShellArg "${persistPath}/etc/machine-id"}
+            if [ -f "$_live" ] && [ ! -L "$_live" ] && [ -s "$_kept" ] \
+              && ! ${pkgs.util-linux}/bin/findmnt "$_live" >/dev/null \
+              && ${pkgs.diffutils}/bin/cmp -s "$_live" "$_kept"; then
+              ${pkgs.util-linux}/bin/mount -o bind "$_kept" "$_live"
+              # A switch before this one left the persist unit failed; with
+              # the mount in place it has nothing left to do, so clear it.
+              # Before systemd runs (at boot) this is a no-op.
+              ${config.systemd.package}/bin/systemctl reset-failed \
+                ${escapeShellArg "persist-${utils.escapeSystemdPath "${persistPath}/etc/machine-id"}.service"} 2>/dev/null || true
             fi
-          '') userNames}
-        '';
-        deps = [
-          "users"
-          "groups"
-          "cloneRepoIfEmpty"
-        ];
-      };
-    };
+          '';
+          deps = [ "specialfs" ];
+        };
+        # Before impermanence's own pass over its files at activation.
+        persist-files.deps = [ "machineIdAdopt" ];
+      }
+    ];
   };
 }

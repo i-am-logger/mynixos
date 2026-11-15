@@ -33,6 +33,8 @@ in
               # No co-author trailer or generated-by line in commits and PRs.
               includeCoAuthoredBy = false;
               attribution = { commit = ""; pr = ""; };
+              # Compact the conversation only as it nears an 800k-token window.
+              autoCompactWindow = 800000;
             };
             description = ''
               Keys deep-merged into ~/.claude/settings.json at activation.

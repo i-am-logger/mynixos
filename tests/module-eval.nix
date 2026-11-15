@@ -478,7 +478,7 @@ in
       run() { "$@"; }
       fresh() { export HOME=$(mktemp -d); mkdir -p "$HOME/.claude"; }
       s() { echo "$HOME/.claude/settings.json"; }
-      defaults='{"attribution":{"commit":"","pr":""},"cleanupPeriodDays":365000,"includeCoAuthoredBy":false}'
+      defaults='{"attribution":{"commit":"","pr":""},"autoCompactWindow":800000,"cleanupPeriodDays":365000,"includeCoAuthoredBy":false}'
 
       # absent: created with the defaults alone
       fresh; rm -r "$HOME/.claude"
@@ -488,7 +488,7 @@ in
       # Claude Code's own keys survive, nested ones too (a deep merge)
       fresh; echo '{"theme":"dark","cleanupPeriodDays":30,"attribution":{"x":1}}' > "$(s)"
       ${step}
-      [ "$(jq -c -S . "$(s)")" = '{"attribution":{"commit":"","pr":"","x":1},"cleanupPeriodDays":365000,"includeCoAuthoredBy":false,"theme":"dark"}' ]
+      [ "$(jq -c -S . "$(s)")" = '{"attribution":{"commit":"","pr":"","x":1},"autoCompactWindow":800000,"cleanupPeriodDays":365000,"includeCoAuthoredBy":false,"theme":"dark"}' ]
 
       # a link into a config repo stays a link; its target is updated
       fresh; mkdir "$HOME/repo"; echo '{"model":"x"}' > "$HOME/repo/settings.json"
@@ -1326,6 +1326,15 @@ in
       in
       {
         machineId = builtins.elem "/etc/machine-id" (map (f: f.file or f) p.files);
+        # The live switch that introduces it adopts an identical id rather
+        # than failing, before impermanence's own pass over its files.
+        machineIdAdopted = config.system.activationScripts ? machineIdAdopt
+          && builtins.elem "machineIdAdopt" config.system.activationScripts.persist-files.deps
+          # and clears the failed state of impermanence's own unit, by its real name
+          && lib.any
+          (n: lib.hasPrefix "persist-persist-etc-machine" n
+            && lib.hasInfix "${n}.service" config.system.activationScripts.machineIdAdopt.text)
+          (builtins.attrNames config.systemd.services);
         networkManager = config.networking.networkmanager.enable
           && builtins.elem "/var/lib/NetworkManager" dirs
           && nmConnections != null && nmConnections.mode == "0700";
