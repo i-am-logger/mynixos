@@ -26,12 +26,13 @@ in
           # Config engine. Hyprland 0.57 removes hyprlang configs and the
           # legacy keyword/dispatch IPC (hyprwm/Hyprland#15539); "lua" renders
           # the whole tree (mynixos infra + the vogix modules) through
-          # home-manager's Lua shapes instead. Flipped per host during the
-          # migration; "hyprlang" remains the default until the fleet is over.
+          # home-manager's Lua shapes instead. The fleet is on 0.57, so "lua"
+          # is the default; "hyprlang" is refused on 0.57 or later
+          # (../default.nix) rather than rendering a config Hyprland ignores.
           configType = lib.mkOption {
             type = lib.types.enum [ "hyprlang" "lua" ];
-            default = "hyprlang";
-            description = "Hyprland config dialect (hyprlang until 0.57, lua from 0.55)";
+            default = "lua";
+            description = "Hyprland config dialect (lua; hyprlang only before Hyprland 0.57)";
           };
 
           # General settings

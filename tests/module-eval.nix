@@ -726,7 +726,11 @@ in
           description = "hypr";
           email = "hypr@example.com";
           graphical.enable = true;
-          apps.graphical.windowManagers.hyprland.enable = true;
+          apps.graphical.windowManagers.hyprland = {
+            enable = true;
+            # No longer the default; refused on Hyprland 0.57 or later.
+            configType = "hyprlang";
+          };
         };
       };
     }
@@ -734,11 +738,14 @@ in
       let
         hm = config.home-manager.users.hypruser;
         text = hm.xdg.configFile."hypr/hyprland.conf".text;
+        refused = lib.any (a: !a.assertion && lib.hasInfix "removed hyprlang configs" a.message) config.assertions;
       in
       hm.wayland.windowManager.hyprland.configType == "hyprlang"
       && lib.hasInfix "natural_scroll=yes" text
       && lib.hasInfix "hyprctl --batch" text
-      && !(hm.xdg.configFile ? "hypr/hyprland.lua"));
+      && !(hm.xdg.configFile ? "hypr/hyprland.lua")
+      # Refused exactly when Hyprland is 0.57 or later.
+      && refused == !(lib.versionOlder config.programs.hyprland.package.version "0.57"));
 
   hyprland-engine-lua = evalAssert "hyprland-engine-lua"
     {
@@ -1188,7 +1195,7 @@ in
       in
       {
         loginShellsRunNoVogix = !(lib.any (lib.hasInfix "bin/vogix") loginTexts);
-        compositorRunsNoRefresh = !(lib.hasInfix "theme refresh" hm.xdg.configFile."hypr/hyprland.conf".text);
+        compositorRunsNoRefresh = !(lib.hasInfix "theme refresh" hm.xdg.configFile."hypr/hyprland.lua".text);
         restoreUnit = restore != null
           && restore.Service.Type == "oneshot"
           && !(restore.Service ? RemainAfterExit)

@@ -615,6 +615,16 @@ in
 {
   # The per-user options are declared in ./options-user.nix, beside this file.
   config = mkIf anyUserGraphical {
+    # Hyprland 0.57 reads no hyprlang config and has no keyword/dispatch IPC:
+    # a hyprlang user there would get a session that ignores its config.
+    assertions = mapAttrsToList
+      (name: userCfg: {
+        assertion = (userCfg.apps.graphical.windowManagers.hyprland.configType or "lua") != "hyprlang"
+          || versionOlder config.programs.hyprland.package.version "0.57";
+        message = "my.users.${name}.apps.graphical.windowManagers.hyprland.configType = \"hyprlang\", but Hyprland is ${config.programs.hyprland.package.version}: 0.57 removed hyprlang configs. Use \"lua\".";
+      })
+      (filterAttrs (_: u: u.graphical.enable or false) config.my.users);
+
     home-manager.users =
       mapAttrs
         (
@@ -721,7 +731,7 @@ in
               wayland.windowManager.hyprland =
                 let
                   modesEnabled = config.my.theming.vogix.enable or false;
-                  configType = userHyprland.configType or "hyprlang";
+                  configType = userHyprland.configType or "lua";
                   isLua = configType == "lua";
 
                   # Call vogix's behavior generator directly so we can access its
