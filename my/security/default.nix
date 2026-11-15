@@ -108,36 +108,31 @@ in
     #
     # NixOS adds `Defaults env_keep+=SSH_AUTH_SOCK` on its own here; without it
     # sudo would scrub the very socket the module has to reach.
-    # Trust is NOT sshd's authorized_keys. That file answers "may this key log
-    # in", and it lists every key the person owns — including the one sitting in
-    # this machine's own USB port. Pointed at it, sudo accepts a signature from
-    # the LOCAL gpg-agent, which every session reaches (my/system/core falls
-    # SSH_AUTH_SOCK back to it when nothing was forwarded) and which signs
-    # without a touch. That is passwordless root for every process running as
-    # the user, not agent-authenticated sudo. So sudo gets its own file, holding
-    # only the keys held somewhere else.
+    # sudo trusts EVERY one of the person's keys, the owner's decision
+    # (2026-11-15: "keep full trust", "for all yubikeys"), resident ones
+    # included. The cost is stated, not hidden: a key plugged into this machine
+    # signs without a touch through the local gpg-agent, which every session
+    # reaches (my/system/core falls SSH_AUTH_SOCK back to it when nothing was
+    # forwarded), so on a host whose own key is trusted here sudo is
+    # passwordless for every process running as the user. sudo still gets its
+    # own root-owned file rather than the user's writable authorized_keys, so
+    # the user cannot add a key to it.
     (mkIf (cfg.enable && cfg.sshAgentSudo.enable) (
       let
-        remoteKeys = userCfg: filter
-          (yk: yk.sshPublicKey != "" && !(elem yk.serial cfg.sshAgentSudo.residentSerials))
-          userCfg.yubikeys;
+        sudoKeys = userCfg: filter (yk: yk.sshPublicKey != "") userCfg.yubikeys;
 
-        usersWithRemoteKeys = filterAttrs
-          (_: userCfg: remoteKeys userCfg != [ ])
+        usersWithKeys = filterAttrs
+          (_: userCfg: sudoKeys userCfg != [ ])
           (activeUsers config.my.users);
       in
       {
         assertions = [
           {
-            assertion = usersWithRemoteKeys != { };
+            assertion = usersWithKeys != { };
             message = ''
-              my.security.sshAgentSudo is enabled, but every configured security
-              key is listed in residentSerials (or no user has one), so sudo
-              would trust an empty set and fall back to the security key prompt
-              this option exists to replace.
-
-              sudo here is authorized by a key held on the machine the operator
-              is typing on. Leave that key out of residentSerials.
+              my.security.sshAgentSudo is enabled, but no user has a security key
+              with an SSH public key, so sudo would trust an empty set and fall
+              back to the security key prompt this option exists to replace.
             '';
           }
         ];
@@ -148,9 +143,9 @@ in
             # symlink; pam_ssh_agent_auth walks the path and rejects anything
             # the user could rewrite.
             mode = "0444";
-            text = concatMapStringsSep "\n" (yk: yk.sshPublicKey) (remoteKeys userCfg) + "\n";
+            text = concatMapStringsSep "\n" (yk: yk.sshPublicKey) (sudoKeys userCfg) + "\n";
           })
-          usersWithRemoteKeys;
+          usersWithKeys;
 
         security.pam = {
           sshAgentAuth = {

@@ -11,6 +11,13 @@ with lib;
 
 let
   cfg = config.my.hardware.securityKeys.yubico;
+  inherit (config.my.hardware.securityKeys) residentSerials;
+
+  # The keys that live in this machine, when the host says which; otherwise
+  # all of them, as before residentSerials existed.
+  hereKeys = userCfg:
+    let resident = filter (yk: elem yk.serial residentSerials) userCfg.yubikeys;
+    in if residentSerials == [ ] then userCfg.yubikeys else resident;
 in
 {
   config = mkIf cfg.enable {
@@ -115,14 +122,18 @@ in
                 executable = true;
               };
 
-              # Configure SSH to use YubiKey authentication keys
+              # Configure SSH to use YubiKey authentication keys: only the ones
+              # that live here, when the host says which. A listed key whose card
+              # is absent is still offered, and when the server refuses the
+              # present one the agent falls through to it and prompts to insert
+              # a card that is in another machine.
               ".gnupg/sshcontrol" = {
                 text = concatMapStringsSep "\n"
                   (yk: ''
                     # YubiKey ${yk.serial} authentication keygrip
                     ${yk.sshKeygrip}
                   '')
-                  userCfg.yubikeys;
+                  (hereKeys userCfg);
                 force = true;
               };
 
@@ -267,14 +278,21 @@ in
                 verify-options = "show-uid-validity";
                 with-fingerprint = true;
                 # default-key is single-valued (with several lines gpg silently
-                # uses the last), so emit exactly one: the key marked primary,
-                # else the first. Card-aware key selection is gpg-smart's job.
+                # uses the last), so emit exactly one: the first key that lives
+                # here, when the host says which (a default naming a card in
+                # another machine asks for that card on every call gpg-smart
+                # does not route); else the key marked primary, else the first.
+                # Card-aware key selection is gpg-smart's job.
                 default-key =
-                  let primaries = filter (yk: yk.primary) userCfg.yubikeys;
+                  let
+                    primaries = filter (yk: yk.primary) userCfg.yubikeys;
+                    resident = filter (yk: elem yk.serial residentSerials) userCfg.yubikeys;
                   in
                   assert assertMsg (length primaries <= 1)
                     "my.users.${name}.yubikeys: more than one key marked primary";
-                  (if primaries == [ ] then head userCfg.yubikeys else head primaries).keyId;
+                  (if resident != [ ] then head resident
+                  else if primaries == [ ] then head userCfg.yubikeys
+                  else head primaries).keyId;
                 default-recipient-self = true;
                 auto-key-locate = "local";
                 keyid-format = "long";

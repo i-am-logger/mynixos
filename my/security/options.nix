@@ -42,28 +42,8 @@
         sshAgentSudo = {
           enable = lib.mkEnableOption "sudo authenticated by the caller's forwarded SSH agent";
 
-          residentSerials = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
-            default = [ ];
-            example = [ "17027658" ];
-            description = ''
-              Serials of security keys kept plugged into THIS machine. Their
-              public keys are excluded from the set sudo trusts.
-
-              A key that lives in the host proves nothing about who is asking.
-              The local gpg-agent signs with it for any process running as that
-              user, and every session reaches that agent because
-              my.system's SSH_AUTH_SOCK falls back to it when nothing was
-              forwarded. Trusting such a key here does not make sudo
-              agent-authenticated — it makes it passwordless for everything on
-              the machine, silently, which is strictly weaker than the security
-              key prompt it replaces.
-
-              A host that keeps a key plugged in for unattended signing must
-              therefore name it here, so that sudo is authorized only by a key
-              held somewhere else.
-            '';
-          };
+          # sudo trusts every one of the person's keys, resident ones included
+          # (owner's decision; the cost is spelled out in ../default.nix).
         };
 
         # Authentication DEVICES are not declared here — they live under

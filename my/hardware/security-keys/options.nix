@@ -43,6 +43,29 @@
                   };
                 };
               };
+
+              # Which of the person's keys live in THIS machine. Read by the
+              # gpg-agent setup: only these are offered over SSH, and the first
+              # is gpg's default-key. Where a key lives does not change what is
+              # trusted: login and sudo trust every key (my/security).
+              residentSerials = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                example = [ "15147046" ];
+                description = ''
+                  Serials of security keys kept plugged into this machine.
+
+                  gpg-agent offers only these keys over SSH, so a key that lives
+                  elsewhere is never offered and never asked for: offering its
+                  stub makes the agent prompt to insert a card that is not here.
+                  The first of them that a user owns becomes that user's gpg
+                  default-key. Empty means every key is offered and default-key
+                  follows `primary`.
+
+                  It only decides what this machine OFFERS; what other machines
+                  trust (SSH login, sudo) is every key, wherever it lives.
+                '';
+              };
             };
           };
         };

@@ -1614,6 +1614,84 @@ in
           [ a.defaultCacheTtl a.maxCacheTtl a.defaultCacheTtlSsh a.maxCacheTtlSsh ];
       });
 
+  # residentSerials says which keys live in this machine. Only those are
+  # offered over SSH (a stub for a card in another machine makes the agent
+  # prompt to insert it), the first becomes gpg's default-key over `primary`,
+  # and that is all it changes: sudo trusts every key. Without it, every key is offered and primary
+  # is the default, as before.
+  security-keys-resident =
+    let
+      keys = [
+        {
+          serial = "111";
+          keyId = "PRIMARYELSEWHERE";
+          primary = true;
+          fingerprint = "AAAA";
+          sshKeygrip = "GRIPAWAY";
+          sshPublicKey = "ssh-ed25519 AWAY";
+          publicKeyPath = ./module-eval.nix;
+          u2fKeyHandle = "H1";
+          u2fPublicKey = "P1";
+        }
+        {
+          serial = "222";
+          keyId = "LIVESHERE";
+          fingerprint = "BBBB";
+          sshKeygrip = "GRIPHERE";
+          sshPublicKey = "ssh-ed25519 HERE";
+          publicKeyPath = ./module-eval.nix;
+          u2fKeyHandle = "H2";
+          u2fPublicKey = "P2";
+        }
+      ];
+      host = resident: {
+        networking.hostName = "test-resident";
+        my = {
+          hardware.securityKeys = {
+            yubico.enable = true;
+            residentSerials = resident;
+          };
+          security = {
+            enable = true;
+            sshAgentSudo.enable = true;
+          };
+          users.shelluser = {
+            fullName = "Shell User";
+            description = "shell";
+            email = "shell@example.com";
+            yubikeys = keys;
+          };
+        };
+      };
+      evalWith = resident: (lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig (host resident) ];
+      }).config;
+      here = evalWith [ "222" ];
+      unset = evalWith [ ];
+      sshcontrol = c: c.home-manager.users.shelluser.home.file.".gnupg/sshcontrol".text;
+      defaultKey = c: c.home-manager.users.shelluser.programs.gpg.settings.default-key;
+      sudoKeys = c: c.environment.etc."sudo-ssh-agent-keys.d/shelluser".text;
+      ok = {
+        offersOnlyResident = lib.hasInfix "GRIPHERE" (sshcontrol here)
+          && !(lib.hasInfix "GRIPAWAY" (sshcontrol here));
+        defaultIsResident = defaultKey here == "LIVESHERE";
+        # Owner: sudo trusts every key, the resident one too.
+        sudoTrustsAll = lib.hasInfix "AWAY" (sudoKeys here)
+          && lib.hasInfix "HERE" (sudoKeys here);
+        unsetOffersAll = lib.hasInfix "GRIPHERE" (sshcontrol unset)
+          && lib.hasInfix "GRIPAWAY" (sshcontrol unset);
+        unsetDefaultIsPrimary = defaultKey unset == "PRIMARYELSEWHERE";
+      };
+      failed = builtins.attrNames (lib.filterAttrs (_: v: !v) ok);
+    in
+    if failed != [ ] then builtins.throw "FAIL: module-eval-security-keys-resident -- did not hold: ${lib.concatStringsSep ", " failed}"
+    else
+      pkgs.runCommand "module-eval-security-keys-resident" { } ''
+        echo "PASS: security-keys-resident"
+        touch $out
+      '';
+
   # With a security key on the host, the greeter's auth stack must carry
   # pam_u2f NON-interactively (touch-to-login; SDDM cannot answer the
   # interactive "press ENTER" conversation), ordered AFTER unix so a typed
