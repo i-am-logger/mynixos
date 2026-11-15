@@ -213,6 +213,12 @@ in
                 # every theme switch syncs the live palette into
                 # /var/lib/vogix/greeter (warn-only themeApply hook).
                 greeter.sync = mkDefault config.vogix.greeter.enable;
+
+                # The theme's polarity becomes the GNOME color-scheme on every
+                # apply (warn-only themeApply hook), which the portal hands to
+                # Chromium-family browsers and GTK apps. The dconf write needs
+                # the host's programs.dconf, which my.graphical turns on.
+                colorScheme.enable = mkDefault (userCfg.graphical.enable or false);
               };
             }
         )

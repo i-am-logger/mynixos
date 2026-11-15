@@ -30,6 +30,12 @@ in
           xwayland.enable = true;
         };
 
+        # vogix writes org.gnome.desktop.interface color-scheme on every theme
+        # apply; xdg-desktop-portal-gtk serves it as the portal's
+        # color-scheme setting, which is what Chromium-family browsers follow.
+        # Without dconf the write has nowhere to land.
+        programs.dconf.enable = true;
+
         # The hyprland package ships TWO session files, and programs.hyprland
         # registers both — including hyprland-uwsm.desktop, whose `uwsm
         # start` dies instantly on this fleet (uwsm is not configured; the

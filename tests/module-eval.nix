@@ -1051,9 +1051,9 @@ in
           (d: builtins.all (agrees d) (builtins.filter (r: r.path == d.dirPath) dRules))
           persistedWithRule;
         # The devices are the owner units' alone: the owner's apply hooks
-        # hold only the greeter sync.
-        ownerHooksOnlyGreeter = builtins.attrNames
-          config.home-manager.users.shelluser.programs.vogix.themeApply == [ "greeter" ];
+        # hold the color-scheme write and the greeter sync, and no device.
+        ownerHooksNoDevices = builtins.attrNames
+          config.home-manager.users.shelluser.programs.vogix.themeApply == [ "color-scheme" "greeter" ];
         # vogix refuses an owner outside its users, devices without an owner,
         # a command outside the store and an OpenRGB build without readiness.
         assertionsHold = lib.all (a: a.assertion) config.assertions;
