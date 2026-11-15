@@ -48,6 +48,12 @@
       };
     };
 
+    # The default terminal (my/users/environment/mynixos.nix). Its own nixpkgs,
+    # not ours: baud builds with a pinned nightly rustc from its own
+    # rust-overlay, and following our nixpkgs would move that toolchain under
+    # it. Pinned to the public repository's master by the lock.
+    baud.url = "github:baud-terminal/baud";
+
     # Monochromatic screen overlay for Hyprland
     hypr-vogix = {
       url = "github:i-am-logger/hypr-vogix";

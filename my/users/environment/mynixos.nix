@@ -23,8 +23,13 @@
 # Users can override any of these by setting environment.BROWSER = pkgs.firefox;
 # etc.
 
-{ lib, pkgs, ... }:
+{ inputs, lib, pkgs, ... }:
 
+let
+  # baud is a flake input, not a nixpkgs attribute. Its flake builds for
+  # x86_64-linux, aarch64-linux and aarch64-darwin.
+  baud = inputs.baud.packages.${pkgs.stdenv.hostPlatform.system}.baud;
+in
 {
   options.my.users = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
@@ -45,7 +50,9 @@
           };
         })
 
-        # GUI apps. Both wezterm and brave build on aarch64-darwin.
+        # GUI apps. baud and brave both build on aarch64-darwin. While baud
+        # is the terminal, wezterm stays installed beside it as the fallback
+        # (my/users/apps/terminals/wezterm).
         (lib.mkIf (config.graphical.enable or false) {
           environment = {
             BROWSER = lib.mkDefault {
@@ -55,7 +62,7 @@
             };
             TERMINAL = lib.mkDefault {
               enable = true;
-              package = pkgs.wezterm;
+              package = baud;
               settings = { };
             };
           };

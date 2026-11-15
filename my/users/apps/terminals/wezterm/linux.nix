@@ -17,7 +17,8 @@ with lib;
 let
   isWezterm = userCfg:
     let t = userCfg.environment.TERMINAL; in
-    if t != null then t.enable && (t.package.pname or "") == "wezterm"
+    # As ./default.nix: selected, or installed as baud's fallback.
+    if t != null then t.enable && builtins.elem (t.package.pname or "") [ "wezterm" "baud" ]
     else userCfg.graphical.enable;
 in
 {

@@ -97,6 +97,7 @@ in
     # launcher/locker selectors (the vogix shell's own tools) -- these name
     # the package in the option value, so they must not be declared on darwin.
     ../my/users/environment/mynixos-linux.nix
+    ../my/users/environment-defaults/linux.nix # xdg-terminal-exec follows the TERMINAL selector
     ../my/users/users/mynixos-linux.nix
     ../my/users/graphical/mynixos-linux.nix
     ../my/users/graphical/media/mynixos-linux.nix

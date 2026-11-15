@@ -1429,6 +1429,52 @@ in
       touch $out
     '';
 
+  # baud is the default terminal: the selector picks it, wezterm stays as the
+  # fallback on Super+Shift+Return -- ADDED to vogix's keymap, not replacing
+  # it -- and Terminal=true apps open in it. A user who selects wezterm gets
+  # wezterm everywhere and no fallback binding.
+  baud-default-terminal = evalClauses "baud-default-terminal"
+    {
+      networking.hostName = "test-baud-default";
+      my = {
+        theming = {
+          enable = true;
+          vogix.enable = true;
+        };
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical.enable = true;
+        };
+        users.other = {
+          fullName = "Other User";
+          description = "other";
+          email = "other@example.com";
+          graphical.enable = true;
+          environment.TERMINAL = pkgs.wezterm;
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.shelluser;
+        other = config.home-manager.users.other;
+        appBinds = u: u.programs.vogix.behavior.modes.app.bindings;
+      in
+      {
+        baudSelected = config.my.users.shelluser.environment.TERMINAL.package.pname == "baud";
+        terminalVar = lib.hasSuffix "/bin/baud" hm.home.sessionVariables.TERMINAL;
+        weztermFallbackInstalled = hm.programs.wezterm.enable;
+        fallbackBind = (appBinds hm).terminalFallback.key == "super + shift + return"
+          && (appBinds hm).terminalFallback.action == "exec, wezterm";
+        vogixKeymapKept = (appBinds hm).terminal.action == "exec, $TERMINAL";
+        terminalExec = hm.xdg.configFile."xdg-terminals.list".text == "org.baud.terminal.desktop\n";
+        optOutIsWezterm = lib.hasSuffix "/bin/wezterm" other.home.sessionVariables.TERMINAL
+          && !((appBinds other) ? terminalFallback)
+          && other.xdg.configFile."xdg-terminals.list".text == "org.wezfurlong.wezterm.desktop\n";
+      });
+
   # apps.graphical.terminals.baud: a vogix user's config.toml names vogix's
   # two theme links, replaces baud's first-launch file, and installs nothing
   # unless a package is given. With nothing to say -- no vogix, no settings --

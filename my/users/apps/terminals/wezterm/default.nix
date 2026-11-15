@@ -16,17 +16,19 @@ in
           terminal = userCfg.environment.TERMINAL;
           isGraphical = userCfg.graphical.enable;
           # Enable wezterm when:
-          # 1. User explicitly set TERMINAL to wezterm, OR
-          # 2. User has graphical.enable = true AND didn't set TERMINAL (opinionated default)
+          # 1. User set TERMINAL to wezterm, OR
+          # 2. TERMINAL is baud: wezterm stays installed as the fallback while
+          #    baud matures (Super+Shift+Return, and the F12 console), OR
+          # 3. User has graphical.enable = true AND TERMINAL is unset
+          isSelected = terminal != null && terminal.enable && (terminal.package.pname or "") == "wezterm";
+          isFallback = terminal != null && terminal.enable && (terminal.package.pname or "") == "baud";
           hasWezterm =
-            if terminal != null then
-              terminal.enable && (terminal.package.pname or "") == "wezterm"
-            else
-              isGraphical; # Opinionated default: wezterm when graphical enabled and no terminal specified
-          # Get package: from user config if set, otherwise use pkgs.wezterm
-          weztermPackage = if terminal != null then terminal.package else pkgs.wezterm;
-          # Get settings: from user config if set, otherwise empty
-          weztermSettings = if terminal != null then terminal.settings else { };
+            if terminal != null then isSelected || isFallback
+            else isGraphical;
+          # The selected package and its settings when wezterm IS the terminal;
+          # the stock one, unconfigured, when it is the fallback.
+          weztermPackage = if isSelected then terminal.package else pkgs.wezterm;
+          weztermSettings = if isSelected then terminal.settings else { };
         in
         mkIf hasWezterm {
           programs.wezterm = mkMerge [

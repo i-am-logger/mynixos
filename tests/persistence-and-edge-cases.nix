@@ -31,6 +31,7 @@ let
     }:
     lib.nixosSystem {
       specialArgs = {
+        inherit inputs; # the default terminal, baud, is read from inputs.baud
         inherit (inputs) vogix;
         inherit pkgs;
       };

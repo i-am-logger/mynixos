@@ -184,6 +184,19 @@ in
                   kbLayout = concatStringsSep "," userCfg.input.keyboardLayouts;
                 };
 
+                # With baud as $TERMINAL, wezterm is the fallback one key away:
+                # Super+Shift+Return beside Super+Return. vogix sets its whole
+                # app mode as ONE mkDefault definition, so this is mkDefault
+                # too -- at equal priority the two merge; at normal priority
+                # this binding would replace every default one.
+                behavior.modes.app = mkIf (userCfg.environment.TERMINAL != null && (userCfg.environment.TERMINAL.package.pname or "") == "baud") (mkDefault {
+                  bindings.terminalFallback = {
+                    key = "super + shift + return";
+                    action = "exec, wezterm";
+                    description = "Fallback terminal (wezterm)";
+                  };
+                });
+
                 desktop = {
                   # The desktop shell follows the user's `graphical.shell`
                   # selection: the bar, its theme.json contract, desktop.json

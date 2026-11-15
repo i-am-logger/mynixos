@@ -36,6 +36,7 @@ let
     }:
     lib.nixosSystem {
       specialArgs = {
+        inherit inputs; # the default terminal, baud, is read from inputs.baud
         inherit (inputs) vogix;
         # Provide pkgs as specialArg to break the cycle where
         # mkOptionsModule resolves pkgs from _module.args, which depends
