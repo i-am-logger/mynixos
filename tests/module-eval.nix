@@ -1438,6 +1438,29 @@ in
       touch $out
     '';
 
+  # The guard itself: a selected terminal that is not in the user's packages
+  # is refused, naming the user and the terminal -- the shape of b1b7c9f,
+  # where Super+Return ran a program nothing had installed.
+  terminal-not-installed-refused = evalClauses "terminal-not-installed-refused"
+    {
+      networking.hostName = "test-terminal-guard";
+      my.users.shelluser = {
+        fullName = "Shell User";
+        description = "shell";
+        email = "shell@example.com";
+        graphical.enable = true;
+      };
+      home-manager.users.shelluser.home.packages = lib.mkForce [ ];
+    }
+    (config:
+      let failed = builtins.filter (a: !a.assertion) config.assertions;
+      in {
+        refused = lib.any
+          (a: lib.hasInfix "environment.TERMINAL selects baud" a.message
+            && lib.hasInfix "shelluser" a.message)
+          failed;
+      });
+
   # baud is the default terminal: the selector picks it, wezterm stays as the
   # fallback on Super+Shift+Return -- ADDED to vogix's keymap, not replacing
   # it -- and Terminal=true apps open in it. A user who selects wezterm gets
@@ -1473,6 +1496,10 @@ in
       in
       {
         baudSelected = config.my.users.shelluser.environment.TERMINAL.package.pname == "baud";
+        # On PATH, not just named in $TERMINAL (b1b7c9f selected baud and
+        # installed nothing); and the guard against that holds.
+        baudInstalled = lib.any (p: (p.pname or "") == "baud") hm.home.packages;
+        terminalGuardHolds = lib.all (a: a.assertion) config.assertions;
         terminalVar = lib.hasSuffix "/bin/baud" hm.home.sessionVariables.TERMINAL;
         weztermFallbackInstalled = hm.programs.wezterm.enable;
         fallbackBind = (appBinds hm).terminalFallback.key == "super + shift + return"
@@ -1485,8 +1512,8 @@ in
       });
 
   # apps.graphical.terminals.baud: a vogix user's config.toml names vogix's
-  # two theme links, replaces baud's first-launch file, and installs nothing
-  # unless a package is given. With nothing to say -- no vogix, no settings --
+  # two theme links, replaces baud's first-launch file, and itself installs
+  # nothing (the TERMINAL selector does). With nothing to say -- no vogix, no settings --
   # no file is written and baud's own stays.
   baud-config = evalClauses "baud-config"
     {
@@ -1514,6 +1541,9 @@ in
             graphical.enable = true;
             theming.vogix.enable = false;
             apps.graphical.terminals.baud.enable = true;
+            # baud's config without baud as the terminal: the config module
+            # itself installs nothing (only the TERMINAL selector installs).
+            environment.TERMINAL = pkgs.wezterm;
           };
           # Says nothing about baud: a graphical vogix user gets it by default.
           defaulted = {
@@ -1538,7 +1568,7 @@ in
         settingsKept = toml.screen.notifications == "on";
         replacesFirstLaunchFile = file.force;
         noPackage = !(lib.any (p: (p.pname or "") == "baud")
-          config.home-manager.users.shelluser.home.packages);
+          config.home-manager.users.other.home.packages);
         nothingToSay = !(config.home-manager.users.other.xdg.configFile ? "baud/config.toml");
         vogixThemesIt = config.home-manager.users.shelluser.programs.vogix.baud.enable;
         onByDefault = defaulted.programs.vogix.baud.enable

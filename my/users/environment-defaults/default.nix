@@ -7,6 +7,21 @@ with lib;
     # Opinionated defaults are now in options/users/environment.nix
     # This module only implements the home-manager configuration
 
+    # A selected terminal that is not installed is a Super+Return that opens
+    # nothing, with no error anywhere. Refuse the configuration instead.
+    assertions = mapAttrsToList
+      (name: userCfg:
+        let
+          t = userCfg.environment.TERMINAL;
+          installed = config.home-manager.users.${name}.home.packages;
+        in
+        {
+          assertion = t == null || !t.enable
+            || any (p: (p.outPath or null) == t.package.outPath) installed;
+          message = "my.users.${name}.environment.TERMINAL selects ${t.package.pname or "a terminal"}, but it is not in ${name}'s packages: $TERMINAL and Super+Return would run a missing program.";
+        })
+      (activeUsers config.my.users);
+
     home-manager.users = mapAttrs
       (_name: userCfg:
         let
@@ -37,8 +52,13 @@ with lib;
             home.sessionVariables.BROWSER = mkDefault "${preferredBrowser}/bin/${preferredBrowser.pname or "browser"}";
           })
 
+          # The selector installs what it selects: $TERMINAL, Super+Return
+          # and the launcher run it by name, so it must be on PATH whether or
+          # not the terminal has a module of its own (wezterm does; baud's
+          # config module installs nothing). The same package twice is one.
           (mkIf (preferredTerminal != null) {
             home.sessionVariables.TERMINAL = mkDefault "${preferredTerminal}/bin/${preferredTerminal.pname or "terminal"}";
+            home.packages = [ preferredTerminal ];
           })
 
           (mkIf (preferredEditor != null) {
