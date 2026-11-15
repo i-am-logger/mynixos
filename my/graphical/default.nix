@@ -147,6 +147,9 @@ in
           ];
           userDirectories = [
             ".mozilla"
+            # swappy's save_dir (./hyprland): mynixos chose the path, so it
+            # declares it; the rest of ~/Pictures is the person's own.
+            "Pictures/screenshots"
           ];
         };
       }

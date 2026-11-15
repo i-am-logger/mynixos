@@ -116,8 +116,38 @@ in
         "/var/lib/systemd"
         "/var/log"
       ]
+        # The state of NixOS services that are on but have no mynixos module
+        # to declare it, keyed on the service itself so the list follows what
+        # actually runs: NetworkManager's saved networks (0700, they hold
+        # Wi-Fi and VPN secrets) and its secret_key (the IPv6 stable-privacy
+        # seed); boltd's Thunderbolt/USB4 approvals; fwupd's update history;
+        # OpenRGB's device configuration.
+        ++ optionals config.networking.networkmanager.enable [
+        { directory = "/etc/NetworkManager/system-connections"; mode = "0700"; }
+        "/var/lib/NetworkManager"
+      ]
+        ++ optional config.services.hardware.bolt.enable "/var/lib/boltd"
+        ++ optional config.services.fwupd.enable "/var/lib/fwupd"
+        ++ optional config.services.hardware.openrgb.enable "/var/lib/OpenRGB"
         ++ cfg.extraSystemDirectories # Allow custom additions
         ++ config.my.system.persistence.features.systemDirectories); # Feature-declared system directories
+
+      # machine-id is minted afresh on a tmpfs root at every boot, and
+      # journald files each boot's logs under it, so without this
+      # `journalctl --list-boots` never reaches past the current boot, DHCP
+      # client ids move, and machine-keyed state sees a new host each boot.
+      # Rotating it buys little: hostname, MACs, DMI and disk serials stay
+      # put regardless.
+      #
+      # It stays local. machine-id(5) calls it confidential, not to be
+      # exposed off the machine, so it is a persisted file and never a value
+      # in a host's (possibly public) configuration; anything needing an id
+      # that leaves the box derives one with sd_id128_get_machine_app_specific
+      # (`systemd-id128 machine-id --app-specific=<uuid>`). Rotation is a
+      # deliberate event: remove the persisted copy and run
+      # systemd-machine-id-setup (or reboot). Stage 2 activation links it
+      # before systemd starts.
+      files = [ "/etc/machine-id" ];
 
       # Per-user persistence
       users = mkMerge (

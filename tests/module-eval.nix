@@ -1242,6 +1242,48 @@ in
         noTmpfilesLink = !(lib.any (lib.hasInfix "/etc/nixos") config.systemd.tmpfiles.rules);
       });
 
+  # What a tmpfs root would otherwise lose at every boot: the machine id
+  # (journald's per-boot logs), NetworkManager's saved networks (private) and
+  # secret_key, the screenshot directory swappy saves to, and the state of
+  # boltd/fwupd/OpenRGB when they run. A service that is off adds nothing.
+  impermanence-boot-state = evalClauses "impermanence-boot-state"
+    {
+      networking.hostName = "test-impermanence-boot-state";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      networking.networkmanager.enable = true;
+      services.hardware.bolt.enable = true;
+      services.fwupd.enable = false;
+      my = {
+        storage.impermanence.enable = true;
+        users.shelluser = {
+          fullName = "Shell User";
+          description = "shell";
+          email = "shell@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        p = config.environment.persistence."/persist";
+        dirs = map (d: d.directory or d) p.directories;
+        nmConnections = lib.findFirst (d: (d.directory or null) == "/etc/NetworkManager/system-connections") null p.directories;
+        userDirs = map (d: d.directory or d) p.users.shelluser.directories;
+      in
+      {
+        machineId = builtins.elem "/etc/machine-id" (map (f: f.file or f) p.files);
+        networkManager = config.networking.networkmanager.enable
+          && builtins.elem "/var/lib/NetworkManager" dirs
+          && nmConnections != null && nmConnections.mode == "0700";
+        boltd = builtins.elem "/var/lib/boltd" dirs;
+        fwupdOffNotPersisted = !(builtins.elem "/var/lib/fwupd" dirs);
+        screenshots = builtins.elem "Pictures/screenshots" userDirs;
+      });
+
   # The audit watch on /etc/nixos follows the link decision: dropped when
   # /etc/nixos is a link to a user's checkout, kept when it is a directory.
   etc-nixos-audit-linked = evalClauses "etc-nixos-audit-linked"
