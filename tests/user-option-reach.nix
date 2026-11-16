@@ -123,6 +123,7 @@ let
     "graphical.streaming" = "OBS plus the v4l2loopback virtual camera.";
     "theming" = "vogix, which is NixOS + Hyprland.";
     "apps.dev.tools.radicle.node" = "the user radicle daemon is a home-manager systemd user service; the CLI itself is cross-platform.";
+    "apps.ai.tools.claude-code.fleetWake" = "fleet-new.path / fleet-new.service are home-manager systemd user units; the CLI itself is cross-platform.";
   };
 
   darwinOnly = {

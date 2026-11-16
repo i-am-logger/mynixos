@@ -457,6 +457,25 @@ in
       let package = (hmOf config).programs.claude-code.package; in
       (package.pname or "") == "claude-code" && !(package ? paths));
 
+  # fleetWake: the path unit watches new/ under the name fleetd's watch.sh
+  # checks, starts at login, and its service's FIFO write is time-bounded so
+  # it cannot hang when nothing reads. Off by default.
+  claude-code-fleet-wake = evalAssert "claude-code-fleet-wake"
+    (herdrUser { } { apps.ai.tools.claude-code = { enable = true; fleetWake.enable = true; }; })
+    (config:
+      let
+        hm = hmOf config;
+        exec = toString hm.systemd.user.services.fleet-new.Service.ExecStart;
+      in
+      hm.systemd.user.paths.fleet-new.Path.PathChanged == "%h/.claude/fleet/new"
+      && hm.systemd.user.paths.fleet-new.Install.WantedBy == [ "default.target" ]
+      && lib.hasInfix "/bin/timeout 2 " exec
+      && lib.hasInfix "> %h/.claude/fleet/events.fifo" exec);
+
+  claude-code-fleet-wake-off = evalAssert "claude-code-fleet-wake-off"
+    (herdrUser { } { apps.ai.tools.claude-code.enable = true; })
+    (config: !((hmOf config).systemd.user.paths ? fleet-new));
+
   # mergedSettings: the real activation step, run against a scratch home.
   # The defaults (history kept, no commit attribution) land in settings.json
   # beside Claude Code's own keys, deep-merged; the file stays a plain

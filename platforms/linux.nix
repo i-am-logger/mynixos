@@ -268,6 +268,8 @@ in
     ../my/users/apps/media/qobine # alsa-lib; packages/qobine is Linux-only
     ../my/users/apps/dev/radicle/options-linux.nix # its option: HM-only, Linux-only
     ../my/users/apps/dev/radicle/linux.nix # user radicle-node: HM systemd.user service
+    ../my/users/apps/ai/claude-code/options-linux.nix # its fleetWake option: HM user units, Linux-only
+    ../my/users/apps/ai/claude-code/linux.nix # fleet-new.path + fleet-new.service
     ../my/users/apps/security/1password # programs._1password{,-gui}
     ../my/users/apps/viewers/feh # X11
   ];
