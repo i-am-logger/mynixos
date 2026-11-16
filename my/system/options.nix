@@ -122,6 +122,16 @@
           description = "List of unfree package names to allow. Modules append to this list and a single predicate is built centrally.";
         };
 
+        # For a set too large and too changeable to name package by package --
+        # CUDA's libraries all carry one licence, and which of them a build
+        # pulls in moves with nixpkgs.
+        allowedUnfreeLicenses = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "CUDA EULA" ];
+          description = "Unfree licences (by shortName) whose packages are allowed. Read by the same central predicate as allowedUnfreePackages.";
+        };
+
       };
     };
   };

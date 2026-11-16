@@ -101,11 +101,19 @@ in
       };
     };
 
-    # Persistence configuration
-    my.system.persistence.features = {
-      systemDirectories = [
-        "/var/lib/nvidia-persistenced"
-      ];
+    my.system = {
+      # cudaSupport pulls CUDA's libraries into whatever builds against them
+      # (opencv under OBS's scene switcher, for one), and they are all under
+      # NVIDIA's CUDA EULA: accept that licence where CUDA is asked for. The
+      # names in allowedUnfreePackages above predate it and stay harmless.
+      allowedUnfreeLicenses = [ "CUDA EULA" ];
+
+      # Persistence configuration
+      persistence.features = {
+        systemDirectories = [
+          "/var/lib/nvidia-persistenced"
+        ];
+      };
     };
   };
 }

@@ -42,10 +42,19 @@
       };
     };
   };
-  home = { cfg, pkgs, lib, ... }: {
-    home.packages = [ pkgs.radicle-node ]
-      ++ lib.optional cfg.tui pkgs.radicle-tui
-      ++ lib.optional cfg.desktop pkgs.radicle-desktop
-      ++ lib.optional cfg.job pkgs.radicle-job;
-  };
+  home = { cfg, pkgs, lib, ... }:
+    let
+      # nixpkgs marks radicle-tui broken: its source is no longer fetchable
+      # and upstream is unmaintained. The option stays; while the package is
+      # broken it is left out, said out loud, and comes back on its own.
+      tuiBroken = pkgs.radicle-tui.meta.broken or false;
+    in
+    {
+      warnings = lib.optional (cfg.tui && tuiBroken)
+        "apps.dev.tools.radicle.tui is on, but nixpkgs marks radicle-tui broken (unfetchable source, unmaintained upstream); it is not installed.";
+      home.packages = [ pkgs.radicle-node ]
+        ++ lib.optional (cfg.tui && !tuiBroken) pkgs.radicle-tui
+        ++ lib.optional cfg.desktop pkgs.radicle-desktop
+        ++ lib.optional cfg.job pkgs.radicle-job;
+    };
 }
