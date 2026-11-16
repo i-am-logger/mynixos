@@ -143,6 +143,7 @@ in
       ../my/users/apps/dev/jq
       ../my/users/apps/dev/kdiff3
       ../my/users/apps/dev/radicle
+      ../my/users/apps/dev/radicle/insecure.nix # radicle-node 1.10.3 permitted where radicle is on (tailnet-only)
 
       # Editors
       ../my/users/apps/editors/helix
