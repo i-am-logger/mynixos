@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.30.0...mynixos-v0.31.0) (2026-11-16)
+
+
+### Features
+
+* **nix:** one nixpkgs, pinned wherever nixpkgs is named ([8714e39](https://github.com/i-am-logger/mynixos/commit/8714e398b297d0ebc61b8c1ba421b12b93d7241f))
+
+
+### Bug Fixes
+
+* **brave:** re-pin the darwin DMG to 1.99.56 ([c74b18b](https://github.com/i-am-logger/mynixos/commit/c74b18b4d55ed3e4da0b89b5395073062dd19932))
+
 ## [0.30.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.29.0...mynixos-v0.30.0) (2026-11-16)
 
 
