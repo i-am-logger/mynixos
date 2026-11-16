@@ -16,6 +16,9 @@
 , fetchFromGitHub
 , git
 , python3
+, pkg-config
+, libgit2
+, oniguruma
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
@@ -43,6 +46,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # layouts name `herdr-reviewr` by bare name.
     ./no-launch-links.patch
   ];
+
+  # nixpkgs' cargo setup hook tells -sys crates to link the system library
+  # rather than build their bundled copy (LIBGIT2_NO_VENDOR,
+  # RUSTONIG_SYSTEM_LIBONIG), so the libraries are supplied here and found
+  # through pkg-config: libgit2 for git2, oniguruma for syntect's regexes.
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ libgit2 oniguruma ];
 
   nativeCheckInputs = [ git ];
 
@@ -73,6 +83,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "an_open_whose_pane_dies_at_launch_refuses_at_once"
     "auto_open_gives_way_to_a_held_lock"
     "workspace_ids_differing_only_in_case_hold_separate_locks"
+    # Failed on ads-dev1 2026-11-15 at 27 s against its bound, under load.
+    "an_open_whose_pane_never_reads_as_reviewr_succeeds_after_the_bound_and_says_so"
     "a_watcher_that_cannot_start_restarts_and_asks_for_everything"
     # Turn baselines keyed on Instant::now() (tests/app_flow.rs).
     "a_question_only_turns_snapshot_expires_at_its_end"

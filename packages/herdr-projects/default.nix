@@ -23,6 +23,7 @@
 , fetchFromGitHub
 , git
 , rsync
+, tzdata
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
@@ -87,11 +88,24 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # wrapped, because its plugin root is computed from its own real path.
   nativeCheckInputs = [ git rsync ];
 
+  # The routine tests schedule in named zones (Europe/Stockholm) through jiff,
+  # which reads the zone database from TZDIR; the Linux sandbox has no
+  # /usr/share/zoneinfo for it to fall back to.
+  preCheck = ''
+    export TZDIR=${tzdata}/share/zoneinfo
+  '';
+
   # A wall-clock bound: it asserts a 300 ms timeout returns within 2 s
   # (src/runner.rs:482-498), which a loaded builder misses -- it failed at a
   # load average of 110 with the other 324 tests passing. Skipping it also
   # drops its check that the group kill reaches a grandchild.
-  checkFlags = [ "--skip=runner::tests::group_kill_reaches_grandchildren" ];
+  checkFlags = [ "--skip=runner::tests::group_kill_reaches_grandchildren" ]
+    # Runs scripts/link-command.sh with PATH=~/.local/bin:/usr/bin:/bin
+    # (src/command_link.rs:233-236), and the Linux sandbox has neither
+    # directory, so the script finds no ln and the link is never made.
+    # darwin's unsandboxed build has both.
+    ++ lib.optional stdenv.hostPlatform.isLinux
+    "--skip=command_link::tests::the_install_script_links_where_herdr_will_move_the_checkout";
 
   postInstall = ''
     root=$out/${finalAttrs.passthru.pluginSubdir}

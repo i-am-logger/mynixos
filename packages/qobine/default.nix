@@ -4,6 +4,7 @@
 , pkg-config
 , alsa-lib
 , openssl
+, sqlite
 }:
 
 rustPlatform.buildRustPackage rec {
@@ -46,8 +47,10 @@ rustPlatform.buildRustPackage rec {
   nativeBuildInputs = [ pkg-config ];
 
   # alsa-lib: rodio's audio output. openssl: reqwest keeps its default
-  # native-tls backend alongside rustls.
-  buildInputs = [ alsa-lib openssl ];
+  # native-tls backend alongside rustls. sqlite: libsqlite3-sys links the
+  # system SQLite on current nixpkgs rather than bundling its own, so
+  # sqlx-macros needs -lsqlite3 at link time.
+  buildInputs = [ alsa-lib openssl sqlite ];
 
   meta = with lib; {
     description = "Terminal player for the Qobuz high resolution streaming service";
