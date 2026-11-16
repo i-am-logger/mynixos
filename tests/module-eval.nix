@@ -788,6 +788,13 @@ in
       && lib.hasInfix ''hl.curve("myBezier"'' text
       && lib.hasInfix "hl.monitor({" text
       && lib.hasInfix ''hl.env("TERMINAL"'' text
+      # one cursor theme with every shape: Hyprland's own env, home-manager's
+      # XCURSOR_*, and the GNOME keys the portal serves
+      && lib.hasInfix ''hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")'' text
+      && hm.home.pointerCursor.name == "Bibata-Modern-Classic"
+      && hm.home.pointerCursor.size == 24
+      && hm.home.sessionVariables.XCURSOR_THEME == "Bibata-Modern-Classic"
+      && hm.dconf.settings."org/gnome/desktop/interface".cursor-theme == "Bibata-Modern-Classic"
       && lib.hasInfix ''["name"] = "slack-menus"'' text
       && lib.hasInfix ''hl.exec_cmd("1password --silent")'' text
       && !(hm.xdg.configFile ? "hypr/hyprland.conf"));

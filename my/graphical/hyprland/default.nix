@@ -650,14 +650,36 @@ in
                   terminalApp.package.meta.mainProgram or terminalApp.package.pname or "wezterm"
                 else
                   "wezterm";
+
+              # The cursor theme (home.pointerCursor below), named once for
+              # both home-manager and Hyprland's own environment.
+              cursorName = "Bibata-Modern-Classic";
+              cursorSize = 24;
             in
             mkIf (userCfg.graphical.enable && userHyprland.enable) {
-              # GTK configuration. `theme`, `iconTheme` and `cursorTheme` are
-              # left unset, so GTK apps use their built-in defaults -- vogix
-              # themes terminal surfaces (alacritty, bat, btop, ripgrep, the
-              # console palette) and has no GTK template.
+              # GTK configuration. `theme` and `iconTheme` are left unset, so
+              # GTK apps use their built-in defaults -- vogix themes terminal
+              # surfaces (alacritty, bat, btop, ripgrep, the console palette)
+              # and has no GTK template. The cursor is set below.
               gtk = {
                 enable = true;
+              };
+
+              # One cursor theme with every shape name, so text, pointer and
+              # resize cursors look different. Without one, every app falls
+              # back to the same arrow. Fixed rather than following vogix's
+              # light/dark: Bibata Classic's dark fill and light outline read
+              # on both, and a swap would reload the cursor in every client.
+              # home-manager carries it to XCURSOR_*, GTK, X11 and the GNOME
+              # cursor keys the portal serves; Hyprland gets it through its own
+              # env below. No hyprcursor: nixpkgs has no hyprcursor build of
+              # it, and Hyprland renders the XCursor theme instead.
+              home.pointerCursor = {
+                package = mkDefault pkgs.bibata-cursors;
+                name = mkDefault cursorName;
+                size = mkDefault cursorSize;
+                gtk.enable = mkDefault true;
+                x11.enable = mkDefault true;
               };
 
               # Swappy config for screenshots
@@ -771,6 +793,8 @@ in
                         { _args = [ "TERMINAL" terminalCmd ]; }
                         { _args = [ "BROWSER" browserCmd ]; }
                         { _args = [ "COLORTERM" "truecolor" ]; }
+                        { _args = [ "XCURSOR_THEME" cursorName ]; }
+                        { _args = [ "XCURSOR_SIZE" (toString cursorSize) ]; }
                       ];
                       on = [
                         {
@@ -791,6 +815,8 @@ in
                         "TERMINAL,${terminalCmd}"
                         "BROWSER,${browserCmd}"
                         "COLORTERM,truecolor"
+                        "XCURSOR_THEME,${cursorName}"
+                        "XCURSOR_SIZE,${toString cursorSize}"
                       ];
                       exec-once = autostart;
                       windowrule = vogixWindowrules ++ windowRules;
