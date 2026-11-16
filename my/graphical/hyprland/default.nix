@@ -869,8 +869,14 @@ in
                 {
                   enable = true;
                   xwayland.enable = true;
-                  # The engine follows the per-user option; "hyprlang" until a
-                  # host flips to the Lua config (Hyprland 0.57 removes hyprlang).
+                  # The portal is the system's: my/graphical installs
+                  # xdg-desktop-portal-hyprland through xdg.portal beside
+                  # programs.hyprland. Left to home-manager, it would also
+                  # rebuild the portal with `.override { hyprland = … }`, an
+                  # argument the package no longer takes.
+                  portalPackage = null;
+                  # The engine follows the per-user option; "lua" by default
+                  # (Hyprland 0.57 removed hyprlang).
                   inherit configType;
                   settings = lib.recursiveUpdate
                     (infraSettings // fallbackSettings)
