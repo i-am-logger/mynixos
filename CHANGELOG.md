@@ -5,6 +5,28 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.29.0...mynixos-v0.30.0) (2026-11-16)
+
+
+### Features
+
+* **claude-code:** fleetWake, declarative fleet-mail wake units ([c42cec5](https://github.com/i-am-logger/mynixos/commit/c42cec5708ee8f8a9229e2d78fe196436ea63ad7))
+
+
+### Bug Fixes
+
+* every host evaluates on the updated nixpkgs ([45eeace](https://github.com/i-am-logger/mynixos/commit/45eeace25c84e2e2b5a356544fd86d313524cfd4))
+* **hyprland:** leave the portal to NixOS ([f005ec2](https://github.com/i-am-logger/mynixos/commit/f005ec2af17edb149f98964b651dfd434f3743a1))
+* **packages:** build on nixpkgs that links system libraries ([4ca9bb2](https://github.com/i-am-logger/mynixos/commit/4ca9bb2634c0e75c75348f6d3f823ad0211eddea))
+* **radicle:** permit radicle-node 1.10.3 where radicle is in use ([a8b99c8](https://github.com/i-am-logger/mynixos/commit/a8b99c8d12a2a6d7fb60f81555d310f936ae2d20))
+* **yubico:** build ripasso-cursive with its bundled libgit2 ([b752753](https://github.com/i-am-logger/mynixos/commit/b752753d06c76af1cd62bd5f980f97a4eddcc99b))
+
+
+### Miscellaneous
+
+* **deps:** vogix 0.14.2 and every input updated ([be8c767](https://github.com/i-am-logger/mynixos/commit/be8c767fe12fdfb78e826be97b8ba6074b0f7ea4))
+* **deps:** vogix 0.15.0 ([e175dc3](https://github.com/i-am-logger/mynixos/commit/e175dc32bf2223aa97c4bed0508faaad1f58f230))
+
 ## [0.29.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.28.0...mynixos-v0.29.0) (2026-11-16)
 
 
