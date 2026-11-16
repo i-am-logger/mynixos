@@ -81,6 +81,7 @@ in
     # fleet (Nix stays owned by the NixOS nix-installer), so garbage collection
     # is wired as plain launchd daemons instead.
     ../my/system/nix-gc
+    ../my/system/nix-registry/darwin.nix # nixpkgs registry + NIX_PATH while the nix-installer owns Nix
 
     # Containers via Colima -- the macOS counterpart to my/dev/development's
     # `virtualisation.podman`. Reads the same `dev.containers.enable` option;

@@ -112,6 +112,21 @@ in
       (c.launchd.daemons ? mynixos-nix-gc && c.launchd.daemons ? mynixos-nix-optimise)
       "my.nixGc should install the gc and optimise launchd daemons";
 
+  # With nix.enable = false (this fleet: the nix-installer owns Nix),
+  # nix-darwin writes no registry and no NIX_PATH, so my/system/nix-registry
+  # does: `nixpkgs` is the nixpkgs the system was built from.
+  darwin-smoke-nix-registry =
+    let
+      c = darwinConfigWith [{ nix.enable = false; }] { };
+      registry = builtins.fromJSON (builtins.unsafeDiscardStringContext c.environment.etc."nix/registry.json".text);
+      entry = builtins.head registry.flakes;
+    in
+    check "nix-registry"
+      (entry.from.id == "nixpkgs"
+        && entry.to.path == toString inputs.nixpkgs.outPath
+        && c.environment.variables.NIX_PATH == "nixpkgs=flake:nixpkgs")
+      "with nix.enable = false, /etc/nix/registry.json and NIX_PATH should pin nixpkgs to the system's own";
+
   # pf, because sshd_config's ListenAddress does nothing when launchd owns the
   # socket.
   darwin-smoke-ssh-firewall =

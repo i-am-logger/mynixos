@@ -457,6 +457,14 @@ in
       let package = (hmOf config).programs.claude-code.package; in
       (package.pname or "") == "claude-code" && !(package ? paths));
 
+  # `nixpkgs` in the registry and on NIX_PATH is the nixpkgs the system was
+  # built from, and NIX_PATH holds nothing else: no channels entry.
+  nix-registry-pinned = evalAssert "nix-registry-pinned" { }
+    (config:
+      toString config.nix.registry.nixpkgs.to.path == toString inputs.nixpkgs.outPath
+      && config.nix.nixPath == [ "nixpkgs=flake:nixpkgs" ]
+      && !config.nix.channel.enable);
+
   # fleetWake: the path unit watches new/ under the name fleetd's watch.sh
   # checks, starts at login, and its service's FIFO write is time-bounded so
   # it cannot hang when nothing reads. Off by default.

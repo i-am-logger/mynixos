@@ -327,6 +327,11 @@
             inherit lib nixpkgs system self inputs;
           };
 
+          # flake.lock holds one nixpkgs, plus the named exceptions (baud's pin).
+          singleNixpkgsTest = import ./tests/single-nixpkgs.nix {
+            inherit lib nixpkgs system self inputs;
+          };
+
           # The darwin module set, evaluated from a Linux runner. Only `config`
           # is read, so no aarch64-darwin builder is needed.
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
@@ -351,6 +356,7 @@
         // tailnetLivenessProbeTests
         // virtualisationContainersTests
         // passtNullFlowTest
+        // singleNixpkgsTest
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays

@@ -1,3 +1,8 @@
+# devenv's nixpkgs is the flake's: one pin, held in flake.lock, so the dev
+# shell and the systems agree on every package (N11). devenv.lock records a
+# copy of the flake's lock graph and follows it on the next `devenv shell`.
 inputs:
+  mynixos:
+    url: path:.
   nixpkgs:
-    url: github:cachix/devenv-nixpkgs/rolling
+    follows: mynixos/nixpkgs

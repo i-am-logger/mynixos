@@ -133,6 +133,7 @@ in
     # System
     ../my/system/core
     ../my/system/etc-nixos
+    ../my/system/nix-registry/linux.nix # channels off; the registry pin comes from nixpkgs itself
     ../my/system/kernel
     ../my/system/systemd
     # A duplicate uid or gid makes two accounts one principal, and neither
