@@ -5,6 +5,15 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.28.0...mynixos-v0.29.0) (2026-11-16)
+
+
+### Features
+
+* **hyprland:** Lua is the default config engine ([455bd19](https://github.com/i-am-logger/mynixos/commit/455bd19e9bb462052cc26b3b9327e39d431b3e32))
+* **hyprland:** one cursor theme with every shape ([d2c82f6](https://github.com/i-am-logger/mynixos/commit/d2c82f6e5d94b67291d0ca1df98629ba16e6817d))
+* **security-keys:** offer only the cards that live here; sudo trusts every key ([9110d41](https://github.com/i-am-logger/mynixos/commit/9110d415cc4bd96c0fe7505996b0fa27c115978e))
+
 ## [0.28.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.27.0...mynixos-v0.28.0) (2026-11-15)
 
 
