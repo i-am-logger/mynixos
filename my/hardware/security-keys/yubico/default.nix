@@ -87,7 +87,10 @@ in
       systemPackages = with pkgs; [
         pinentry-qt
         gopass
-        ripasso-cursive
+        # nixpkgs' cargo hook now makes -sys crates link system libraries,
+        # and ripasso's libgit2-sys 0.17 wants libgit2 1.8 where nixpkgs has
+        # 1.9. Opting out builds it as before, with its bundled 1.8.1.
+        (ripasso-cursive.overrideAttrs { dontCargoUseSystemLibs = true; })
         libsecret
         libnotify
         yubikey-touch-detector
