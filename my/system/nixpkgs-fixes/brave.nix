@@ -83,18 +83,18 @@ _final: prev:
 prev.lib.optionalAttrs prev.stdenv.hostPlatform.isDarwin {
   brave =
     let
-      pinnedVersion = "1.95.102";
+      pinnedVersion = "1.99.56";
 
       # arm64 is the verified one; the x64 hash is recorded so the expression is
       # complete, but no x86_64-darwin host exists to launch it on.
       dmg = {
         aarch64-darwin = {
           suffix = "arm64";
-          hash = "sha256-l+tfihfRoOGR06RwWeebn6R9OTADXRCiOtCG355Ksfs=";
+          hash = "sha256-YMTAvoDt+pEWiAX4B6RZgPYnOJbicS4hebZ9nWHr25M=";
         };
         x86_64-darwin = {
           suffix = "x64";
-          hash = "sha256-NwpxF2L74VdjA1enwQHpSSPS4FmaIObz/NoQE/jbeR0=";
+          hash = "sha256-h8L1m2anlsbYGxcgolJjUboabwGXshHQdfL3JD2mC/Q=";
         };
       }.${prev.stdenv.hostPlatform.system};
 
