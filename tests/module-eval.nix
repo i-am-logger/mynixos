@@ -1009,6 +1009,39 @@ in
       && config.boot.plymouth.theme == "vogix"
       && lib.any (p: lib.hasInfix "vogix-plymouth" p.name) config.boot.plymouth.themePackages);
 
+  # Notification actions send an xdg-activation token only from vogix's
+  # patched quickshell (vogix.lib.quickshellPatched: nixpkgs' 0.3.2 plus two
+  # patches, marked passthru.vogixActivationToken). The vogix desktop unit
+  # runs programs.quickshell.package, so that is the package that must be
+  # the patched build — and it must be the one home-manager installs. It
+  # arrives through the per-user nixpkgs.overlays in my/theming/vogix
+  # (useGlobalPkgs is off, so the system overlay alone would not reach it);
+  # this guards that path.
+  graphical-shell-quickshell-patched = evalClauses "graphical-shell-quickshell-patched"
+    {
+      networking.hostName = "test-shell-quickshell";
+      my.users.shelluser = {
+        fullName = "Shell User";
+        description = "shell";
+        email = "shell@example.com";
+        graphical.enable = true;
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.shelluser;
+        qs = hm.programs.quickshell.package;
+      in
+      {
+        quickshell-enabled = hm.programs.quickshell.enable;
+        quickshell-patched = qs.passthru.vogixActivationToken or false;
+        quickshell-installed = lib.any (p: (p.drvPath or null) == qs.drvPath) hm.home.packages;
+        desktop-unit-runs-it = lib.hasInfix
+          (builtins.unsafeDiscardStringContext "${qs}/bin/qs ")
+          (builtins.unsafeDiscardStringContext
+            (toString hm.systemd.user.services.vogix-desktop.Service.ExecStart));
+      });
+
   # The machine surfaces on a yoga-shaped host: the Kraken ring and the
   # Keychron backlight come from mynixos's hardware options, the DRAM from
   # vogix's own option, and all three follow the machine owner's published

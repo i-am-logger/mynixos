@@ -706,16 +706,16 @@
         "vogix16-themes": "vogix16-themes"
       },
       "locked": {
-        "lastModified": 1794803617,
-        "narHash": "sha256-yMfiCFNN7EoGpMRnMvvUxaBapVa+KcRCslm3e01kWTM=",
+        "lastModified": 1794885940,
+        "narHash": "sha256-2mZFHVFm/49121o2MrsQ7+UfsRx1qGMzPtkoiybcFow=",
         "owner": "i-am-logger",
         "repo": "vogix",
-        "rev": "b84e3a327e77672dc16f4ea5120f76d64b454cb8",
+        "rev": "c02f926af17600edcd315941c7ba4f4cc5fac55b",
         "type": "github"
       },
       "original": {
         "owner": "i-am-logger",
-        "ref": "vogix-v0.15.0",
+        "ref": "vogix-v0.16.0",
         "repo": "vogix",
         "type": "github"
       }

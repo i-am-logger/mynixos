@@ -150,6 +150,12 @@ in
               # `pkgs.vogix` resolves via the flake's devenv build instead
               # of falling back to packages/vogix.nix (which would re-build
               # vogix via rustPlatform and need outputHashes for git deps).
+              # The same overlay swaps in vogix's patched quickshell, which
+              # programs.quickshell.package (the vogix-desktop unit's qs)
+              # defaults to: without it notification actions send no
+              # activation token. useGlobalPkgs is off, so the system overlay
+              # alone would not reach it. Guarded by the module-eval test
+              # graphical-shell-quickshell-patched.
               nixpkgs.overlays = [ vogix.overlays.default ];
 
               programs.vogix = {
