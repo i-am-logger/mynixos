@@ -1,0 +1,318 @@
+From 2c3e7b4012158814d4be8fa6ba7b694e2eab0244 Mon Sep 17 00:00:00 2001
+From: Ido Samuelson <i-am-logger@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 22:45:06 -0700
+Subject: [PATCH] fix: write JSON members onto bind-mounted and symlinked files
+
+A ~/.claude.json persisted by impermanence is either a single-file bind
+mount or a symlink into the persistent store. Renaming the staged temp
+onto a mount point fails EBUSY (EXDEV across mounts), so every sync
+failed with "failed to write ~/.claude.json"; renaming it over a symlink
+replaces the link with a plain file, silently dropping persistence.
+
+Keep the rename as the first choice. When it fails EBUSY or EXDEV, write
+the staged bytes into the destination in place (same inode and mode),
+as Claude Code itself does, and remove the temp. Member writes follow a
+symlink first, so the temp is staged beside the real file and the link
+survives; a link into an unwritable directory is replaced as before.
+---
+ src/claude_json.rs          |   3 +-
+ src/jsonsync.rs             |  14 ++--
+ src/profile.rs              |  70 ++++++++++++++++-
+ tests/inline/claude_json.rs | 148 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 226 insertions(+), 9 deletions(-)
+
+diff --git a/src/claude_json.rs b/src/claude_json.rs
+index 1df3aaa8..312a7f6e 100644
+--- a/src/claude_json.rs
++++ b/src/claude_json.rs
+@@ -141,7 +141,8 @@ pub(crate) fn strip_home_oauth_account() -> Result<()> {
+     }
+     let bytes = serde_json::to_vec_pretty(&Value::Object(obj))
+         .context("failed to serialize .claude.json after stripping oauthAccount")?;
+-    atomic_write(&path, &bytes).with_context(|| format!("failed to write {}", path.display()))
++    crate::profile::write_through_link(&path, |target| atomic_write(target, &bytes))
++        .with_context(|| format!("failed to write {}", path.display()))
+ }
+ 
+ #[cfg(test)]
+diff --git a/src/jsonsync.rs b/src/jsonsync.rs
+index 73962f3a..4c6b3893 100644
+--- a/src/jsonsync.rs
++++ b/src/jsonsync.rs
+@@ -20,7 +20,7 @@ use std::time::SystemTime;
+ use anyhow::{Context, Result};
+ use serde_json::{Map, Value};
+ 
+-use crate::profile::{atomic_write, atomic_write_600};
++use crate::profile::{atomic_write, atomic_write_600, write_through_link};
+ 
+ /// Where a key sits in a synced document. The walk is one level deep, so
+ /// [`KeyPath::Nested`] is only ever asked about keys of a top-level object whose
+@@ -240,9 +240,11 @@ fn merge_member(
+ /// restyle it either way. Any path that is not `operator_file` is treated as
+ /// clauth-owned, the stricter default.
+ fn write_member(path: &Path, bytes: &[u8], operator_file: Option<&Path>) -> std::io::Result<()> {
+-    if operator_file == Some(path) {
+-        atomic_write(path, bytes)
+-    } else {
+-        atomic_write_600(path, bytes)
+-    }
++    write_through_link(path, |target| {
++        if operator_file == Some(path) {
++            atomic_write(target, bytes)
++        } else {
++            atomic_write_600(target, bytes)
++        }
++    })
+ }
+diff --git a/src/profile.rs b/src/profile.rs
+index 8c72e83e..70d49e2e 100644
+--- a/src/profile.rs
++++ b/src/profile.rs
+@@ -2314,7 +2314,7 @@ pub(crate) fn atomic_write(path: &Path, content: impl AsRef<[u8]>) -> std::io::R
+     }
+     let tmp = tmp_sibling(path);
+     std::fs::write(&tmp, content)?;
+-    match std::fs::rename(&tmp, path) {
++    match land(&tmp, path) {
+         Ok(()) => Ok(()),
+         Err(e) => {
+             let _ = std::fs::remove_file(&tmp);
+@@ -2354,7 +2354,7 @@ pub(crate) fn atomic_write_600(path: &Path, content: impl AsRef<[u8]>) -> std::i
+     }
+     #[cfg(not(unix))]
+     std::fs::write(&tmp, content)?;
+-    match std::fs::rename(&tmp, path) {
++    match land(&tmp, path) {
+         Ok(()) => Ok(()),
+         Err(e) => {
+             let _ = std::fs::remove_file(&tmp);
+@@ -2363,6 +2363,72 @@ pub(crate) fn atomic_write_600(path: &Path, content: impl AsRef<[u8]>) -> std::i
+     }
+ }
+ 
++/// Publish a staged temp at `path`: rename it there, or, when `path` is a
++/// mount point (EBUSY; impermanence persists a single file as a bind mount)
++/// or the rename would cross mounts (EXDEV), write its bytes into `path` in
++/// place, as Claude Code itself does then. In place, `path` keeps its inode and
++/// mode, and a reader can catch a partial write, which the JSON syncers already
++/// skip as unparseable.
++fn land(tmp: &Path, path: &Path) -> std::io::Result<()> {
++    use std::io::ErrorKind::{CrossesDevices, ResourceBusy};
++    match rename_tmp(tmp, path) {
++        Err(e) if matches!(e.kind(), ResourceBusy | CrossesDevices) => {
++            use std::io::Write;
++            let bytes = std::fs::read(tmp)?;
++            let mut f = std::fs::OpenOptions::new().write(true).open(path)?;
++            f.write_all(&bytes)?;
++            f.set_len(bytes.len() as u64)?;
++            f.sync_all()?;
++            let _ = std::fs::remove_file(tmp);
++            Ok(())
++        }
++        renamed => renamed,
++    }
++}
++
++/// Write `path` through `write`, following it first when it is a symlink, so
++/// the temp is staged beside the file the link names and the link survives: a
++/// rename over the link itself would swap it for a plain file (impermanence
++/// links a persisted file in when it cannot bind-mount it). A link whose target
++/// cannot be written (read-only, store-managed) is replaced as before.
++pub(crate) fn write_through_link(
++    path: &Path,
++    write: impl Fn(&Path) -> std::io::Result<()>,
++) -> std::io::Result<()> {
++    use std::io::ErrorKind::{PermissionDenied, ReadOnlyFilesystem};
++    let is_link = std::fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink());
++    let Some(target) = is_link.then(|| std::fs::canonicalize(path).ok()).flatten() else {
++        return write(path);
++    };
++    match write(&target) {
++        Err(e) if matches!(e.kind(), PermissionDenied | ReadOnlyFilesystem) => write(path),
++        written => written,
++    }
++}
++
++/// Rename a staged temp onto `path`. A test build can fail the next rename on
++/// its thread with a chosen error ([`fail_next_rename`]), standing in for a
++/// destination that is a mount point, which no unprivileged test can make.
++fn rename_tmp(tmp: &Path, path: &Path) -> std::io::Result<()> {
++    #[cfg(test)]
++    if let Some(kind) = RENAME_FAULT.take() {
++        return Err(kind.into());
++    }
++    std::fs::rename(tmp, path)
++}
++
++#[cfg(test)]
++thread_local! {
++    static RENAME_FAULT: std::cell::Cell<Option<std::io::ErrorKind>> =
++        const { std::cell::Cell::new(None) };
++}
++
++/// Fail this thread's next [`rename_tmp`] with `kind`.
++#[cfg(test)]
++pub(crate) fn fail_next_rename(kind: std::io::ErrorKind) {
++    RENAME_FAULT.set(Some(kind));
++}
++
+ /// Create `path` as a directory (recursively) with mode 0o700 on Unix,
+ /// or the default mode on non-Unix.
+ pub(crate) fn mkdir_700(path: &Path) -> std::io::Result<()> {
+diff --git a/tests/inline/claude_json.rs b/tests/inline/claude_json.rs
+index f5db5040..f13c0f7f 100644
+--- a/tests/inline/claude_json.rs
++++ b/tests/inline/claude_json.rs
+@@ -459,3 +459,151 @@ fn known_paths_reach_per_session_copies_and_still_exclude_isolated() {
+     );
+     assert_eq!(paths.len(), 4, "no member beyond those four: {paths:#?}");
+ }
++
++/// No temp sibling left beside `path`: every write path removes its staging
++/// file, whether it renamed it or wrote its bytes in place.
++fn assert_no_temp_beside(path: &Path) {
++    #[allow(clippy::expect_used)]
++    let dir = path.parent().expect("has parent");
++    let prefix = format!(
++        ".{}.tmp.",
++        path.file_name().expect("has name").to_string_lossy()
++    );
++    let left: Vec<_> = fs::read_dir(dir)
++        .expect("read dir")
++        .filter_map(Result::ok)
++        .filter(|e| e.file_name().to_string_lossy().starts_with(&prefix))
++        .collect();
++    assert!(left.is_empty(), "temp files left beside {path:?}: {left:?}");
++}
++
++/// A `~/.claude.json` that is a bind-mounted file (impermanence persists a
++/// single file that way) is a mount point, and rename onto a mount point fails
++/// EBUSY. The sync must still land: the bytes go into the mounted file in
++/// place, so its inode is the same one, and the staging temp is gone.
++#[cfg(unix)]
++#[test]
++fn sync_writes_a_bind_mounted_home_file_in_place() {
++    use std::os::unix::fs::MetadataExt;
++
++    let home = HomeSandbox::new();
++    let home_file = home.home().join(".claude.json");
++    let winner = home.home().join(".clauth/profiles/p1/runtime/.claude.json");
++    #[allow(clippy::expect_used)]
++    fs::create_dir_all(winner.parent().expect("has parent")).expect("mkdir runtime");
++    // Longer than what replaces it, so a write that leaves a stale tail shows.
++    write_json(
++        &home_file,
++        &json!({"numStartups": 1, "tips": "x".repeat(4096)}),
++    );
++    write_json(&winner, &json!({"numStartups": 9}));
++    set_mtime(&home_file, t(5));
++    set_mtime(&winner, t(10));
++    let inode = fs::metadata(&home_file).expect("metadata").ino();
++
++    crate::profile::fail_next_rename(std::io::ErrorKind::ResourceBusy);
++    sync_paths(&[home_file.clone(), winner]).expect("sync onto a mount point");
++
++    assert_eq!(read_json(&home_file), json!({"numStartups": 9}));
++    assert_eq!(
++        fs::metadata(&home_file).expect("metadata").ino(),
++        inode,
++        "the mounted file is written in place, not replaced"
++    );
++    assert_no_temp_beside(&home_file);
++}
++
++/// The same fallback when the rename crosses mounts (EXDEV), through the
++/// owner-only writer: the file keeps its own mode, since it is the same file.
++#[cfg(unix)]
++#[test]
++fn owner_only_write_lands_in_place_when_the_rename_crosses_devices() {
++    use std::os::unix::fs::{MetadataExt, PermissionsExt};
++
++    let tmp = tempfile::tempdir().expect("tempdir");
++    let path = tmp.path().join("member.json");
++    fs::write(&path, "old bytes, longer than the new ones").expect("seed");
++    fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).expect("chmod");
++    let inode = fs::metadata(&path).expect("metadata").ino();
++
++    crate::profile::fail_next_rename(std::io::ErrorKind::CrossesDevices);
++    crate::profile::atomic_write_600(&path, b"new").expect("write across devices");
++
++    assert_eq!(fs::read(&path).expect("read"), b"new");
++    let meta = fs::metadata(&path).expect("metadata");
++    assert_eq!(meta.ino(), inode, "written in place, not replaced");
++    assert_eq!(meta.permissions().mode() & 0o777, 0o640);
++    assert_no_temp_beside(&path);
++}
++
++/// A `~/.claude.json` that is a symlink to a persisted copy in another
++/// directory (impermanence's shape when the persisted file was missing at
++/// activation): the sync writes the file the link names and leaves the link
++/// in place, rather than renaming a fresh file over the link.
++#[cfg(unix)]
++#[test]
++fn sync_writes_through_a_symlinked_home_file() {
++    let home = HomeSandbox::new();
++    let persist = tempfile::tempdir().expect("persist dir");
++    let target = persist.path().join(".claude.json");
++    let home_file = home.home().join(".claude.json");
++    let winner = home.home().join(".clauth/profiles/p1/runtime/.claude.json");
++    #[allow(clippy::expect_used)]
++    fs::create_dir_all(winner.parent().expect("has parent")).expect("mkdir runtime");
++    write_json(&target, &json!({"numStartups": 1}));
++    std::os::unix::fs::symlink(&target, &home_file).expect("symlink");
++    write_json(&winner, &json!({"numStartups": 9}));
++    set_mtime(&target, t(5));
++    set_mtime(&winner, t(10));
++
++    sync_paths(&[home_file.clone(), winner]).expect("sync");
++
++    assert!(
++        fs::symlink_metadata(&home_file)
++            .expect("lstat")
++            .file_type()
++            .is_symlink(),
++        "the link survives the write"
++    );
++    assert_eq!(fs::read_link(&home_file).expect("readlink"), target);
++    assert_eq!(read_json(&target), json!({"numStartups": 9}));
++    assert_no_temp_beside(&target);
++    assert_no_temp_beside(&home_file);
++}
++
++/// A link into a directory nobody may write (a read-only, store-managed
++/// file) is not followed: the write cannot land there, so the link is
++/// replaced by a regular file as before, and its target is untouched.
++#[cfg(unix)]
++#[test]
++fn sync_replaces_a_link_into_a_read_only_directory() {
++    use std::os::unix::fs::PermissionsExt;
++
++    let home = HomeSandbox::new();
++    let store = tempfile::tempdir().expect("store dir");
++    let target = store.path().join(".claude.json");
++    let home_file = home.home().join(".claude.json");
++    let winner = home.home().join(".clauth/profiles/p1/runtime/.claude.json");
++    #[allow(clippy::expect_used)]
++    fs::create_dir_all(winner.parent().expect("has parent")).expect("mkdir runtime");
++    write_json(&target, &json!({"numStartups": 1}));
++    std::os::unix::fs::symlink(&target, &home_file).expect("symlink");
++    write_json(&winner, &json!({"numStartups": 9}));
++    set_mtime(&target, t(5));
++    set_mtime(&winner, t(10));
++    fs::set_permissions(store.path(), fs::Permissions::from_mode(0o555)).expect("chmod store");
++
++    let synced = sync_paths(&[home_file.clone(), winner]);
++    fs::set_permissions(store.path(), fs::Permissions::from_mode(0o755)).expect("unchmod");
++    synced.expect("sync");
++
++    assert!(
++        fs::symlink_metadata(&home_file)
++            .expect("lstat")
++            .file_type()
++            .is_file(),
++        "the link is replaced by a regular file"
++    );
++    assert_eq!(read_json(&home_file), json!({"numStartups": 9}));
++    assert_eq!(read_json(&target), json!({"numStartups": 1}));
++}

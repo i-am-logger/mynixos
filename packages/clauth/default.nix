@@ -48,6 +48,21 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   cargoHash = "sha256-A897WAfqn5YP09b1IKo8wV4avzzjNm6wUJ2tL6hHLE0=";
 
+  patches = [
+    # clauth writes ~/.claude.json and the runtime copies by staging a temp
+    # beside the path and renaming it over (src/profile.rs atomic_write,
+    # src/jsonsync.rs write_member). Under impermanence ~/.claude.json is a
+    # single-file bind mount, a rename onto a mount point fails EBUSY, and
+    # every sync dies with "failed to write ~/.claude.json". When the
+    # persisted copy was missing at activation it is a symlink instead, and
+    # the rename swaps the link for a tmpfs file, losing persistence without
+    # a word. This falls back to writing in place on EBUSY/EXDEV (what Claude
+    # Code itself does) and stages member writes beside the file a symlink
+    # names. Not yet reported upstream (uwuclxdy/clauth); drop this patch once
+    # a release writes onto both shapes.
+    ./write-onto-mounted-and-linked-files.patch
+  ];
+
   # This darwin builder runs unsandboxed, so each build happens in a fresh
   # /nix/var/nix/builds/nix-<pid>-<random> directory, and rustc writes that
   # path into every panic location of the vendored crates, so two builds of
@@ -60,15 +75,19 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   nativeBuildInputs = [ makeBinaryWrapper installShellFiles ];
 
-  # Off, measured: on this darwin builder 38 tests failed and 4840 passed
-  # (11 ignored). All 38 are in the daemon, gateway and proxy supervision
-  # paths, which read processes through `ps` and the host name through
-  # `hostname` ("ps: command not found", "could not run `hostname`"), and
+  # Not the whole suite, measured: on this darwin builder 38 tests failed and
+  # 4840 passed (11 ignored). All 38 are in the daemon, gateway and proxy
+  # supervision paths, which read processes through `ps` and the host name
+  # through `hostname` ("ps: command not found", "could not run `hostname`"), and
   # a nix build's PATH carries neither. Upstream CI runs the suite on
   # macos-latest (.github/workflows/ci.yml:68-76), and the tests that would
   # drive the real Keychain are #[ignore]d there
   # (tests/inline/keychain.rs:1-13).
-  doCheck = false;
+  #
+  # So only the .claude.json syncer's tests run, which need neither: they
+  # include the patch's own, so a build that loses the patch fails here.
+  cargoTestFlags = [ "--bin" "clauth" ];
+  checkFlags = [ "claude_json::tests::" ];
 
   postInstall = ''
     mkdir -p "$out/libexec/clauth"
