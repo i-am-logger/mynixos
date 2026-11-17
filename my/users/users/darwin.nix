@@ -46,6 +46,19 @@ in
     # this module deliberately leaves alone (see the header). That asymmetry with
     # NixOS is the platform's, recorded here rather than modelled away.
     environment.shells = map (s: pkgs.${s}) shells;
-    programs = lib.genAttrs shells (_: { enable = true; });
+    programs = lib.mkMerge [
+      (lib.genAttrs shells (_: { enable = true; }))
+
+      # When home-manager owns a user's zsh it runs compinit itself, against a
+      # per-version dump (my/users/apps/shells/zsh). /etc/zshrc's own compinit
+      # takes no -d, so it would keep writing the one $ZDOTDIR/.zcompdump that
+      # Apple's /bin/zsh and nix's zsh both read -- and both read /etc/zshrc --
+      # and the two would keep rebuilding it after each other. Only the global
+      # compinit goes: enableCompletion stays on for the fpath setup and
+      # nix-zsh-completions it also provides.
+      (lib.mkIf (lib.any (u: u.apps.terminal.shells.zsh.enable or false) (lib.attrValues users)) {
+        zsh.enableGlobalCompInit = lib.mkDefault false;
+      })
+    ];
   };
 }

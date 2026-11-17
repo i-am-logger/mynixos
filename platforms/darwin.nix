@@ -64,6 +64,7 @@ in
   # -----------------------------------------------------------------------
   ++ [
     ../my/users/users/darwin.nix
+    ../my/users/users/app-management-darwin.nix
 
     # Pointer preferences (leftHanded, naturalScroll) -> NSGlobalDomain.
     ../my/users/input/darwin.nix
@@ -130,5 +131,6 @@ in
 
     # herdr-focus-notify: clickable notifications that focus the agent pane.
     ../my/users/apps/multiplexers/herdr/darwin.nix
+    ../my/users/apps/terminals/baud/darwin.nix
   ];
 }

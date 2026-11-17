@@ -244,4 +244,54 @@ in
       in builtins.all (n: builtins.elem n names) [ "tree" "wget" "sops" ]
     )
     "the portable base package set should be installed on darwin";
+
+  # A darwin host keeps its privacy grants across a switch. home-manager's
+  # copyApps check runs `tccutil reset SystemPolicyAppBundles` when its probe is
+  # denied, which clears App Management for EVERY app, so mynixos turns that check
+  # off and runs its own probe, which stops the switch instead of resetting.
+  darwin-smoke-tcc-kept =
+    let
+      c = darwinConfigWith [{ home-manager.users.smoke.targets.darwin.copyApps.enable = true; }] { };
+      hm = c.home-manager.users.smoke;
+      activationText = lib.concatMapStrings (e: e.data or "") (lib.attrValues hm.home.activation);
+    in
+    check "tcc-kept"
+      (!hm.targets.darwin.copyApps.enableChecks
+        && hm.home.activation ? checkAppManagement
+        && !(lib.hasInfix "tccutil" activationText))
+      "copyApps' tccutil-resetting check should be off, with mynixos's App Management probe in its place";
+
+  # baud.app keeps its grants when signed with a certificate the machine holds:
+  # the designated requirement is then the identifier and that certificate, not a
+  # per-build cdhash. baud is the darwin default terminal, so naming an identity
+  # is all a host does.
+  darwin-smoke-baud-signing =
+    let
+      c = darwinConfig { users.smoke.terminal.baud.signingIdentity = "smoke signing"; };
+      act = c.home-manager.users.smoke.home.activation;
+    in
+    check "baud-signing"
+      (act ? signBaud
+        && lib.hasInfix "codesign --force --sign \"$baudIdentity\" -i dev.baud.terminal" act.signBaud.data
+        && lib.hasInfix "'smoke signing'" act.signBaud.data
+        && builtins.elem "copyApps" act.signBaud.after)
+      "terminal.baud.signingIdentity should sign baud.app after copyApps";
+
+  # No identity, no signing step: the certificate belongs to one machine.
+  darwin-smoke-baud-signing-off = check "baud-signing-off"
+    (!(base.home-manager.users.smoke.home.activation ? signBaud))
+    "with no signingIdentity, baud.app should stay ad hoc";
+
+  # One completion dump per zsh version, and no global compinit fighting over it.
+  # Apple's /bin/zsh (what launchd hands GUI launches) and nix's zsh both start
+  # interactively on darwin; sharing one dump, each rebuilds it after the other,
+  # 0.4-2.4 s per prompt.
+  darwin-smoke-zsh-compdump =
+    let
+      c = darwinConfig { users.smoke.apps.terminal.shells.zsh.enable = true; };
+    in
+    check "zsh-compdump"
+      (!c.programs.zsh.enableGlobalCompInit
+        && lib.hasInfix "zcompdump-$ZSH_VERSION" c.home-manager.users.smoke.programs.zsh.completionInit)
+      "a home-manager zsh should own compinit, with a per-version dump, and /etc/zshrc's should be off";
 }

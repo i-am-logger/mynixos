@@ -128,6 +128,7 @@ let
 
   darwinOnly = {
     "apps.graphical.utils.keepingyouawake" = "Drives macOS IOKit power assertions.";
+    "terminal.baud" = "Signs baud.app with a keychain certificate so macOS keeps its privacy grants across builds; codesign and TCC are macOS only.";
     "terminal.herdr.plugins.focusNotify" = "herdr-focus-notify's manifest declares macOS only; it drives lsappinfo, open -b and alerter.";
   };
 

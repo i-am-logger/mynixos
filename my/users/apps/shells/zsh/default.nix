@@ -32,6 +32,22 @@
           share = lib.mkDefault true;
         };
 
+        # One completion dump per zsh version. compinit rebuilds the dump whenever
+        # its `#files: N version: V` header disagrees with the running shell, so
+        # two zsh builds sharing one dump rebuild it after each other on every
+        # alternation -- on darwin Apple's /bin/zsh (the account shell launchd
+        # hands GUI launches) and nix's zsh both start interactively, costing
+        # 0.4-2.4 s per prompt. compinit does not create the dump's directory,
+        # and a failed write would rebuild every time, hence the mkdir (which
+        # only forks the first time).
+        completionInit = lib.mkDefault ''
+          autoload -U compinit
+          _zcd="''${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+          [[ -d $_zcd ]] || mkdir -p "$_zcd"
+          compinit -d "$_zcd/zcompdump-$ZSH_VERSION"
+          unset _zcd
+        '';
+
         # Aliases live in my/users/terminal/aliases.nix via home.shellAliases,
         # so they are identical in bash, zsh and fish rather than per-shell.
 
