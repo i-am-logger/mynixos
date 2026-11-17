@@ -446,6 +446,21 @@ in
       && svc.Service.Restart == "on-failure"
       && lib.hasSuffix "-clauth-daemon" (toString svc.Service.ExecStart));
 
+  # clauth's herdr plugin is on wherever clauth is and herdr is the
+  # multiplexer; without clauth it stays off (it would fail its assertion),
+  # and a user's explicit false wins.
+  clauth-herdr-plugin-default = evalAssert "clauth-herdr-plugin-default"
+    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
+    (config: config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
+
+  clauth-herdr-plugin-default-off = evalAssert "clauth-herdr-plugin-default-off"
+    (herdrUser { } { })
+    (config: !config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
+
+  clauth-herdr-plugin-user-off = evalAssert "clauth-herdr-plugin-user-off"
+    (herdrUser { plugins.clauth.enable = false; } { apps.ai.tools.clauth.enable = true; })
+    (config: !config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
+
   clauth-daemon-off = evalAssert "clauth-daemon-off"
     (herdrUser { } { apps.ai.tools.clauth.enable = true; })
     (config: !((hmOf config).systemd.user.services ? clauth-daemon));

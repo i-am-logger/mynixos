@@ -94,6 +94,7 @@ in
     # ---------------------------------------------------------------------
     ++ [
       ../my/users/terminal/mynixos.nix
+      ../my/users/apps/multiplexers/herdr/mynixos.nix
       ../my/users/graphical/mynixos.nix
       ../my/users/dev/mynixos.nix
       ../my/users/ai/mynixos.nix
