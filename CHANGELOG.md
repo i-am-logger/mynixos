@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.31.0...mynixos-v0.32.0) (2026-11-17)
+
+
+### Features
+
+* **darwin:** keep privacy grants across switches; sign baud; one zsh dump ([5e66538](https://github.com/i-am-logger/mynixos/commit/5e66538b0bc745f55cefa65cb33ff4e2c576828f))
+
+
+### Miscellaneous
+
+* **deps:** vogix 0.16.0, notification clicks send activation tokens ([34f7b4d](https://github.com/i-am-logger/mynixos/commit/34f7b4d7ac76d22a8707fb117ce9a0e7de44e737))
+
 ## [0.31.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.30.0...mynixos-v0.31.0) (2026-11-16)
 
 
