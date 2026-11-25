@@ -2560,6 +2560,28 @@ in
       in
       covers "009b" && covers "009c" && covers "009d");
 
+  # Stock uvcvideo refuses the card's settings mailbox (XU 4, selector 1),
+  # whose length changes per command, with ENOBUFS. The card ships a patched
+  # uvcvideo built out of tree for the running kernel, so vendor tools talk
+  # through /dev/video0 instead of detaching the driver.
+  peripheral-elgato-4k-x-uvcvideo = evalAssert "peripheral-elgato-4k-x-uvcvideo"
+    {
+      networking.hostName = "test-4kx";
+      my.hardware.peripherals.elgato.game-capture-4k-x.enable = true;
+    }
+    (config: builtins.any
+      (p: (p.pname or "") == "uvcvideo-elgato-4k-x"
+        && p.version == config.boot.kernelPackages.kernel.version
+        && builtins.any (x: baseNameOf x == "uvcvideo-variable-xu.patch") (p.patches or [ ]))
+      config.boot.extraModulePackages);
+
+  peripheral-elgato-4k-x-uvcvideo-off = evalAssert "peripheral-elgato-4k-x-uvcvideo-off"
+    {
+      networking.hostName = "test-4kx";
+      my.hardware.peripherals.elgato.game-capture-4k-x = { enable = true; uvcvideo.patch = false; };
+    }
+    (config: !builtins.any (p: (p.pname or "") == "uvcvideo-elgato-4k-x") config.boot.extraModulePackages);
+
   psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
     {
       imports = [ (kernelAt "7.2.6") ];

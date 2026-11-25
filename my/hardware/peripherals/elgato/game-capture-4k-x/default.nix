@@ -20,10 +20,48 @@ let
       SUBSYSTEM=="usb", ATTR{idVendor}=="0fd9", ATTR{idProduct}=="009b|009c|009d", TAG+="uaccess"
     '';
   };
+
+  # uvcvideo alone, from the running kernel's source plus the mailbox patch
+  # (from elgato4k-linux, GPL). Installed under updates/, which depmod
+  # searches before the in-tree kernel/ directory, so modprobe loads this
+  # one; the rest of the kernel stays the cached build.
+  kernel = config.boot.kernelPackages.kernel;
+  uvcvideo = pkgs.stdenv.mkDerivation {
+    pname = "uvcvideo-elgato-4k-x";
+    inherit (kernel) version src;
+    patches = [ ./uvcvideo-variable-xu.patch ];
+
+    unpackPhase = ''
+      mkdir source
+      tar -xf $src -C source --strip-components=1 --wildcards '*/drivers/media/usb/uvc/*'
+      cd source
+    '';
+
+    nativeBuildInputs = kernel.moduleBuildDependencies;
+    makeFlags = config.boot.kernelPackages.kernelModuleMakeFlags ++ [
+      "-C"
+      "${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
+      "M=$(PWD)/drivers/media/usb/uvc"
+    ];
+    buildFlags = [ "modules" ];
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm444 drivers/media/usb/uvc/uvcvideo.ko \
+        $out/lib/modules/${kernel.modDirVersion}/updates/uvcvideo.ko
+      runHook postInstall
+    '';
+
+    meta.platforms = lib.platforms.linux;
+  };
 in
 {
   config = lib.mkIf cfg.enable (lib.mkMerge [
     { services.udev.packages = [ udevRules ]; }
+
+    (lib.mkIf cfg.uvcvideo.patch {
+      boot.extraModulePackages = [ uvcvideo ];
+    })
 
     # In this host's HDMI chain: force the downstream monitor's EDID onto
     # the connector (the card reports no ELD), keep it enabled regardless of

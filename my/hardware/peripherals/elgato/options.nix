@@ -27,6 +27,23 @@
                 Product: Game Capture 4K X (009b, or 009c/009d by USB speed mode)
               '';
 
+              # Stock uvcvideo answers the card's settings mailbox (extension
+              # unit 4, selector 1) with ENOBUFS: its length changes per command
+              # and the driver insists on the cached control size. Without the
+              # patch, vendor tools detach uvcvideo for every command, which
+              # blinks the capture and has wedged the host's xHCI.
+              uvcvideo.patch = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = ''
+                  Load a uvcvideo built from the running kernel's source with
+                  ./game-capture-4k-x/uvcvideo-variable-xu.patch, which lets
+                  XU 4 / selector 1 GET_CUR/SET_CUR on this card use the
+                  caller's size (1..4096). Only that driver is compiled; it
+                  replaces the in-tree one through depmod's updates/ priority.
+                '';
+              };
+
               # The card in a host's HDMI chain (host -> 4K X -> monitor) does not
               # report ELD, so HDMI audio and the monitor's capabilities go missing
               # on that connector. Forcing the downstream monitor's EDID and keeping
