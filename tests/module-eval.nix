@@ -2468,6 +2468,26 @@ in
   # The Corsair HX1200i Series 2025 PSU (USB 1b1c:1c27): sensors only. The
   # in-kernel corsair-psu hwmon driver reports rails, power, fan and temps;
   # lm_sensors shows them. No fan or OCP control is sent.
+  # Logi Bolt receiver (046d:c548): udev rules + ltunify, and Solaar with its
+  # per-user tray service (pairing, battery, button settings).
+  peripheral-logitech-bolt = evalAssert "peripheral-logitech-bolt"
+    {
+      networking.hostName = "test-bolt";
+      my.hardware.peripherals.logitech.bolt.enable = true;
+    }
+    (config: config.hardware.logitech.wireless.enable
+      && config.programs.solaar.enable
+      && config.programs.solaar.userService.enable
+      && lib.hasInfix "hide" (toString config.systemd.user.services.solaar.serviceConfig.ExecStart));
+
+  # tray = false keeps Solaar installed but does not start it with the session.
+  peripheral-logitech-bolt-no-tray = evalAssert "peripheral-logitech-bolt-no-tray"
+    {
+      networking.hostName = "test-bolt";
+      my.hardware.peripherals.logitech.bolt = { enable = true; tray = false; };
+    }
+    (config: config.programs.solaar.enable && !(config.systemd.user.services ? solaar));
+
   psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
     {
       imports = [ (kernelAt "7.2.6") ];

@@ -77,6 +77,27 @@
             };
           };
 
+          logitech = {
+            bolt = {
+              enable = lib.mkEnableOption ''
+                Logi Bolt wireless receiver and the devices paired to it.
+
+                udev rules and ltunify (nixpkgs hardware.logitech.wireless), and
+                Solaar (programs.solaar) for pairing, battery levels and button
+                settings, which the kernel's plain HID input does not cover.
+
+                Vendor: Logitech (046d)
+                Product: Logi Bolt Receiver (c548)
+              '';
+
+              tray = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Start Solaar hidden in the tray with each graphical session (its per-user service), so battery levels and button settings are live.";
+              };
+            };
+          };
+
           sipeed = {
             tangPrimer25k = {
               enable = lib.mkEnableOption ''
