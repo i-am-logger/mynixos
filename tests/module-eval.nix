@@ -2732,10 +2732,11 @@ in
         hm = config.home-manager.users.vmuser;
         conf = hm.home.file."VMs/w.conf".text;
         pkgNames = map (p: p.pname or p.name or "") hm.home.packages;
-        rules = lib.concatMapStrings
-          (p: lib.concatMapStrings (f: builtins.readFile "${p}/lib/udev/rules.d/${f}")
-            (builtins.attrNames (builtins.readDir "${p}/lib/udev/rules.d")))
-          (builtins.filter (p: builtins.pathExists "${p}/lib/udev/rules.d") config.services.udev.packages);
+        # Read from the derivations' `text` attributes (writeTextFile and
+        # writeShellApplication both carry one), never from built outputs:
+        # import-from-derivation here builds every udev package at eval time,
+        # and on CI that ended in a stack overflow.
+        rules = lib.concatMapStrings (p: p.text or "") config.services.udev.packages;
         userDirs = map (d: d.directory or d) config.environment.persistence."/persist".users.vmuser.directories;
       in
       {
@@ -2745,7 +2746,7 @@ in
         firmware = lib.hasInfix ''boot="efi"'' conf && lib.hasInfix ''tpm="on"'' conf
           && lib.hasInfix ''secureboot="off"'' conf;
         iso = lib.hasInfix ''iso="/home/vmuser/VMs/w/install.iso"'' conf;
-        launcherPinsHash = lib.any (p: (p.name or "") == "vm-w" && lib.hasInfix "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" (builtins.readFile "${p}/bin/vm-w")) hm.home.packages;
+        launcherPinsHash = lib.any (p: (p.name or "") == "vm-w" && lib.hasInfix "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" (p.text or "")) hm.home.packages;
         virtio = lib.hasInfix "fixed_iso=" conf && lib.hasInfix "virtio-win" conf;
         disk = lib.hasInfix ''disk_img="/home/vmuser/VMs/w/disk.qcow2"'' conf;
         usbInConf = lib.hasInfix ''usb_devices=("413c:1234")'' conf;
