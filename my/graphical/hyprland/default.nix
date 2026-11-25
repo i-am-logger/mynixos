@@ -881,6 +881,15 @@ in
                         }
                       ];
                       window_rule = vogixWindowRulesLua ++ windowRulesLua;
+                      # Auto-HDR off. mynixos runs every HDR-capable monitor in HDR all
+                      # the time (my.hardware.display), where auto-HDR has nothing to
+                      # switch on -- but Hyprland 0.57 (Renderer.cpp, the fullscreen
+                      # wantHDR path) still reads a fullscreen surface carrying an SDR
+                      # image description as "leave HDR" and sends SDR metadata while
+                      # rendering PQ, so the picture goes bright and washed out. Mesa
+                      # WSI tags every Vulkan swapchain sRGB, so any fullscreen
+                      # wgpu/Vulkan app triggers it (seen with telly on ads-dev1).
+                      render.cm_auto_hdr = 0;
                     }
                     // optionalAttrs (displayWorkspaceRulesLua != [ ]) {
                       # Concatenated for the same reason as window_rule:

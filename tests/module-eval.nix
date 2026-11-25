@@ -2342,6 +2342,10 @@ in
     (config: {
       wildcard-only = monitorRules config == [ displayWildcard ];
       no-workspace-rules = !((hyprSettings config) ? workspace_rule);
+      # Auto-HDR is off: with monitors always in HDR, Hyprland 0.57 would
+      # otherwise send SDR metadata for any fullscreen sRGB-tagged surface
+      # (Mesa WSI tags Vulkan swapchains) while still rendering PQ.
+      no-auto-hdr = ((hyprSettings config).render.cm_auto_hdr or null) == 0;
     });
 
   # (a) A catalogued model: its facts (make, model, 10-bit HDR, fullscreen VRR)
