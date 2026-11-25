@@ -2575,6 +2575,39 @@ in
         && builtins.any (x: baseNameOf x == "uvcvideo-variable-xu.patch") (p.patches or [ ]))
       config.boot.extraModulePackages);
 
+  # Full VMs (a Windows guest for vendor tools that exist nowhere else):
+  # libvirtd with an emulated TPM for Windows 11, virt-manager, the named
+  # users in the root-equivalent libvirtd group and nobody else, and the
+  # disks and definitions on /persist rather than a tmpfs root.
+  virtualisation-libvirt = evalClauses "virtualisation-libvirt"
+    {
+      networking.hostName = "test-libvirt";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my = {
+        storage.impermanence.enable = true;
+        virtualisation.libvirt = { enable = true; users = [ "vmuser" ]; };
+        users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+        users.other = { fullName = "Other"; description = "other"; email = "other@example.com"; };
+      };
+    }
+    (config: {
+      libvirtd = config.virtualisation.libvirtd.enable;
+      tpm = config.virtualisation.libvirtd.qemu.swtpm.enable;
+      virtManager = config.programs.virt-manager.enable;
+      userInGroup = builtins.elem "libvirtd" config.users.users.vmuser.extraGroups;
+      othersNot = !(builtins.elem "libvirtd" config.users.users.other.extraGroups);
+      persisted = builtins.elem "/var/lib/libvirt"
+        (map (d: d.directory or d) config.environment.persistence."/persist".directories);
+    });
+
+  virtualisation-libvirt-off = evalAssert "virtualisation-libvirt-off"
+    { networking.hostName = "test-libvirt-off"; }
+    (config: !config.virtualisation.libvirtd.enable);
+
   peripheral-elgato-4k-x-uvcvideo-off = evalAssert "peripheral-elgato-4k-x-uvcvideo-off"
     {
       networking.hostName = "test-4kx";

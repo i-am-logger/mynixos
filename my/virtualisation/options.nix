@@ -255,6 +255,26 @@ in
     default = { };
     type = lib.types.submodule {
       options = {
+        # Full VMs of OTHER operating systems, for what only runs there (a
+        # monitor's Windows firmware updater, with its USB device passed
+        # through). Unlike `containers` these are not mynixos systems: they are
+        # made by hand in virt-manager and live in /var/lib/libvirt.
+        libvirt = {
+          enable = lib.mkEnableOption "libvirtd with QEMU/KVM, an emulated TPM (Windows 11) and virt-manager";
+
+          users = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            example = [ "alice" ];
+            description = ''
+              Accounts added to the `libvirtd` group, which manages the system
+              libvirt (qemu:///system) without a password. That is
+              ROOT-EQUIVALENT -- a member can define a VM with any host disk
+              attached -- so the list is explicit, never every user.
+            '';
+          };
+        };
+
         containers = lib.mkOption {
           default = [ ];
           example = lib.literalExpression "[ radicle-seed radicle-builder ]";

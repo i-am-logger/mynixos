@@ -218,6 +218,8 @@ in
     # How a host runs OTHER MYNIXOS SYSTEMS inside itself. Linux-only by
     # construction: podman and virtualisation.oci-containers are.
     ../my/virtualisation/containers
+    # Full VMs of other operating systems (libvirtd + virt-manager).
+    ../my/virtualisation/libvirt
 
     # An overlay carrying one out-of-tree patch to passt, podman's rootless
     # network helper. Delete this line and the directory the moment nixpkgs
