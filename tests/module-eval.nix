@@ -537,6 +537,26 @@ in
       let package = (hmOf config).programs.claude-code.package; in
       (package.pname or "") == "claude-code" && !(package ? paths));
 
+  # runs.slice: releasable reads the user manager's runs.slice MemoryMax and
+  # refuses every run while it is infinity. A budget alone (no
+  # performance.enable) declares it, with no swap, no MemoryHigh and no CPU
+  # property; without a budget there is none.
+  performance-runs-budget = evalAssert "performance-runs-budget"
+    { networking.hostName = "test-runs"; my.performance.runs.budget = "128G"; }
+    (config:
+      let
+        lines = lib.filter (l: l != "")
+          (lib.splitString "\n" config.systemd.user.units."runs.slice".text);
+      in
+      lib.elem "MemoryMax=128G" lines
+      && lib.elem "MemorySwapMax=0" lines
+      && !(lib.any (lib.hasPrefix "MemoryHigh") lines)
+      && !(lib.any (l: lib.hasPrefix "CPU" l || lib.hasPrefix "AllowedCPUs" l) lines));
+
+  performance-runs-no-budget = evalAssert "performance-runs-no-budget"
+    { networking.hostName = "test-runs-none"; my.performance.enable = true; }
+    (config: !(config.systemd.user.units ? "runs.slice"));
+
   # `nixpkgs` in the registry and on NIX_PATH is the nixpkgs the system was
   # built from, and NIX_PATH holds nothing else: no channels entry.
   nix-registry-pinned = evalAssert "nix-registry-pinned" { }

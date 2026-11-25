@@ -19,6 +19,20 @@
           default = true;
           description = "Enable vmtouch RAM caching for system closure";
         };
+
+        runs.budget = lib.mkOption {
+          type = lib.types.nullOr (lib.types.strMatching "[0-9]+[KMGT]?");
+          default = null;
+          example = "128G";
+          description = ''
+            MemoryMax of every user's runs.slice, with no swap: the memory all
+            of releasable's runs share (its nixosModules.runs contract, option
+            releasable.runs.budget), and the slice baud's scripts/bounded
+            scopes go in. Its own switch, independent of `enable`. null
+            declares no runs.slice, and releasable then refuses every run.
+            Sized per host from its RAM, so mynixos sets no default.
+          '';
+        };
       };
     };
   };

@@ -154,6 +154,14 @@ in
     (c: c.my.performance.zramPercent)
     { networking.hostName = "test"; my.performance.zramPercent = 101; };
 
+  # --- systemd size: my.performance.runs.budget ("128G", not "128GB") ---
+
+  runs-budget-rejects-suffix = mustReject'
+    { networking.hostName = "test"; my.performance.runs.budget = "128G"; }
+    "runs-budget-rejects-suffix"
+    (c: c.my.performance.runs.budget)
+    { networking.hostName = "test"; my.performance.runs.budget = "128GB"; };
+
   zram-accepts-valid-int = mustAccept "zram-accepts-valid-int"
     (c: c.my.performance.zramPercent)
     { networking.hostName = "test"; my.performance.zramPercent = 50; };

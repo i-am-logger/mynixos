@@ -6,6 +6,10 @@ let
   cfg = config.my.performance;
 in
 {
+  # runs.slice is its own switch (my.performance.runs.budget), not gated on
+  # `enable`, so a budget is never a silent no-op.
+  imports = [ ./runs.nix ];
+
   config = mkIf cfg.enable {
     # Kernel and memory optimizations
     boot.kernel.sysctl = {
