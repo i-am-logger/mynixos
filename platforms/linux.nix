@@ -34,6 +34,13 @@ in
     (mkOptionsModule ../my/system/core/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/bluetooth/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/motherboards/options.nix { inherit lib; })
+    # my.hardware.display: the layout, and one declaration per monitor model,
+    # each beside the model's facts. hdmiFrl is declared by the amdgpu module
+    # that implements it.
+    (mkOptionsModule ../my/hardware/display/options.nix { inherit lib; })
+    (mkOptionsModule ../my/hardware/display/monitors/generic/options.nix { inherit lib; })
+    (mkOptionsModule ../my/hardware/display/monitors/dell/aw3225qf/options.nix { inherit lib; })
+    (mkOptionsModule ../my/hardware/gpu/amd/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/cooling/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/peripherals/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/laptops/lenovo/options.nix { inherit lib; })
@@ -161,6 +168,8 @@ in
 
     ../my/hardware/cpu/amd
     ../my/hardware/cpu/intel
+
+    ../my/hardware/display
 
     ../my/hardware/gpu/amd
     ../my/hardware/gpu/nvidia

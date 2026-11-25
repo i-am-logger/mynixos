@@ -337,6 +337,12 @@
           darwinSmokeTests = import ./tests/darwin-smoke.nix {
             inherit lib nixpkgs system self inputs;
           };
+
+          # my/hardware/display/layout.nix on its own: placement arithmetic and
+          # the refusals, without a NixOS evaluation.
+          displayLayoutTests = import ./tests/display-layout.nix {
+            inherit lib nixpkgs system self inputs;
+          };
         in
         {
           formatting = treefmtEval.${system}.config.build.check self;
@@ -357,6 +363,7 @@
         // virtualisationContainersTests
         // passtNullFlowTest
         // singleNixpkgsTest
+        // displayLayoutTests
       );
 
       # Heavy booting VM tests, kept OUT of `checks` so `nix flake check` stays

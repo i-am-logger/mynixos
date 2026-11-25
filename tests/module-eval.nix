@@ -183,6 +183,71 @@ let
   keysOf = hm: map (k: k.command) ((herdrSettings hm).keys.command or [ ]);
   headMark = builtins.fromJSON ''"​"'';
 
+  # --- my.hardware.display ----------------------------------------------------
+  #
+  # A graphical Hyprland user with theming off, so what is asserted is mynixos's
+  # own rendering of the display domain into the Lua settings.
+  displayHost = display: {
+    networking.hostName = "test-display";
+    my = {
+      theming = {
+        enable = false;
+        vogix.enable = false;
+      };
+      hardware.display = display;
+      users.hypruser = {
+        fullName = "Hypr User";
+        description = "hypr";
+        email = "hypr@example.com";
+        graphical.enable = true;
+        apps.graphical.windowManagers.hyprland.enable = true;
+      };
+    };
+  };
+
+  hyprSettings = config: config.home-manager.users.hypruser.wayland.windowManager.hyprland.settings;
+  monitorRules = config: (hyprSettings config).monitor;
+  ruleFor = output: config: lib.findFirst (r: r.output == output) null (monitorRules config);
+
+  # The built-in defaults as a wildcard: highest resolution then refresh, 10-bit
+  # HDR with SDR content at 203 nits, VRR for fullscreen.
+  displayWildcard = {
+    output = "";
+    mode = "highres";
+    position = "auto";
+    scale = "1";
+    bitdepth = 10;
+    cm = "hdr";
+    sdr_max_luminance = 203;
+    vrr = 2;
+  };
+
+  aw = "desc:Dell Inc. AW3225QF";
+
+  # No display assertion fails: an accepted configuration must also be a valid one.
+  displayClean = config: failing "my.hardware.display" config == [ ];
+
+  # Refuses: an assertion mentioning `needle` fails. Evaluated without a user,
+  # because the display assertions belong to the system, not to Hyprland.
+  displayRefuses = name: needle: testConfig:
+    let
+      inherit ((lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig { networking.hostName = "test-display-refuse"; } testConfig ];
+      })) config;
+    in
+    if failing needle config == [ ]
+    then builtins.throw "FAIL: module-eval-${name} -- '${needle}' did not fire"
+    else pkgs.runCommand "module-eval-${name}" { } "echo PASS: ${name}; touch $out";
+
+  # A kernel package set whose version reads as `version`, for the FRL gate.
+  # Only `kernel.version` is read, so nothing is built.
+  kernelAt = version: { pkgs, ... }: {
+    boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linux_latest.override {
+      argsOverride = { inherit version; modDirVersion = version; };
+    });
+  };
+
 in
 {
   # Test 1: Module imports without errors (empty config, no my.* options set)
@@ -2268,4 +2333,217 @@ in
       # has to agree with the advertised address -- asserting only the image
       # name would let the two drift apart again.
       && config.networking.hostName == "radicle-yoga-seed");
+
+  # --- my.hardware.display ----------------------------------------------------
+
+  # (b) With nothing declared, the one rule is the wildcard, and it is the
+  # built-in defaults: HDR on, highest resolution then refresh.
+  display-wildcard-defaults = evalClauses "display-wildcard-defaults" (displayHost { })
+    (config: {
+      wildcard-only = monitorRules config == [ displayWildcard ];
+      no-workspace-rules = !((hyprSettings config) ? workspace_rule);
+    });
+
+  # (a) A catalogued model: its facts (make, model, 10-bit HDR, fullscreen VRR)
+  # become one rule beside the wildcard, and nothing equal to Hyprland's own
+  # defaults is written. The mode stays "highres" so the link decides (4K@240
+  # on DP 1.4 + DSC, 4K@60 on HDMI TMDS); the native mode is geometry only.
+  display-aw3225qf = evalClauses "display-aw3225qf"
+    (displayHost { monitors.dell.aw3225qf.main = { }; })
+    (config:
+      let text = config.home-manager.users.hypruser.xdg.configFile."hypr/hyprland.lua".text; in {
+        clean = displayClean config;
+        rules = monitorRules config == [
+          displayWildcard
+          (displayWildcard // { output = aw; })
+        ];
+        rendered = lib.hasInfix ''["output"] = "desc:Dell Inc. AW3225QF"'' text
+          && lib.hasInfix ''["mode"] = "highres"'' text;
+      });
+
+  # (c) rightOf with scale 1.5 and a 90° turn: 3840x2160/1.5 is 2560x1440, the
+  # turned 2560x1440 panel is 1440x2560, centred it starts 560 higher, and
+  # normalising moves the first one down by that much instead.
+  display-layout-placement = evalClauses "display-layout-placement"
+    (displayHost {
+      monitors = {
+        dell.aw3225qf.main = { };
+        generic.side = { output = "DP-2"; mode = { width = 2560; height = 1440; refresh = 60; }; };
+      };
+      layout = {
+        main.scale = 1.5;
+        side = {
+          position = { rightOf = "main"; align = "center"; };
+          transform.rotation = 90;
+        };
+      };
+    })
+    (config: {
+      clean = displayClean config;
+      main = (ruleFor aw config) == displayWildcard // { output = aw; position = "0x560"; scale = "1.5"; };
+      side = (ruleFor "DP-2" config) == displayWildcard // { output = "DP-2"; mode = "2560x1440@60"; position = "2560x0"; transform = 1; };
+    });
+
+  # (d) Workspaces become persistent workspace rules with the first as the
+  # default; a mirror names the mirrored monitor's selector; a serial narrows
+  # the selector; a disabled monitor is just `disabled`.
+  display-workspaces-mirror = evalClauses "display-workspaces-mirror"
+    (displayHost {
+      monitors = {
+        dell.aw3225qf.main.serial = "SN1";
+        generic = {
+          laptop.output = "eDP-1";
+          spare.output = "HDMI-A-2";
+        };
+      };
+      layout = {
+        main.workspaces = [ 1 2 ];
+        laptop.mirror = "main";
+        spare.enable = false;
+      };
+    })
+    (config: {
+      clean = displayClean config;
+      workspaces = (hyprSettings config).workspace_rule == [
+        { workspace = "1"; monitor = "${aw} SN1"; default = true; persistent = true; }
+        { workspace = "2"; monitor = "${aw} SN1"; persistent = true; }
+      ];
+      serial = ruleFor "${aw} SN1" config != null;
+      mirror = (ruleFor "eDP-1" config).mirror == "${aw} SN1";
+      disabled = ruleFor "HDMI-A-2" config == { output = "HDMI-A-2"; disabled = true; };
+    });
+
+  # The SDR shape a host uses for a mirrored external at 1440p: nothing HDR is
+  # written for it, while the laptop keeps the defaults.
+  display-sdr-instance = evalClauses "display-sdr-instance"
+    (displayHost {
+      monitors = {
+        dell.aw3225qf.external = {
+          output = "HDMI-A-1";
+          mode = { width = 2560; height = 1440; refresh = 59.95; };
+          bitDepth = 8;
+          hdr.enable = false;
+        };
+        generic.laptop = { output = "eDP-1"; mode = { width = 2560; height = 1600; refresh = 240; }; };
+      };
+      layout = {
+        external.position = { x = 0; y = 0; };
+        laptop.mirror = "external";
+      };
+    })
+    (config: {
+      clean = displayClean config;
+      external = ruleFor "HDMI-A-1" config == { output = "HDMI-A-1"; mode = "2560x1440@59.95"; position = "0x0"; scale = "1"; vrr = 2; };
+      laptop = ruleFor "eDP-1" config == displayWildcard // { output = "eDP-1"; mode = "2560x1600@240"; mirror = "HDMI-A-1"; };
+    });
+
+  # (e) The AW3225QF's HDR modes carry its EDID luminance; "edid" (the default,
+  # covered by display-aw3225qf) writes none.
+  display-hdr-mode = evalClauses "display-hdr-mode"
+    (displayHost {
+      monitors.dell.aw3225qf = {
+        dp = { output = "DP-1"; hdrMode = "peak1000"; };
+        hdmi = { output = "HDMI-A-1"; hdrMode = "trueBlack400"; };
+      };
+    })
+    (config: {
+      clean = displayClean config;
+      peak1000 = (ruleFor "DP-1" config).max_luminance == 993 && (ruleFor "DP-1" config).max_avg_luminance == 277;
+      trueBlack400 = (ruleFor "HDMI-A-1" config).max_luminance == 427 && (ruleFor "HDMI-A-1" config).max_avg_luminance == 265;
+    });
+
+  # (f) HDMI FRL: the feature-mask bit on a kernel that has it off by default,
+  # nothing from 7.4 on (where it is on), nothing when not asked, and only on
+  # an AMD GPU.
+  display-hdmi-frl-7-2 = evalAssert "display-hdmi-frl-7-2"
+    {
+      imports = [ (kernelAt "7.2.6") ];
+      networking.hostName = "test-frl";
+      my.hardware = { gpu = "amd"; display.hdmiFrl.enable = true; };
+    }
+    (config: config.boot.kernelPackages.kernel.version == "7.2.6"
+      && builtins.elem "amdgpu.dc_feature_mask=0x402" config.boot.kernelParams);
+
+  display-hdmi-frl-7-4 = evalAssert "display-hdmi-frl-7-4"
+    {
+      imports = [ (kernelAt "7.4.0") ];
+      networking.hostName = "test-frl";
+      my.hardware = { gpu = "amd"; display.hdmiFrl.enable = true; };
+    }
+    (config: config.boot.kernelPackages.kernel.version == "7.4.0"
+      && !lib.any (lib.hasPrefix "amdgpu.dc_feature_mask") config.boot.kernelParams);
+
+  display-hdmi-frl-off = evalAssert "display-hdmi-frl-off"
+    {
+      imports = [ (kernelAt "7.2.6") ];
+      networking.hostName = "test-frl";
+      my.hardware.gpu = "amd";
+    }
+    (config: !lib.any (lib.hasPrefix "amdgpu.dc_feature_mask") config.boot.kernelParams);
+
+  display-refuses-frl-without-amd = displayRefuses "display-refuses-frl-without-amd" "hdmiFrl"
+    { my.hardware = { gpu = "nvidia"; display.hdmiFrl.enable = true; }; };
+
+  # (g) What the domain refuses.
+  display-refuses-twins = displayRefuses "display-refuses-twins" "set serial or output"
+    { my.hardware.display.monitors.dell.aw3225qf = { left = { }; right = { }; }; };
+
+  display-refuses-duplicate-name = displayRefuses "display-refuses-duplicate-name" "declared more than once"
+    {
+      my.hardware.display.monitors = {
+        dell.aw3225qf.main = { };
+        generic.main.output = "DP-2";
+      };
+    };
+
+  display-refuses-unknown-layout-name = displayRefuses "display-refuses-unknown-layout-name" "no monitor instance is named \"ghost\""
+    { my.hardware.display.layout.ghost = { }; };
+
+  display-refuses-cycle = displayRefuses "display-refuses-cycle" "placement cycle"
+    {
+      my.hardware.display = {
+        monitors.dell.aw3225qf = { a.output = "DP-1"; b.output = "DP-2"; };
+        layout = { a.position.rightOf = "b"; b.position.rightOf = "a"; };
+      };
+    };
+
+  display-refuses-overlap = displayRefuses "display-refuses-overlap" "overlap"
+    {
+      my.hardware.display = {
+        monitors.dell.aw3225qf = { a.output = "DP-1"; b.output = "DP-2"; };
+        layout = { a.position = { x = 0; y = 0; }; b.position = { x = 100; y = 0; }; };
+      };
+    };
+
+  display-refuses-hdr-8bit = displayRefuses "display-refuses-hdr-8bit" "HDR needs bitDepth = 10"
+    { my.hardware.display.monitors.dell.aw3225qf.main.bitDepth = 8; };
+
+  display-refuses-icc-with-hdr = displayRefuses "display-refuses-icc-with-hdr" "icc"
+    { my.hardware.display.monitors.dell.aw3225qf.main.hdr.icc = "/etc/main.icc"; };
+
+  display-refuses-fractional-scale = displayRefuses "display-refuses-fractional-scale" "whole logical pixels"
+    {
+      my.hardware.display = {
+        monitors.generic.side = { output = "DP-2"; mode = { width = 2560; height = 1440; refresh = 60; }; };
+        layout.side.scale = 1.5;
+      };
+    };
+
+  display-refuses-generic-without-identity = displayRefuses "display-refuses-generic-without-identity" "set output, or make and model"
+    { my.hardware.display.monitors.generic.anon = { }; };
+
+  display-refuses-hyprlang = displayRefuses "display-refuses-hyprlang" "cannot render my.hardware.display"
+    {
+      my = {
+        theming = { enable = false; vogix.enable = false; };
+        hardware.display.monitors.dell.aw3225qf.main = { };
+        users.hypruser = {
+          fullName = "Hypr User";
+          description = "hypr";
+          email = "hypr@example.com";
+          graphical.enable = true;
+          apps.graphical.windowManagers.hyprland = { enable = true; configType = "hyprlang"; };
+        };
+      };
+    };
 }

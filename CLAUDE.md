@@ -125,7 +125,7 @@ Declared on both platforms:
 
 Linux only: `my.ai`, `my.boot`, `my.environment`, `my.filesystem`, `my.forensics`, `my.graphical`, `my.infra`,
 `my.performance`, `my.presets`, `my.security`, `my.storage`, `my.streaming`, `my.theming`, `my.video` — plus
-`my.hardware.{bluetooth,cooling,laptops.lenovo,memory,motherboards,peripherals,securityKeys,storage,usb}`,
+`my.hardware.{bluetooth,cooling,display,laptops.lenovo,memory,motherboards,peripherals,securityKeys,storage,usb}`,
 `my.network.{openssh,tailscale,headscale,tor,monitoring,ipv6,unifi}` and
 `my.system.{architecture,dualBoot,kernel,persistence,systemd,udev}`.
 

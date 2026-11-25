@@ -175,6 +175,67 @@ let
   luaLib = import "${vogix}/nix/modules/lib/hypr-lua.nix" { inherit lib; };
   inherit (lib.generators) mkLuaInline;
 
+  # my.hardware.display in Hyprland's Lua spelling: one hl.monitor table per
+  # monitor, after the wildcard that carries the built-in defaults, plus the
+  # workspace rules the layout asks for. Field names are Hyprland 0.57's
+  # (LuaBindingsConfigRules.cpp), where an unknown key is an error, and a value
+  # equal to Hyprland's own default is left out. hyprlang is not rendered: the
+  # assertion below refuses it alongside a declared monitor.
+  display = import ../../hardware/display/resolve.nix { inherit lib; } config.my.hardware.display;
+  displayInstances = attrValues display.instances; # sorted by name
+
+  # 239.99 -> "239.99", 60 -> "60", 1.0 -> "1": the mode and scale strings
+  # Hyprland parses.
+  showNumber = x: let s = builtins.toJSON x; in if hasSuffix ".0" s then removeSuffix ".0" s else s;
+
+  modeString = mode:
+    if isString mode then mode
+    else "${toString mode.width}x${toString mode.height}@${showNumber mode.refresh}";
+
+  monitorRuleLua = inst:
+    let
+      m = inst.cfg;
+      l = inst.layout;
+      inherit (m) hdr;
+      transform = l.transform.rotation / 90 + (if l.transform.flipped then 4 else 0);
+      mirrored = (display.instances.${l.mirror} or { selector = l.mirror; }).selector;
+    in
+    if !l.enable then { output = inst.selector; disabled = true; }
+    else
+      {
+        output = inst.selector;
+        mode = modeString m.mode;
+        position = if l.position == "auto" then "auto" else "${toString l.position.x}x${toString l.position.y}";
+        # A STRING-typed field (see infraSettings below).
+        scale = showNumber l.scale;
+        vrr = { off = 0; on = 1; fullscreen = 2; }.${m.vrr};
+      }
+      // optionalAttrs (transform != 0) { inherit transform; }
+      // optionalAttrs (l.mirror != null) { mirror = mirrored; }
+      // optionalAttrs (m.bitDepth == 10) { bitdepth = 10; }
+      // (if hdr.enable then
+        {
+          cm = "hdr";
+          sdr_max_luminance = hdr.sdr.referenceWhite;
+        }
+        // optionalAttrs (hdr.sdr.brightness != 1.0) { sdrbrightness = hdr.sdr.brightness; }
+        // optionalAttrs (hdr.sdr.saturation != 1.0) { sdrsaturation = hdr.sdr.saturation; }
+        // optionalAttrs (hdr.luminance.min != null) { min_luminance = hdr.luminance.min; }
+        // optionalAttrs (hdr.luminance.max != null) { max_luminance = hdr.luminance.max; }
+        // optionalAttrs (hdr.luminance.maxAverage != null) { max_avg_luminance = hdr.luminance.maxAverage; }
+      else optionalAttrs (hdr.gamut != null) { cm = hdr.gamut; })
+      // optionalAttrs (hdr.icc != null) { icc = "${hdr.icc}"; };
+
+  displayMonitorsLua = [ (monitorRuleLua display.wildcard) ] ++ map monitorRuleLua displayInstances;
+
+  # Persistent workspaces on their monitor, the first one its default.
+  displayWorkspaceRulesLua = concatMap
+    (inst: imap0
+      (i: ws: { workspace = toString ws; monitor = inst.selector; persistent = true; }
+        // optionalAttrs (i == 0) { default = true; })
+      inst.layout.workspaces)
+    (filter (inst: inst.layout.enable) displayInstances);
+
   # One catalog of fallback binds (used when vogix theming is off), rendered
   # to hyprlang strings or Lua bind elements depending on the config engine.
   # The two gap binds are the only engine-specific entries: raw `hyprctl
@@ -617,13 +678,21 @@ in
   config = mkIf anyUserGraphical {
     # Hyprland 0.57 reads no hyprlang config and has no keyword/dispatch IPC:
     # a hyprlang user there would get a session that ignores its config.
-    assertions = mapAttrsToList
-      (name: userCfg: {
-        assertion = (userCfg.apps.graphical.windowManagers.hyprland.configType or "lua") != "hyprlang"
-          || versionOlder config.programs.hyprland.package.version "0.57";
-        message = "my.users.${name}.apps.graphical.windowManagers.hyprland.configType = \"hyprlang\", but Hyprland is ${config.programs.hyprland.package.version}: 0.57 removed hyprlang configs. Use \"lua\".";
-      })
-      (filterAttrs (_: u: u.graphical.enable or false) config.my.users);
+    assertions = concatLists (mapAttrsToList
+      (name: userCfg: [
+        {
+          assertion = (userCfg.apps.graphical.windowManagers.hyprland.configType or "lua") != "hyprlang"
+            || versionOlder config.programs.hyprland.package.version "0.57";
+          message = "my.users.${name}.apps.graphical.windowManagers.hyprland.configType = \"hyprlang\", but Hyprland is ${config.programs.hyprland.package.version}: 0.57 removed hyprlang configs. Use \"lua\".";
+        }
+        # my.hardware.display is rendered for the Lua engine only.
+        {
+          assertion = (userCfg.apps.graphical.windowManagers.hyprland.configType or "lua") != "hyprlang"
+            || displayInstances == [ ];
+          message = "my.users.${name}.apps.graphical.windowManagers.hyprland.configType = \"hyprlang\" cannot render my.hardware.display, whose monitors are written for the Lua engine only. Use \"lua\".";
+        }
+      ])
+      (filterAttrs (_: u: u.graphical.enable or false) config.my.users));
 
     home-manager.users =
       mapAttrs
@@ -770,6 +839,7 @@ in
                     else behaviorModule.mkHyprlandConfig { };
                   vogixWindowrules = vogixBehaviorOutput.settings.windowrule or [ ];
                   vogixWindowRulesLua = vogixBehaviorOutput.settings.window_rule or [ ];
+                  vogixWorkspaceRulesLua = vogixBehaviorOutput.settings.workspace_rule or [ ];
 
                   # exec-once commands for the Lua start hook: hl.exec_cmd
                   # spawns detached already, so shell `&` suffixes are stripped.
@@ -788,7 +858,9 @@ in
                       # "1.5", "auto" — Hyprland 0.56.2 MONITOR_FIELDS,
                       # LuaBindingsConfigRules.cpp); a bare number only passes
                       # via lua_isstring coercion, so keep the quoted form.
-                      monitor = [{ output = ""; mode = "highres"; position = "auto"; scale = "1"; }];
+                      # The wildcard (built-in defaults) and one rule per
+                      # monitor in my.hardware.display.
+                      monitor = displayMonitorsLua;
                       env = [
                         { _args = [ "TERMINAL" terminalCmd ]; }
                         { _args = [ "BROWSER" browserCmd ]; }
@@ -802,13 +874,18 @@ in
                             "hyprland.start"
                             (mkLuaInline (
                               "function()\n"
-                              + concatMapStrings (c: "  hl.exec_cmd(${luaLib.luaStr c})\n") luaStartupCommands
-                              + "end"
+                                + concatMapStrings (c: "  hl.exec_cmd(${luaLib.luaStr c})\n") luaStartupCommands
+                                + "end"
                             ))
                           ];
                         }
                       ];
                       window_rule = vogixWindowRulesLua ++ windowRulesLua;
+                    }
+                    // optionalAttrs (displayWorkspaceRulesLua != [ ]) {
+                      # Concatenated for the same reason as window_rule:
+                      # vogix generates workspace rules of its own.
+                      workspace_rule = vogixWorkspaceRulesLua ++ displayWorkspaceRulesLua;
                     } else {
                       inherit (environment) monitor;
                       env = [

@@ -4,6 +4,7 @@ with lib;
 
 let
   cfg = config.my.hardware.gpu;
+  frl = config.my.hardware.display.hdmiFrl;
   f = config.my.forensics;
 
   # Rescue an amdgpu devcoredump (the faulting shader / IB disassembly) before
@@ -94,6 +95,20 @@ in
           ExecStart = "${captureDevcoredump} %i";
         };
       };
+    })
+
+    # HDMI 2.1 FRL. amdgpu gained FRL in 7.2 behind DC_FRL_MASK (1 << 10) and
+    # turns it on by default from 7.4, whose default dc_feature_mask is
+    # MULTI_MON_PP_MCLK_SWITCH | FRL = 0x402. The parameter REPLACES the default
+    # mask rather than adding to it, so it restates 7.4's whole default instead
+    # of setting the FRL bit alone -- which would drop the MCLK-switch bit.
+    (mkIf frl.enable {
+      assertions = [{
+        assertion = cfg == "amd";
+        message = "my.hardware.display.hdmiFrl.enable is an amdgpu display-core switch, so it needs my.hardware.gpu = \"amd\" (it is ${if cfg == null then "null" else "\"${cfg}\""}).";
+      }];
+      boot.kernelParams = mkIf (cfg == "amd" && versionOlder config.boot.kernelPackages.kernel.version "7.4")
+        [ "amdgpu.dc_feature_mask=0x402" ];
     })
   ];
 }

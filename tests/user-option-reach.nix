@@ -144,6 +144,7 @@ let
     "graphical" = "the Hyprland/greetd stack.";
     "hardware.bluetooth" = "bluez.";
     "hardware.cooling" = "liquidctl/OpenRGB over Linux HID.";
+    "hardware.display" = "monitors and their layout, rendered into Hyprland's Lua config; macOS arranges its own displays.";
     "hardware.laptops.lenovo" = "x86 laptop profiles.";
     "hardware.memory" = "Linux VM tunables.";
     "hardware.motherboards" = "x86 desktop boards.";
