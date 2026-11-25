@@ -5,6 +5,29 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.33.0...mynixos-v0.34.0) (2026-11-25)
+
+
+### Features
+
+* **elgato:** 4K X ships a patched uvcvideo for its settings mailbox ([dc0a92e](https://github.com/i-am-logger/mynixos/commit/dc0a92e4f01a6c83389040f56d2ebf631ba3f161))
+* **peripherals:** Elgato Game Capture 4K X, vendor controls without sudo ([5ca5c65](https://github.com/i-am-logger/mynixos/commit/5ca5c65aaa55c68dce0dc6b1d79a47d6f1528eb1))
+* **peripherals:** Logi Bolt receiver -- udev rules, ltunify and Solaar ([7a3d951](https://github.com/i-am-logger/mynixos/commit/7a3d9514ab3ed26d9733f6d9cdc1b4af06598911))
+* **power-supplies:** Corsair HX1200i Series 2025 profile, sensors only ([beb9c27](https://github.com/i-am-logger/mynixos/commit/beb9c27655c09274397d5a91b759527e77dcd35b))
+* **virtualisation:** libvirt, full VMs through libvirtd and virt-manager ([baf1052](https://github.com/i-am-logger/mynixos/commit/baf10528dce8c56fc73fe64221d86794c3491f85))
+
+
+### Bug Fixes
+
+* **display:** VRR only for fullscreen game/video content by default ([39afc01](https://github.com/i-am-logger/mynixos/commit/39afc01df94ae882e312d7b5ba55bfc146046bb1))
+* **hyprland:** auto-HDR off, so a fullscreen SDR app keeps the HDR signal ([5077f8c](https://github.com/i-am-logger/mynixos/commit/5077f8c6cae2f66a284aae858c51116543fbb1c6))
+* **hyprland:** set cm_auto_hdr through hl.config, where Hyprland reads it ([1b88eb2](https://github.com/i-am-logger/mynixos/commit/1b88eb2a37917eb8392a0b888d780a709f359e61))
+
+
+### Code Refactoring
+
+* **elgato:** the 4K X owns its HDMI workaround and the 4K X rule its speed modes ([7463791](https://github.com/i-am-logger/mynixos/commit/74637911ea07554041f29cba305f3fe11b6446b9))
+
 ## [0.33.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.32.0...mynixos-v0.33.0) (2026-11-25)
 
 
