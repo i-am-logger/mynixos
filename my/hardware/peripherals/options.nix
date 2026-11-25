@@ -39,38 +39,6 @@
             };
           };
 
-          elgato = {
-            game-capture-4k-x = {
-              enable = lib.mkEnableOption ''
-                Elgato Game Capture 4K X (HDMI 2.1 capture card, USB).
-
-                Capture works through the kernel's uvcvideo with no setup. This
-                adds a uaccess udev rule so the logged-in user can open the
-                card's USB device read-write, which vendor-control tools need
-                (elgato4k-linux: HDR tone mapping, EDID mode) -- without it
-                they only run as root.
-
-                Vendor: Elgato Systems (0fd9)
-                Product: Game Capture 4K X (009b)
-              '';
-            };
-
-            streamdeck = {
-              enable = lib.mkOption {
-                type = lib.types.bool;
-                default = false;
-                description = ''
-                  Enable Elgato Stream Deck support (all models).
-
-                  Provides udev rules, streamdeck-ui package, and Qt/Wayland integration
-                  for Stream Deck programmable macro pads (Original, Mini, XL, V2, MK.2, Plus).
-
-                  Vendor: Elgato Systems (0fd9)
-                  Device type: USB HID programmable control surface
-                '';
-              };
-            };
-          };
 
           keychron = {
             k2-he = {

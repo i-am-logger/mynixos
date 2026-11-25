@@ -44,6 +44,7 @@ in
     (mkOptionsModule ../my/hardware/cooling/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/power-supplies/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/peripherals/options.nix { inherit lib; })
+    (mkOptionsModule ../my/hardware/peripherals/elgato/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/laptops/lenovo/options.nix { inherit lib; })
 
     # Each of these has NO darwin implementation, so declaring them in

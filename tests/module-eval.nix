@@ -2500,16 +2500,65 @@ in
       vrr2 = (ruleFor aw config).vrr == 2;
     });
 
-  # Elgato Game Capture 4K X (0fd9:009b): uaccess, so vendor-control tools
-  # (elgato4k-linux: HDR tone mapping, EDID mode) run without sudo.
+  # Elgato Game Capture 4K X: uaccess, so vendor-control tools
+  # (elgato4k-linux: HDR tone mapping, EDID mode) run without sudo, under
+  # each product ID the card enumerates as (it changes with USB speed mode).
+  # Before 73-seat-late.rules, which turns the tag into an ACL.
+  # The 4K X sitting in an HDMI chain does not report ELD, so the host forces
+  # the downstream monitor's EDID onto that connector and keeps HDMI audio up
+  # regardless. Declared on the card (it is the card's fault), not the board:
+  # these five parameters and the EDID firmware are exactly what the X870E
+  # profile carried for yoga.
+  peripheral-elgato-4k-x-passthrough =
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [
+          baseConfig
+          {
+            networking.hostName = "test-4kx";
+            my.hardware.peripherals.elgato.game-capture-4k-x = { enable = true; passthrough.output = "HDMI-A-1"; };
+          }
+        ];
+      };
+      p = eval.config.boot.kernelParams;
+      # hardware.firmware merges into one derivation, so look at the
+      # definitions: the EDID must be among the firmware this module adds.
+      firmwareHasEdid = builtins.any
+        (d: builtins.any (f: builtins.pathExists "${f}/lib/firmware/edid/hdmi-audio.bin") (lib.toList d))
+        eval.options.hardware.firmware.definitions;
+      ok = lib.all (x: builtins.elem x p) [
+        "amdgpu.audio=1"
+        "snd_hda_codec_hdmi.enable_all_pins=1"
+        "snd_hda_codec_hdmi.static_hdmi_pcm=1"
+        "drm.edid_firmware=HDMI-A-1:edid/hdmi-audio.bin"
+        "video=HDMI-A-1:e"
+      ] && firmwareHasEdid;
+    in
+    if !ok then builtins.throw "FAIL: module-eval-peripheral-elgato-4k-x-passthrough -- params or EDID firmware missing"
+    else pkgs.runCommand "module-eval-peripheral-elgato-4k-x-passthrough" { } "echo PASS; touch $out";
+
+  # The board alone no longer forces anything onto HDMI-A-1.
+  x870e-board-has-no-elgato-workaround = evalAssert "x870e-board-has-no-elgato-workaround"
+    {
+      networking.hostName = "test-x870e";
+      my.hardware.motherboards.gigabyte.x870e-aorus-elite-wifi7.enable = true;
+    }
+    (config: !(lib.any (x: lib.hasPrefix "drm.edid_firmware" x || lib.hasPrefix "snd_hda_codec_hdmi" x) config.boot.kernelParams));
+
   peripheral-elgato-4k-x = evalAssert "peripheral-elgato-4k-x"
     {
       networking.hostName = "test-4kx";
       my.hardware.peripherals.elgato.game-capture-4k-x.enable = true;
     }
-    (config: builtins.any
-      (p: builtins.match ".*0fd9.*009b.*uaccess.*" (builtins.readFile "${p}/lib/udev/rules.d/70-elgato-4k-x.rules") != null)
-      (builtins.filter (p: builtins.pathExists "${p}/lib/udev/rules.d/70-elgato-4k-x.rules") config.services.udev.packages));
+    (config:
+      let
+        file = "lib/udev/rules.d/70-elgato-4k-x.rules";
+        rules = lib.concatMapStrings (p: builtins.readFile "${p}/${file}")
+          (builtins.filter (p: builtins.pathExists "${p}/${file}") config.services.udev.packages);
+        covers = id: builtins.match ".*0fd9[^\n]*${id}[^\n]*uaccess.*" rules != null;
+      in
+      covers "009b" && covers "009c" && covers "009d");
 
   psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
     {
