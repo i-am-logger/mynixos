@@ -7,7 +7,7 @@
 # Each machine is rendered for its owner:
 #   ~/VMs/<name>.conf      the quickemu config (a bash file it sources)
 #   ~/VMs/<name>/          disk.qcow2, OVMF vars, TPM state (persisted)
-#   vm-<name>              starts it
+#   vm-<name>              starts it; `vm-<name> fetch` places pinned install media
 # A Windows machine also gets the VirtIO drivers (nixpkgs' virtio-win ISO) and
 # an unattended-setup disc built from the answer file in quickemu's own source,
 # so it always matches the packaged quickemu: no TPM/Secure Boot/RAM/CPU check,
@@ -65,7 +65,7 @@ let
       network="${m.network}"
     ''
     + optionalString (m.install.iso != null) ''
-      iso="${m.install.iso}"
+      iso="${dir}/install.iso"
     ''
     + optionalString (m.os == "windows") ''
       fixed_iso="${pkgs.virtio-win.src}"
@@ -74,10 +74,60 @@ let
       usb_devices=(${concatMapStringsSep " " (d: ''"${d.vendor}:${d.product}"'') m.usb})
     '';
 
-  launcher = name: pkgs.writeShellScriptBin "vm-${name}" ''
-    mkdir -p "$HOME/VMs/${name}"
-    exec ${pkgs.quickemu}/bin/quickemu --vm "$HOME/VMs/${name}.conf" "$@"
-  '';
+  # `vm-<name>` starts the VM; `vm-<name> fetch [FILE|URL]` places pinned
+  # install media. The ISO is verified once, when placed, and a stamp (hash,
+  # size, mtime) lets later starts refuse swapped or truncated media without
+  # re-hashing gigabytes every boot.
+  launcher = name: m:
+    let
+      iso = m.install.iso;
+      want = if iso != null then iso.sha256 else "";
+      url = if iso != null && iso.url != null then iso.url else "";
+    in
+    pkgs.writeShellApplication {
+      name = "vm-${name}";
+      runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.quickemu ];
+      text = ''
+        dir="$HOME/VMs/${name}"
+        iso="$dir/install.iso"
+        stamp="$dir/install.iso.verified"
+        want="${want}"
+        stampOf() { echo "$want $(stat -c '%s %Y' "$iso")"; }
+
+        if [ "''${1:-}" = fetch ]; then
+          [ -n "$want" ] || { echo "vm-${name}: no install.iso is declared for this machine" >&2; exit 2; }
+          src="''${2:-${url}}"
+          [ -n "$src" ] || { echo "usage: vm-${name} fetch FILE|URL" >&2; exit 2; }
+          mkdir -p "$dir"
+          tmp="$iso.partial"
+          case "$src" in
+            http://* | https://*) curl -L --fail -C - -o "$tmp" "$src" ;;
+            *) cp --reflink=auto -- "$src" "$tmp" ;;
+          esac
+          echo "verifying SHA-256..."
+          got="$(sha256sum "$tmp" | cut -d' ' -f1)"
+          if [ "$got" != "$want" ]; then
+            echo "vm-${name}: SHA-256 mismatch: got $got, expected $want" >&2
+            rm -f "$tmp"
+            exit 1
+          fi
+          mv -f "$tmp" "$iso"
+          stampOf > "$stamp"
+          echo "install media verified: $iso"
+          exit 0
+        fi
+
+        if [ -n "$want" ]; then
+          if [ ! -f "$iso" ] || [ "$(cat "$stamp" 2>/dev/null)" != "$(stampOf)" ]; then
+            echo "vm-${name}: install media missing or unverified; run: vm-${name} fetch FILE|URL" >&2
+            exit 1
+          fi
+        fi
+
+        mkdir -p "$dir"
+        exec quickemu --vm "$HOME/VMs/${name}.conf" "$@"
+      '';
+    };
 
   usbRules = pkgs.writeTextFile {
     name = "mynixos-vm-usb-rules";
@@ -118,7 +168,7 @@ in
       home-manager.users = mkMerge (mapAttrsToList
         (name: m: {
           ${m.owner} = {
-            home.packages = [ (launcher name) ];
+            home.packages = [ (launcher name m) ];
             home.file = {
               "VMs/${name}.conf".text = confOf name m;
             } // optionalAttrs (m.os == "windows") {

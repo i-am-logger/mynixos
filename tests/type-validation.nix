@@ -422,6 +422,15 @@ in
       my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; engine = "libvirt"; };
     };
 
+  # Install media is pinned by its SHA-256, hex.
+  vm-install-iso-rejects-short-hash = mustReject' vmControl "vm-install-iso-rejects-short-hash"
+    (c: c.my.virtualisation.vms.machines.w.install.iso)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; install.iso.sha256 = "abc123"; };
+    };
+
   incus-storage-rejects-zfs = mustReject "incus-storage-rejects-zfs"
     (c: c.my.virtualisation.incus.storage)
     { networking.hostName = "test"; my.virtualisation.incus.storage = "zfs"; };

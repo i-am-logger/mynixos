@@ -35,15 +35,37 @@ let
         '';
       };
 
+      # Install media pinned by checksum and kept WITH the VM, never in the Nix
+      # store: a store path would put gigabytes into the system closure, so
+      # every copy and GC would carry it. The file is ~owner/VMs/<name>/install.iso,
+      # placed by `vm-<name> fetch` only if its SHA-256 matches.
       install.iso = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
         default = null;
-        example = "/home/alice/Downloads/Win11_24H2_English_x64.iso";
         description = ''
-          Install media, as a path on this machine. A string on purpose: an
-          ISO is gigabytes and must never be copied into the Nix store. Null
-          once installed, or for a machine that boots its existing disk.
+          Install media, pinned by SHA-256. `vm-<name> fetch [FILE|URL]` copies
+          (reflinked on btrfs, so instant) or downloads it into
+          ~owner/VMs/<name>/install.iso and refuses a mismatch; `vm-<name>`
+          refuses to boot unverified media. Null once installed, or for a
+          machine that boots its existing disk.
         '';
+        type = lib.types.nullOr (lib.types.submodule {
+          options = {
+            sha256 = lib.mkOption {
+              type = lib.types.strMatching "[0-9a-f]{64}";
+              example = "bd4307df32bc8af33b39ccecb1174aeb345386630f89a2b86c7a4e36b55ea650";
+              description = "SHA-256 of the ISO, lowercase hex (what sha256sum prints).";
+            };
+            url = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = ''
+                Where `vm-<name> fetch` downloads from when given no argument.
+                Optional: Microsoft's Windows links expire within a day, so for
+                Windows the hash is what is pinned and the file is supplied.
+              '';
+            };
+          };
+        });
       };
 
       cpus = lib.mkOption {

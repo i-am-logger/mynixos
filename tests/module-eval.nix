@@ -2699,7 +2699,7 @@ in
         virtualisation.vms.machines.w = {
           owner = "vmuser";
           os = "windows";
-          install.iso = "/home/vmuser/Downloads/win.iso";
+          install.iso.sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
           cpus = 4;
           memory = "8G";
           disk.size = "64G";
@@ -2724,7 +2724,8 @@ in
           && lib.hasInfix ''disk_size="64G"'' conf;
         firmware = lib.hasInfix ''boot="efi"'' conf && lib.hasInfix ''tpm="on"'' conf
           && lib.hasInfix ''secureboot="off"'' conf;
-        iso = lib.hasInfix ''iso="/home/vmuser/Downloads/win.iso"'' conf;
+        iso = lib.hasInfix ''iso="/home/vmuser/VMs/w/install.iso"'' conf;
+        launcherPinsHash = lib.any (p: (p.name or "") == "vm-w" && lib.hasInfix "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" (builtins.readFile "${p}/bin/vm-w")) hm.home.packages;
         virtio = lib.hasInfix "fixed_iso=" conf && lib.hasInfix "virtio-win" conf;
         disk = lib.hasInfix ''disk_img="/home/vmuser/VMs/w/disk.qcow2"'' conf;
         usbInConf = lib.hasInfix ''usb_devices=("413c:1234")'' conf;
