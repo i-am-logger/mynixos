@@ -145,31 +145,36 @@ in
         c.home-manager.users.smoke.home.packages)
       "my.users.<n>.dev.containers on darwin should install colima";
 
-  # `backend` is declared on both platforms and defaults to "podman", which
-  # darwin cannot serve. The injector flips the DEFAULT here rather than the
-  # declaration, so a darwin host that just turns dev on gets Colima and not an
-  # assertion. Nothing else in the suite would notice if that injector were
-  # dropped -- the whole check above would simply stop firing.
+  # The engine defaults follow the users: on darwin, a user who wants containers
+  # gets docker (Colima) and never podman, which darwin cannot serve.
   darwin-smoke-containers-backend =
     let c = darwinConfig { users.smoke.dev.enable = true; };
     in
     check "containers-backend"
-      (c.my.dev.containers.backend == "docker")
-      "darwin should default my.dev.containers.backend to \"docker\" (Colima)";
+      (c.my.virtualisation.containers.docker.enable && !c.my.virtualisation.containers.podman.enable)
+      "darwin should run docker (Colima) and not podman by default";
+
+  # The darwin-only Colima setting lives under the feature's .darwin key.
+  darwin-smoke-containers-colima-autostart =
+    let c = darwinConfig { users.smoke.dev.enable = true; virtualisation.containers.darwin.colimaAutoStart = true; };
+    in
+    check "containers-colima-autostart"
+      (c.home-manager.users.smoke.launchd.agents.colima.enable or false)
+      "containers.darwin.colimaAutoStart should install the colima launchd agent";
 
   # And the mismatch is a hard error, not a silent no-op: podman on darwin would
   # otherwise evaluate to a host with dev enabled and no container runtime.
   darwin-smoke-containers-rejects-podman =
     let
       c = darwinConfig {
-        dev.containers.backend = "podman";
+        virtualisation.containers.podman.enable = true;
         users.smoke.dev.enable = true;
       };
       failing = builtins.filter (a: !a.assertion) c.assertions;
     in
     check "containers-rejects-podman"
       (builtins.any (a: lib.hasInfix "not implemented on darwin" a.message) failing)
-      "my.dev.containers.backend = \"podman\" on darwin should fail an assertion";
+      "my.virtualisation.containers.podman.enable on darwin should fail an assertion";
 
   # keepingyouawake is darwin-only and drives IOKit power assertions.
   darwin-smoke-keepingyouawake =

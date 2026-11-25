@@ -12,7 +12,10 @@ let
   # the name explicitly rather than reading an attribute key, because the name is
   # the guest's hostname and having it twice is what once produced
   # `radicle-radicle-yoga-seed`.
-  cfg = config.my.virtualisation.containers;
+  cfg = config.my.virtualisation.containers.guests;
+
+  # A guest is a mynixos system (systemd inside) or a plain dockerTools image.
+  isSystem = role: role.system != null;
 
   # PODMAN'S STOCK SECCOMP PROFILE, PLUS THE TWO SYSCALLS A NIX BUILD NEEDS.
   #
@@ -163,9 +166,10 @@ let
         # GAP: RemainAfterExit above means a bare `systemctl restart
         # podman-${name}.service` does not re-run this unit, so the ACL is
         # applied on activation and on boot, not on a container restart.
-        setfacl -m g:wheel:x -m g:adm:x ${stateDir}
-        setfacl -R -m g:wheel:rX -m d:g:wheel:rX \
-                   -m g:adm:rX   -m d:g:adm:rX   ${stateDir}/journal
+        ${optionalString (role.stateVolumes ? journal) ''
+          setfacl -m g:wheel:x -m g:adm:x ${stateDir}
+          setfacl -R -m g:wheel:rX -m d:g:wheel:rX \
+                     -m g:adm:rX   -m d:g:adm:rX   ${stateDir}/journal''}
 
         # Recursive over the account's OWN podman storage, which really does
         # belong to it on this host and which a uid change would otherwise
@@ -203,13 +207,20 @@ let
   containerOf = role:
     let inherit (role) name stateDir; in
     nameValuePair name {
-      # Streamed straight from the role -- no registry, no tarball in the store.
-      imageStream = role.system.config.system.build.image;
+      # Always streamed into podman -- no registry, no tarball loaded. A system
+      # guest streams its own image; streamLayeredImage IS a stream; and
+      # buildLayeredImage's tarball carries the stream it was made from as
+      # `.stream` (it also inherits `isExe`, so that cannot tell them apart).
+      imageStream =
+        if isSystem role then role.system.config.system.build.image
+        else role.image.stream or role.image;
       # `localhost/` is not decoration: podman refuses an unqualified short name
       # ("did not resolve to an alias and no unqualified-search registries are
       # defined"), and defining a search registry for an image that is loaded
       # locally and must never be fetched would be the wrong fix.
-      image = "localhost/${name}:${role.system.config.my.system.ociImage.tag}";
+      image =
+        if isSystem role then "localhost/${name}:${role.system.config.my.system.ociImage.tag}"
+        else "localhost/${role.image.imageName}:${role.image.imageTag}";
       podman.user = role.user;
 
       volumes =
@@ -220,18 +231,16 @@ let
       extraOptions =
         map (c: "--cap-add=${c}") role.capabilities
         ++ map (d: "--device=${d}") role.devices
-        ++ [
-          # systemd as PID 1 needs /run, /run/lock and the cgroup hierarchy as
-          # tmpfs. podman does that in "systemd mode", which it auto-enables
-          # ONLY when the command is literally /sbin/init, /usr/sbin/init,
-          # /usr/local/sbin/init or systemd. A NixOS toplevel is a store path
-          # ending in /init, which matches none of them -- so it must be forced.
-          # Without it systemd execs and dies instantly, printing nothing, which
-          # reads as a broken image and is not one.
-          "--systemd=always"
-          "--security-opt=no-new-privileges"
-
-        ]
+        # systemd as PID 1 needs /run, /run/lock and the cgroup hierarchy as
+        # tmpfs. podman does that in "systemd mode", which it auto-enables
+        # ONLY when the command is literally /sbin/init, /usr/sbin/init,
+        # /usr/local/sbin/init or systemd. A NixOS toplevel is a store path
+        # ending in /init, which matches none of them -- so it must be forced.
+        # Without it systemd execs and dies instantly, printing nothing, which
+        # reads as a broken image and is not one.
+        # (Image guests run their own Cmd as PID 1 and get none of this.)
+        ++ optional (isSystem role) "--systemd=always"
+        ++ [ "--security-opt=no-new-privileges" ]
         # What a nix build sandbox needs, and nothing else. Both are measured,
         # not reasoned: without the unmask nix fails its namespace probe
         # outright ("this system does not support the kernel namespaces that
@@ -263,6 +272,13 @@ let
 in
 {
   config = mkIf (cfg != [ ]) {
+    assertions = map
+      (role: {
+        assertion = (role.system != null) != (role.image != null);
+        message = "my.virtualisation.containers.guests: guest `${role.name}` must set exactly one of `system` and `image`.";
+      })
+      cfg;
+
     users.users = listToAttrs (map
       (role: nameValuePair role.user {
         isSystemUser = true;

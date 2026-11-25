@@ -177,7 +177,7 @@ pkgs.testers.runNixOSTest {
         system.enable = true;
         system.hostname = "host";
         theming.enable = false;
-        virtualisation.containers = [{
+        virtualisation.containers.guests = [{
           system = roleSystem;
           # /var/lib/tailscale outlives the container object, which
           # `Restart=on-failure` destroys and recreates on every cycle. Without

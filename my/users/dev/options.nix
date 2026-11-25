@@ -22,8 +22,8 @@
                 default = true;
                 description = ''
                   Install the container runtime for this account (opinionated
-                  default: enabled when dev.enable = true). WHICH runtime is the
-                  host-wide my.dev.containers.backend option — podman by
+                  default: enabled when dev.enable = true). WHICH engines run is the
+                  host-wide my.virtualisation.containers — rootless podman by
                   default, so the account needs no root-equivalent group.
                 '';
               };

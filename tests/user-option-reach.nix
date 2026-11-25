@@ -175,22 +175,18 @@ let
     "system.persistence" = "impermanence's collection point; nothing wipes the disk on macOS.";
     "system.systemd" = "systemd.";
     "system.udev" = "udev.";
-    "virtualisation" = "running other mynixos systems inside this one; rootless podman and virtualisation.oci-containers are Linux by construction.";
+    "virtualisation.containers.guests" = "running other systems and images inside this one; rootless podman and virtualisation.oci-containers are Linux by construction.";
+    "virtualisation.incus" = "LXC system containers and QEMU VMs; Incus needs a Linux kernel.";
+    "virtualisation.vms" = "full VMs on KVM (libvirt, quickemu); darwin has no KVM.";
     "theming" = "vogix, which is NixOS + Hyprland.";
     "video" = "v4l2loopback.";
   };
 
-  # `my.dev.containers` -- including `backend` -- is deliberately NOT listed on
-  # either side, and must never be. The asymmetry there is in the
-  # IMPLEMENTATION, not the reach: the option is declared once, in
-  # my/dev/development/options.nix, loaded from platforms/common.nix, and means
-  # the same thing on both platforms. Linux implements "podman" (rootless, no
-  # root-equivalent group) and "docker"; darwin runs Colima and implements
-  # "docker" alone, flipping only the DEFAULT via
-  # my/dev/containers/mynixos-darwin.nix and rejecting "podman" with an
-  # assertion. Listing it here would be wrong twice over -- it would claim a
-  # one-sided option where there is none, and the staleness check below would
-  # fail it for existing on both platforms.
+  # `my.virtualisation.containers.{podman,docker}` are deliberately NOT listed on
+  # either side, and must never be: they mean the same thing on both platforms.
+  # Linux implements both engines (rootless, no root-equivalent group); darwin
+  # runs docker in Colima and REJECTS podman with an assertion. The asymmetry is
+  # in the implementation, not the reach.
   topDarwinOnly = {
     "hardware.biometrics" = "Touch ID / Apple Watch unlock.";
     "hardware.laptops.apple" = "Apple Silicon laptop profiles.";
@@ -198,6 +194,7 @@ let
     "network.sshFirewall" = "pf, because sshd_config's ListenAddress does nothing when launchd owns the socket.";
     "dev.builderHost" = "a nix-darwin account plus an /etc/nix/nix.custom.conf drop-in; NixOS hosts are the clients.";
     "nixGc" = "launchd GC daemons; nix-darwin's own GC asserts nix.enable, which is false here.";
+    "virtualisation.containers.darwin" = "Colima settings: the Linux VM that docker runs in on macOS.";
   };
 
   # `under`: the path IS the listed option or sits inside it.

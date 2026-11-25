@@ -71,7 +71,9 @@ in
     # mkOptionsModule, because they declare `options.my.infra` directly.
     ../my/infra/radicle/seed.nix
     ../my/infra/radicle/builder.nix
-    (mkOptionsModule ../my/virtualisation/options.nix { inherit lib; })
+    (mkOptionsModule ../my/virtualisation/containers/guests-options.nix { inherit lib; })
+    (mkOptionsModule ../my/virtualisation/incus/options.nix { inherit lib; })
+    (mkOptionsModule ../my/virtualisation/vms/options.nix { inherit lib; })
     (mkOptionsModule ../my/dev/remote-builders/options-linux.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/boot/options.nix { inherit lib; })
     (mkOptionsModule ../my/storage/options.nix { inherit lib; })
@@ -215,11 +217,14 @@ in
     ../my/infra/github-runner
     ../my/infra/radicle
     ../my/infra/rke2
-    # How a host runs OTHER MYNIXOS SYSTEMS inside itself. Linux-only by
-    # construction: podman and virtualisation.oci-containers are.
+    # my.virtualisation on Linux: the container engines (rootless podman and
+    # docker), the guests run on podman (other mynixos systems and plain
+    # images), Incus, and full VMs (libvirt, quickemu).
+    ../my/virtualisation/containers/engines.nix
     ../my/virtualisation/containers
-    # Full VMs of other operating systems (libvirtd + virt-manager).
-    ../my/virtualisation/libvirt
+    ../my/virtualisation/incus
+    ../my/virtualisation/vms/libvirt
+    ../my/virtualisation/vms/quickemu
 
     # An overlay carrying one out-of-tree patch to passt, podman's rootless
     # network helper. Delete this line and the directory the moment nixpkgs

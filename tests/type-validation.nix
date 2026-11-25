@@ -51,6 +51,14 @@ let
 
   mustReject = mustReject' { networking.hostName = "control"; };
 
+  # The control for the machine checks: a valid machine `w`, so a rejection
+  # is about the value under test and not a missing attribute.
+  vmControl = {
+    networking.hostName = "control";
+    my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+    my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; };
+  };
+
   # Build a check derivation that verifies evaluation with valid config succeeds.
   mustAccept = name: accessor: testConfig:
     let
@@ -349,33 +357,74 @@ in
     (c: c.my.environment.login.look)
     { networking.hostName = "test"; my.environment.login.look = "regreet"; };
 
-  # --- Enum: my.dev.containers.backend ---
+  # --- my.virtualisation: engines, guests, machines ---
   #
-  # An enum and not two booleans, because podman's dockerCompat/dockerSocket and
-  # dockerd both claim the `docker` binary and /run/docker.sock. A third value
-  # would have to name a runtime that is actually wired up.
+  # Container engines are independent booleans: a host may run podman and
+  # docker side by side. (`docker` the command then belongs to docker; podman's
+  # dockerCompat is only on when docker is not.)
 
-  containers-backend-rejects-invalid = mustReject "containers-backend-rejects-invalid"
-    (c: c.my.dev.containers.backend)
-    { networking.hostName = "test"; my.dev.containers.backend = "containerd"; };
+  containers-podman-rejects-string = mustReject "containers-podman-rejects-string"
+    (c: c.my.virtualisation.containers.podman.enable)
+    { networking.hostName = "test"; my.virtualisation.containers.podman.enable = "yes"; };
 
-  containers-backend-rejects-bool = mustReject "containers-backend-rejects-bool"
-    (c: c.my.dev.containers.backend)
-    { networking.hostName = "test"; my.dev.containers.backend = true; };
+  containers-docker-accepts-bool = mustAccept "containers-docker-accepts-bool"
+    (c: c.my.virtualisation.containers.docker.enable)
+    { networking.hostName = "test"; my.virtualisation.containers.docker.enable = true; };
 
-  containers-backend-accepts-podman = mustAccept "containers-backend-accepts-podman"
-    (c: c.my.dev.containers.backend)
-    { networking.hostName = "test"; my.dev.containers.backend = "podman"; };
+  # Guests run on rootless podman only (per-guest accounts and --systemd=always
+  # are podman features); the enum has one value on purpose.
+  containers-guest-engine-rejects-docker = mustReject "containers-guest-engine-rejects-docker"
+    (c: map (g: g.engine) c.my.virtualisation.containers.guests)
+    {
+      networking.hostName = "test";
+      my.virtualisation.containers.guests = [{ system = { config = { }; }; name = "g"; engine = "docker"; }];
+    };
 
-  containers-backend-accepts-docker = mustAccept "containers-backend-accepts-docker"
-    (c: c.my.dev.containers.backend)
-    { networking.hostName = "test"; my.dev.containers.backend = "docker"; };
+  # USB device ids: four lowercase hex digits each, written "vvvv:pppp".
+  usb-device-accepts-string = mustAccept "usb-device-accepts-string"
+    (c: c.my.virtualisation.vms.machines.w.usb)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; usb = [ "413c:1234" ]; };
+    };
 
-  containers-backend-defaults-to-podman = mustAccept "containers-backend-defaults-to-podman"
-    (c:
-      if c.my.dev.containers.backend == "podman" then "ok"
-      else builtins.throw "my.dev.containers.backend should default to podman on Linux")
-    { networking.hostName = "test"; };
+  usb-device-accepts-attrs = mustAccept "usb-device-accepts-attrs"
+    (c: c.my.virtualisation.vms.machines.w.usb)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; usb = [{ vendor = "413c"; product = "1234"; }]; };
+    };
+
+  usb-device-rejects-short = mustReject' vmControl "usb-device-rejects-short"
+    (c: c.my.virtualisation.vms.machines.w.usb)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; usb = [ "41c:1" ]; };
+    };
+
+  usb-device-rejects-nonhex = mustReject' vmControl "usb-device-rejects-nonhex"
+    (c: c.my.virtualisation.vms.machines.w.usb)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; usb = [ "zzzz:1234" ]; };
+    };
+
+  # Only implemented engines are values: libvirt machines are not rendered yet.
+  vm-engine-rejects-libvirt = mustReject' vmControl "vm-engine-rejects-libvirt"
+    (c: c.my.virtualisation.vms.machines.w.engine)
+    {
+      networking.hostName = "test";
+      my.users.vmuser = { fullName = "V"; description = "v"; email = "v@example.com"; };
+      my.virtualisation.vms.machines.w = { owner = "vmuser"; os = "windows"; engine = "libvirt"; };
+    };
+
+  incus-storage-rejects-zfs = mustReject "incus-storage-rejects-zfs"
+    (c: c.my.virtualisation.incus.storage)
+    { networking.hostName = "test"; my.virtualisation.incus.storage = "zfs"; };
 
   # --- Persistence path validation (relativePath type) ---
 

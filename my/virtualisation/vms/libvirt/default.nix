@@ -1,4 +1,4 @@
-# my.virtualisation.libvirt -- full VMs through libvirtd and virt-manager.
+# my.virtualisation.vms.libvirt -- full VMs through libvirtd and virt-manager.
 #
 # The system libvirt (qemu:///system), not a per-user session: it owns USB
 # host-device passthrough, relabelling the usbfs node for the guest itself,
@@ -8,8 +8,7 @@
 { config, lib, ... }:
 
 let
-  cfg = config.my.virtualisation.libvirt;
-  impermanence = config.my.storage.impermanence;
+  cfg = config.my.virtualisation.vms.libvirt;
 in
 {
   config = lib.mkIf cfg.enable {
@@ -24,8 +23,6 @@ in
 
     # Disk images, VM definitions, NVRAM and TPM state. On a tmpfs root these
     # would vanish at reboot -- or fill RAM first.
-    environment.persistence = lib.mkIf impermanence.enable {
-      ${impermanence.persistPath}.directories = [ "/var/lib/libvirt" ];
-    };
+    my.system.persistence.features.systemDirectories = [ "/var/lib/libvirt" ];
   };
 }

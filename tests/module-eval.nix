@@ -647,7 +647,8 @@ in
           inherit (config.my.system.persistence) features;
           groupsOf = u: u.extraGroups or [ ];
         in
-        config.my.dev.containers.backend == "podman"
+        config.my.virtualisation.containers.podman.enable
+        && !config.my.virtualisation.containers.docker.enable
         && config.virtualisation.podman.enable
         && config.virtualisation.podman.dockerCompat
         # dockerSocket would symlink /run/docker.sock onto the ROOTFUL podman
@@ -684,7 +685,7 @@ in
     let
       devUser = {
         networking.hostName = "test-containers-docker";
-        my.dev.containers.backend = "docker";
+        my.virtualisation.containers = { docker.enable = true; podman.enable = false; };
         my.users.devuser = {
           fullName = "Dev User";
           description = "dev user";
@@ -739,7 +740,7 @@ in
     evalAssert "containers-docker-subid-guard"
       {
         networking.hostName = "test-containers-docker-subid";
-        my.dev.containers.backend = "docker";
+        my.virtualisation.containers = { docker.enable = true; podman.enable = false; };
         my.users.devuser = {
           fullName = "Dev User";
           description = "dev user";
@@ -2575,21 +2576,45 @@ in
         && builtins.any (x: baseNameOf x == "uvcvideo-variable-xu.patch") (p.patches or [ ]))
       config.boot.extraModulePackages);
 
+  # --- my.virtualisation ----------------------------------------------------
+
+  # Engines are independent: podman and docker side by side. `docker` the
+  # command then belongs to docker, so podman's dockerCompat stays off (nixpkgs
+  # asserts the two cannot both claim it), and both stay rootless with no
+  # container group handed out.
+  containers-both-engines = evalClauses "containers-both-engines"
+    {
+      networking.hostName = "test-containers-both";
+      my.virtualisation.containers.docker.enable = true;
+      my.users.devuser = {
+        fullName = "Dev User";
+        description = "dev user";
+        email = "dev@example.com";
+        dev.enable = true;
+      };
+    }
+    (config: {
+      podman = config.virtualisation.podman.enable;
+      docker = config.virtualisation.docker.enable && config.virtualisation.docker.rootless.enable;
+      dockerCommandIsDocker = !config.virtualisation.podman.dockerCompat;
+      noContainerGroups = !(lib.any
+        (u: lib.elem "docker" (u.extraGroups or [ ]) || lib.elem "podman" (u.extraGroups or [ ]))
+        (lib.attrValues config.users.users));
+      assertionsHold = !(lib.any (a: !a.assertion) config.assertions);
+      bothPersisted = lib.elem "/var/lib/docker" config.my.system.persistence.features.systemDirectories
+        && lib.elem ".local/share/containers" config.my.system.persistence.features.userDirectories;
+    });
+
   # Full VMs (a Windows guest for vendor tools that exist nowhere else):
   # libvirtd with an emulated TPM for Windows 11, virt-manager, the named
   # users in the root-equivalent libvirtd group and nobody else, and the
-  # disks and definitions on /persist rather than a tmpfs root.
+  # disks and definitions on /persist rather than a tmpfs root -- declared
+  # through the persistence features like every other module.
   virtualisation-libvirt = evalClauses "virtualisation-libvirt"
     {
       networking.hostName = "test-libvirt";
-      fileSystems."/persist" = {
-        device = "/dev/disk/by-label/persist";
-        fsType = "ext4";
-        neededForBoot = true;
-      };
       my = {
-        storage.impermanence.enable = true;
-        virtualisation.libvirt = { enable = true; users = [ "vmuser" ]; };
+        virtualisation.vms.libvirt = { enable = true; users = [ "vmuser" ]; };
         users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
         users.other = { fullName = "Other"; description = "other"; email = "other@example.com"; };
       };
@@ -2600,13 +2625,143 @@ in
       virtManager = config.programs.virt-manager.enable;
       userInGroup = builtins.elem "libvirtd" config.users.users.vmuser.extraGroups;
       othersNot = !(builtins.elem "libvirtd" config.users.users.other.extraGroups);
-      persisted = builtins.elem "/var/lib/libvirt"
-        (map (d: d.directory or d) config.environment.persistence."/persist".directories);
+      persisted = builtins.elem "/var/lib/libvirt" config.my.system.persistence.features.systemDirectories;
     });
 
   virtualisation-libvirt-off = evalAssert "virtualisation-libvirt-off"
     { networking.hostName = "test-libvirt-off"; }
     (config: !config.virtualisation.libvirtd.enable);
+
+  # Incus: system containers and VMs. nixpkgs refuses it on iptables, so it
+  # turns nftables on; the bridge is trusted so guests get DHCP/DNS; the UI
+  # listens on localhost unless told otherwise; incus-admin is root-equivalent
+  # and gets only the named users.
+  virtualisation-incus = evalClauses "virtualisation-incus"
+    {
+      networking.hostName = "test-incus";
+      my = {
+        virtualisation.incus = { enable = true; users = [ "vmuser" ]; storage = "btrfs"; ui.enable = true; };
+        users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+        users.other = { fullName = "Other"; description = "other"; email = "other@example.com"; };
+      };
+    }
+    (config:
+      let
+        p = config.virtualisation.incus.preseed;
+        pool = lib.findFirst (s: s.name == "default") null p.storage_pools;
+        bridge = lib.findFirst (n: n.name == "incusbr0") null p.networks;
+        profile = lib.findFirst (x: x.name == "default") null p.profiles;
+      in
+      {
+        incus = config.virtualisation.incus.enable;
+        ui = config.virtualisation.incus.ui.enable;
+        nftables = config.networking.nftables.enable;
+        userInGroup = builtins.elem "incus-admin" config.users.users.vmuser.extraGroups;
+        othersNot = !(builtins.elem "incus-admin" config.users.users.other.extraGroups);
+        poolDriver = pool != null && pool.driver == "btrfs";
+        bridgeNat = bridge != null && bridge.config."ipv4.nat" == "true";
+        profileWired = profile != null && profile.devices.root.pool == "default"
+          && profile.devices.eth0.network == "incusbr0";
+        uiOnLocalhost = p.config."core.https_address" == "127.0.0.1:8443";
+        bridgeTrusted = builtins.elem "incusbr0" config.networking.firewall.trustedInterfaces;
+        persisted = builtins.elem "/var/lib/incus" config.my.system.persistence.features.systemDirectories;
+      });
+
+  virtualisation-incus-off = evalAssert "virtualisation-incus-off"
+    { networking.hostName = "test-incus-off"; }
+    (config: !config.virtualisation.incus.enable && !config.networking.nftables.enable);
+
+  # RKE2's rpfilter exemption is iptables-only; Incus forces nftables. Until RKE2
+  # has an nftables branch the two are refused together rather than leaving
+  # Cilium's interfaces silently dropped by reverse-path filtering.
+  virtualisation-incus-refuses-rke2 = evalAssert "virtualisation-incus-refuses-rke2"
+    {
+      networking.hostName = "test-incus-rke2";
+      my.virtualisation.incus.enable = true;
+      my.infra.rke2.enable = true;
+    }
+    (config: lib.any (a: !a.assertion && lib.hasInfix "Incus" a.message && lib.hasInfix "RKE2" a.message) config.assertions);
+
+  # A declared quickemu machine: Windows from a local ISO, VirtIO drivers and an
+  # unattended-setup disc from the store, the owner's ~/VMs persisted, the USB
+  # device handed to the owner, and kvm told to ignore the MSRs Windows probes.
+  vm-quickemu-windows = evalClauses "vm-quickemu-windows"
+    {
+      networking.hostName = "test-vm-windows";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my = {
+        storage.impermanence.enable = true;
+        users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+        virtualisation.vms.machines.w = {
+          owner = "vmuser";
+          os = "windows";
+          install.iso = "/home/vmuser/Downloads/win.iso";
+          cpus = 4;
+          memory = "8G";
+          disk.size = "64G";
+          usb = [ "413c:1234" ];
+        };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.vmuser;
+        conf = hm.home.file."VMs/w.conf".text;
+        pkgNames = map (p: p.pname or p.name or "") hm.home.packages;
+        rules = lib.concatMapStrings
+          (p: lib.concatMapStrings (f: builtins.readFile "${p}/lib/udev/rules.d/${f}")
+            (builtins.attrNames (builtins.readDir "${p}/lib/udev/rules.d")))
+          (builtins.filter (p: builtins.pathExists "${p}/lib/udev/rules.d") config.services.udev.packages);
+        userDirs = map (d: d.directory or d) config.environment.persistence."/persist".users.vmuser.directories;
+      in
+      {
+        guestOs = lib.hasInfix ''guest_os="windows"'' conf;
+        resources = lib.hasInfix ''cpu_cores="4"'' conf && lib.hasInfix ''ram="8G"'' conf
+          && lib.hasInfix ''disk_size="64G"'' conf;
+        firmware = lib.hasInfix ''boot="efi"'' conf && lib.hasInfix ''tpm="on"'' conf
+          && lib.hasInfix ''secureboot="off"'' conf;
+        iso = lib.hasInfix ''iso="/home/vmuser/Downloads/win.iso"'' conf;
+        virtio = lib.hasInfix "fixed_iso=" conf && lib.hasInfix "virtio-win" conf;
+        disk = lib.hasInfix ''disk_img="/home/vmuser/VMs/w/disk.qcow2"'' conf;
+        usbInConf = lib.hasInfix ''usb_devices=("413c:1234")'' conf;
+        unattended = hm.home.file ? "VMs/w/unattended.iso";
+        packages = lib.elem "quickemu" pkgNames && lib.elem "vm-w" pkgNames;
+        usbOwned = lib.hasInfix ''ATTRS{idVendor}=="413c", ATTRS{idProduct}=="1234", OWNER="vmuser"'' rules;
+        vmsPersisted = lib.elem "VMs" userDirs;
+        ignoreMsrs = lib.hasInfix "ignore_msrs=1" config.boot.extraModprobeConfig;
+      });
+
+  vm-quickemu-off = evalAssert "vm-quickemu-off"
+    {
+      networking.hostName = "test-vm-off";
+      my.users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+    }
+    (config:
+      !(lib.any (p: (p.pname or "") == "quickemu") config.home-manager.users.vmuser.home.packages)
+      && !(lib.hasInfix "ignore_msrs" config.boot.extraModprobeConfig));
+
+  vm-refuses-unknown-owner = evalAssert "vm-refuses-unknown-owner"
+    {
+      networking.hostName = "test-vm-owner";
+      my.virtualisation.vms.machines.w = { owner = "nobody-here"; os = "linux"; };
+    }
+    (config: lib.any (a: !a.assertion && lib.hasInfix "nobody-here" a.message) config.assertions);
+
+  vm-refuses-secureboot-without-uefi = evalAssert "vm-refuses-secureboot-without-uefi"
+    {
+      networking.hostName = "test-vm-sb";
+      my.users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+      my.virtualisation.vms.machines.w = {
+        owner = "vmuser";
+        os = "linux";
+        firmware = { uefi = false; secureBoot = true; };
+      };
+    }
+    (config: lib.any (a: !a.assertion && lib.hasInfix "secureBoot" a.message) config.assertions);
 
   peripheral-elgato-4k-x-uvcvideo-off = evalAssert "peripheral-elgato-4k-x-uvcvideo-off"
     {

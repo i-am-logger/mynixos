@@ -26,6 +26,7 @@ in
   # -----------------------------------------------------------------------
   ++ [
     (mkOptionsModule ../my/system/homebrew/options.nix { inherit lib; })
+    (mkOptionsModule ../my/virtualisation/containers/darwin-options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/laptops/apple/options.nix { inherit lib; })
     (mkOptionsModule ../my/system/nix-gc/options.nix { inherit lib; })
 
@@ -84,12 +85,10 @@ in
     ../my/system/nix-gc
     ../my/system/nix-registry/darwin.nix # nixpkgs registry + NIX_PATH while the nix-installer owns Nix
 
-    # Containers via Colima -- the macOS counterpart to my/dev/development's
-    # `virtualisation.podman`. Reads the same `dev.containers.enable` option;
-    # the injector beside it flips `my.dev.containers.backend` to "docker",
-    # which is the only runtime Colima serves here.
-    ../my/dev/containers
-    ../my/dev/containers/mynixos-darwin.nix
+    # Containers via Colima -- the macOS counterpart to the Linux engines in
+    # my/virtualisation/containers/engines.nix. Reads the same per-user
+    # `dev.containers.enable`; docker is the only engine Colima serves here.
+    ../my/virtualisation/containers/colima.nix
 
     # Accept remote nix builds (my.dev.builderHost): the locked-down account
     # + forced-command key + nix.custom.conf trust. The client half

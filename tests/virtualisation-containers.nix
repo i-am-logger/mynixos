@@ -1,4 +1,4 @@
-# my.virtualisation.containers, which had no coverage at all.
+# my.virtualisation.containers.guests, which had no coverage at all.
 #
 # Two things are asserted, and both are about what happens AFTER something has
 # already gone wrong:
@@ -50,7 +50,7 @@ let
   hostWith = roles: self.lib.mkSystem {
     platform = "linux";
     hostname = "container-host";
-    my.virtualisation.containers = roles;
+    my.virtualisation.containers.guests = roles;
     extraModules = [{
       boot.loader.grub.devices = [ "nodev" ];
       fileSystems."/" = { device = "tmpfs"; fsType = "tmpfs"; };
@@ -160,4 +160,34 @@ in
       (lib.any (p: baseNameOf (toString p) == "udp-sock-errs-null-flow.patch")
         (withoutGuest.pkgs.passt.patches or [ ]))
       "the passt overlay must apply to every Linux host, not only ones declaring a container role";
+  # --- Image guests: any dockerTools image, not only a mynixos system ------
+
+  # A guest can be a plain image -- a single program, no systemd. It keeps the
+  # host-side safeguards (its own account, limits, state) and drops what only a
+  # system needs: systemd mode and the journal volume. streamLayeredImage is
+  # streamed; a buildLayeredImage tarball is loaded from the stream it carries.
+  virtualisation-containers-image-guest =
+    let
+      app = pkgs.writeShellScriptBin "app" "echo hi";
+      streamed = pkgs.dockerTools.streamLayeredImage { name = "app"; tag = "t1"; contents = [ app ]; config.Cmd = [ "/bin/app" ]; };
+      tarball = pkgs.dockerTools.buildLayeredImage { name = "tarapp"; tag = "t2"; contents = [ app ]; config.Cmd = [ "/bin/app" ]; };
+      host = (hostWith [ streamed { image = tarball; name = "tar-app"; } ]).config;
+      s = host.virtualisation.oci-containers.containers.app;
+      t = host.virtualisation.oci-containers.containers.tar-app;
+      sys = withGuest.virtualisation.oci-containers.containers.guest-role;
+    in
+    check "image-guest"
+      (
+        s.imageStream == streamed && s.image == "localhost/app:t1"
+        && t.imageStream == tarball.stream && t.image == "localhost/tarapp:t2"
+        && s.podman.user == "app-user" && t.podman.user == "tar-app-user"
+        && !(lib.elem "--systemd=always" s.extraOptions)
+        && !(lib.any (v: lib.hasSuffix ":/var/log/journal" v) s.volumes)
+        && lib.elem "--memory=4g" s.extraOptions
+        # Control: a system guest still runs systemd and keeps its journal.
+        && lib.elem "--systemd=always" sys.extraOptions
+        && lib.any (v: lib.hasSuffix ":/var/log/journal" v) sys.volumes
+      )
+      ("an image guest must load its image (stream or file), run without systemd mode "
+        + "and without a journal volume, under its own account and limits");
 }

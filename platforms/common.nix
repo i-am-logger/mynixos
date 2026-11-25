@@ -74,6 +74,9 @@ in
       # Top-level options
       (mkOptionsModule ../my/system/options.nix { inherit lib; })
       (mkOptionsModule ../my/dev/development/options.nix { inherit lib; })
+      # Container engines (both platforms); the Linux- and darwin-only parts of
+      # my.virtualisation are declared by those platforms.
+      (mkOptionsModule ../my/virtualisation/options.nix { inherit lib; })
 
       # Network options
 

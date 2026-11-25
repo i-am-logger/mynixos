@@ -150,12 +150,12 @@ in
           # additional networks). Left managed, NetworkManager autoconnects and
           # runs DHCP on it and can take it down under a running container,
           # which breaks both container connectivity and the aardvark-dns
-          # resolution my.dev.containers turns on.
+          # resolution the podman engine (my.virtualisation.containers) turns on.
           #
-          # The list is static rather than derived from
-          # my.dev.containers.backend: my/system/core has no business reading
-          # my.dev, and the entries already there (cni*, flannel*, docker*)
-          # are not conditional on a backend either.
+          # The list is static rather than derived from which engines are on
+          # (my.virtualisation): my/system/core has no business reading it, and
+          # the entries already there (cni*, flannel*, docker*, incusbr*,
+          # virbr*) are not conditional on an engine either.
           #
           # THIS FILE IS THE SINGLE OWNER of `unmanaged-devices`, and the cilium_*
           # and lxc* entries are here rather than in my/infra/rke2 for that
@@ -175,7 +175,7 @@ in
           # generation, so what this protects is the new cluster, not the forge.
           etc."NetworkManager/conf.d/99-unmanaged-cni.conf".text = ''
             [keyfile]
-            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:podman*;interface-name:br-*;interface-name:cilium_host;interface-name:cilium_net;interface-name:cilium_vxlan;interface-name:lxc*
+            unmanaged-devices=interface-name:cni*;interface-name:flannel*;interface-name:veth*;interface-name:docker*;interface-name:podman*;interface-name:br-*;interface-name:cilium_host;interface-name:cilium_net;interface-name:cilium_vxlan;interface-name:lxc*;interface-name:incusbr*;interface-name:virbr*
           '';
 
           # Linux-only half of the base set. The portable half lives in

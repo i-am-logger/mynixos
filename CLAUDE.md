@@ -77,6 +77,9 @@ What this means when writing modules:
   `my/users/apps/browsers/brave` picking a wrapped or an unwrapped package — never for whether an option exists.
 - `tests/user-option-reach.nix` enumerates both option trees and fails when reach changes. An option that is
   one-sided by design is recorded there with its reason.
+- A platform-only *setting* of a feature that exists on both platforms goes under a `.darwin` / `.linux` key of
+  that feature, declared only by that platform (`my.virtualisation.containers.darwin.colimaAutoStart`). A whole
+  feature that exists on one platform only is simply declared there (`my.virtualisation.vms`).
 
 ### Module files
 

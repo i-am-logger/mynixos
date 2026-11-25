@@ -1,6 +1,6 @@
 # Containers on darwin.
 #
-# The NixOS side (my/dev/development) sets `virtualisation.podman` or
+# The Linux side (./engines.nix) sets `virtualisation.podman` or
 # `virtualisation.docker`, neither of which exists on macOS — there is no Linux
 # kernel to run containers on. macOS needs a Linux VM, and the runtime lives
 # inside it.
@@ -18,19 +18,18 @@
 # equivalent. Colima keeps `docker` and `docker-compose` behaving the same way
 # on both platforms, which is worth more here than the isolation is.
 #
-# Only `backend = "docker"` is implemented here. Rootless podman's whole benefit
-# on Linux is that there is no daemon and no root-equivalent group; inside a
-# Colima VM the user is already root of a throwaway machine, so `podman machine`
-# would buy nothing and cost a second VM stack. The option still EXISTS on
-# darwin — it is one option on both platforms — so the mismatch is an assertion
-# below rather than a silent no-op, and mynixos-darwin.nix makes "docker" the
-# default here so the fleet does not trip it by accident.
+# Only docker is implemented here. Rootless podman's whole benefit on Linux is
+# that there is no daemon and no root-equivalent group; inside a Colima VM the
+# user is already root of a throwaway machine, so `podman machine` would buy
+# nothing and cost a second VM stack. The podman option still EXISTS on darwin
+# -- the engines are one option tree on both platforms -- so turning it on is an
+# assertion below rather than a silent no-op.
 { activeUsers, config, lib, pkgs, ... }:
 
 with lib;
 
 let
-  cfg = config.my.dev.containers;
+  cfg = config.my.virtualisation.containers;
 
   runtime = pkgs.colima;
 
@@ -45,22 +44,25 @@ let
 in
 {
   config = {
+    # docker (in Colima) is the darwin engine; it comes on for a host whose
+    # users want containers, like podman does on Linux.
+    my.virtualisation.containers.docker.enable = mkDefault anyUserContainers;
+
     assertions = [
       {
-        assertion = anyUserContainers -> cfg.backend == "docker";
+        assertion = !cfg.podman.enable;
         message = ''
-          my.dev.containers.backend = "${cfg.backend}" is not implemented on darwin.
+          my.virtualisation.containers.podman.enable is not implemented on darwin.
           macOS has no kernel to run containers on, so mynixos runs them in a
-          Colima VM with the docker runtime. Set my.dev.containers.backend =
-          "docker" on this host (my/dev/containers/mynixos-darwin.nix already
-          does so by default), or turn containers off for its users.
+          Colima VM with the docker runtime (containers.docker, on by default
+          here). Turn podman off on this host.
         '';
       }
     ];
 
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (wants userCfg) {
+        mkIf (wants userCfg && cfg.docker.enable) {
           home.packages = [
             runtime # colima — the Linux VM running the daemon
             pkgs.docker # client only on darwin; the daemon is in the VM
@@ -72,7 +74,7 @@ in
           # is deliberately NOT set here — hardcoding it would fight the context
           # and break `docker context use`.
 
-          launchd.agents.colima = mkIf cfg.autoStart {
+          launchd.agents.colima = mkIf cfg.darwin.colimaAutoStart {
             enable = true;
             config = {
               Label = "org.mynixos.colima";
