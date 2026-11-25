@@ -2465,6 +2465,27 @@ in
   # (f) HDMI FRL: the feature-mask bit on a kernel that has it off by default,
   # nothing from 7.4 on (where it is on), nothing when not asked, and only on
   # an AMD GPU.
+  # The Corsair HX1200i Series 2025 PSU (USB 1b1c:1c27): sensors only. The
+  # in-kernel corsair-psu hwmon driver reports rails, power, fan and temps;
+  # lm_sensors shows them. No fan or OCP control is sent.
+  psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
+    {
+      imports = [ (kernelAt "7.2.6") ];
+      networking.hostName = "test-psu";
+      my.hardware.powerSupplies.corsair.hx1200i.enable = true;
+    }
+    (config: builtins.elem "corsair-psu" config.boot.kernelModules
+      && builtins.any (p: (p.pname or "") == "lm-sensors") config.environment.systemPackages
+      && failing "powerSupplies" config == [ ]);
+
+  # corsair-psu learned 0x1c27 in 6.17 (6082bfe47795); an older kernel binds
+  # nothing, so the profile refuses it rather than silently showing no sensors.
+  psu-corsair-hx1200i-refuses-old-kernel = displayRefuses "psu-corsair-hx1200i-refuses-old-kernel" "6.17"
+    {
+      imports = [ (kernelAt "6.12.0") ];
+      my.hardware.powerSupplies.corsair.hx1200i.enable = true;
+    };
+
   display-hdmi-frl-7-2 = evalAssert "display-hdmi-frl-7-2"
     {
       imports = [ (kernelAt "7.2.6") ];

@@ -42,6 +42,7 @@ in
     (mkOptionsModule ../my/hardware/display/monitors/dell/aw3225qf/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/gpu/amd/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/cooling/options.nix { inherit lib; })
+    (mkOptionsModule ../my/hardware/power-supplies/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/peripherals/options.nix { inherit lib; })
     (mkOptionsModule ../my/hardware/laptops/lenovo/options.nix { inherit lib; })
 
@@ -165,6 +166,7 @@ in
     ../my/hardware/boot/uefi
 
     ../my/hardware/cooling/nzxt/kraken-elite-rgb/elite-240-rgb
+    ../my/hardware/power-supplies/corsair/hx1200i
 
     ../my/hardware/cpu/amd
     ../my/hardware/cpu/intel
