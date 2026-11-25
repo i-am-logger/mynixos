@@ -2500,6 +2500,17 @@ in
       vrr2 = (ruleFor aw config).vrr == 2;
     });
 
+  # Elgato Game Capture 4K X (0fd9:009b): uaccess, so vendor-control tools
+  # (elgato4k-linux: HDR tone mapping, EDID mode) run without sudo.
+  peripheral-elgato-4k-x = evalAssert "peripheral-elgato-4k-x"
+    {
+      networking.hostName = "test-4kx";
+      my.hardware.peripherals.elgato.game-capture-4k-x.enable = true;
+    }
+    (config: builtins.any
+      (p: builtins.match ".*0fd9.*009b.*uaccess.*" (builtins.readFile "${p}/lib/udev/rules.d/70-elgato-4k-x.rules") != null)
+      (builtins.filter (p: builtins.pathExists "${p}/lib/udev/rules.d/70-elgato-4k-x.rules") config.services.udev.packages));
+
   psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
     {
       imports = [ (kernelAt "7.2.6") ];
