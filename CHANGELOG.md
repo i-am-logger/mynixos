@@ -5,6 +5,20 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.32.0...mynixos-v0.33.0) (2026-11-25)
+
+
+### Features
+
+* **display:** my.hardware.display — monitor models, layout, HDR on by default ([933b826](https://github.com/i-am-logger/mynixos/commit/933b82699b0291dfeb7b17687daa72ed8105427a))
+* **herdr:** clauth's plugin on wherever clauth is ([b5711f7](https://github.com/i-am-logger/mynixos/commit/b5711f76dd4d9bff5a19866f6463b0eb3ea98a36))
+
+
+### Bug Fixes
+
+* **clauth:** write ~/.claude.json through a bind mount or a symlink ([d82f4e5](https://github.com/i-am-logger/mynixos/commit/d82f4e558b7d517d147e70f02b3e805f8cf670dc))
+* **display:** refuse mirror chains, prefix twins and shared workspaces ([d12d94c](https://github.com/i-am-logger/mynixos/commit/d12d94c640f61183b58466106a53bbf25b61d65b))
+
 ## [0.32.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.31.0...mynixos-v0.32.0) (2026-11-17)
 
 
