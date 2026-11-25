@@ -95,9 +95,14 @@ in
     };
 
     vrr = mkOption {
-      type = types.enum [ "off" "on" "fullscreen" ];
-      default = "fullscreen";
-      description = "Variable refresh rate: never, always, or for fullscreen windows only.";
+      type = types.enum [ "off" "on" "fullscreen" "content" ];
+      # "content" (Hyprland vrr 3): VRR only for a fullscreen window that
+      # declares game or video content (wp_content_type). Plain "fullscreen"
+      # (vrr 2) lets any fullscreen app drive the refresh rate, and on an OLED
+      # an SDR app presenting 24-60 fps then pulses in brightness as the panel
+      # follows its frame pacing (seen with telly on ads-dev1's AW3225QF).
+      default = "content";
+      description = "Variable refresh rate: never, always, for fullscreen windows, or for fullscreen windows declaring game/video content.";
     };
 
     bitDepth = mkOption {

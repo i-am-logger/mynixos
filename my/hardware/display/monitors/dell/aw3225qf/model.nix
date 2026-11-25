@@ -41,7 +41,7 @@ in
 
     bitDepth = mkDefault 10;
     hdr.enable = mkDefault true;
-    vrr = mkDefault "fullscreen";
+    vrr = mkDefault "content";
 
     hdr.luminance = mkIf (config.hdrMode != "edid") {
       max = mkDefault luminance.${config.hdrMode}.max;

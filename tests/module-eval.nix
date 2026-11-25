@@ -219,7 +219,7 @@ let
     bitdepth = 10;
     cm = "hdr";
     sdr_max_luminance = 203;
-    vrr = 2;
+    vrr = 3;
   };
 
   aw = "desc:Dell Inc. AW3225QF";
@@ -2354,7 +2354,7 @@ in
         !(lib.hasInfix "hl.render(" text) && lib.hasInfix ''["cm_auto_hdr"] = 0'' text;
     });
 
-  # (a) A catalogued model: its facts (make, model, 10-bit HDR, fullscreen VRR)
+  # (a) A catalogued model: its facts (make, model, 10-bit HDR, content-gated VRR)
   # become one rule beside the wildcard, and nothing equal to Hyprland's own
   # defaults is written. The mode stays "highres" so the link decides (4K@240
   # on DP 1.4 + DSC, 4K@60 on HDMI TMDS); the native mode is geometry only.
@@ -2443,7 +2443,7 @@ in
     })
     (config: {
       clean = displayClean config;
-      external = ruleFor "HDMI-A-1" config == { output = "HDMI-A-1"; mode = "2560x1440@59.95"; position = "0x0"; scale = "1"; vrr = 2; };
+      external = ruleFor "HDMI-A-1" config == { output = "HDMI-A-1"; mode = "2560x1440@59.95"; position = "0x0"; scale = "1"; vrr = 3; };
       laptop = ruleFor "eDP-1" config == displayWildcard // { output = "eDP-1"; mode = "2560x1600@240"; mirror = "HDMI-A-1"; };
     });
 
@@ -2487,6 +2487,18 @@ in
       my.hardware.peripherals.logitech.bolt = { enable = true; tray = false; };
     }
     (config: config.programs.solaar.enable && !(config.systemd.user.services ? solaar));
+
+  # VRR defaults to "content" (Hyprland vrr 3): only a fullscreen window that
+  # declares game or video content gets VRR. Plain fullscreen VRR (2) made a
+  # QD-OLED pulse with an SDR app presenting 24-60 fps on a 240 Hz panel
+  # (telly on ads-dev1: VRR_ENABLED toggling, refresh tracking frame pacing).
+  # "fullscreen" stays available for panels without OLED VRR flicker.
+  display-vrr-fullscreen-explicit = evalClauses "display-vrr-fullscreen-explicit"
+    (displayHost { monitors.dell.aw3225qf.main.vrr = "fullscreen"; })
+    (config: {
+      clean = displayClean config;
+      vrr2 = (ruleFor aw config).vrr == 2;
+    });
 
   psu-corsair-hx1200i = evalAssert "psu-corsair-hx1200i"
     {

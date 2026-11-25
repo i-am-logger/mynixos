@@ -208,7 +208,7 @@ let
         position = if l.position == "auto" then "auto" else "${toString l.position.x}x${toString l.position.y}";
         # A STRING-typed field (see infraSettings below).
         scale = showNumber l.scale;
-        vrr = { off = 0; on = 1; fullscreen = 2; }.${m.vrr};
+        vrr = { off = 0; on = 1; fullscreen = 2; content = 3; }.${m.vrr};
       }
       // optionalAttrs (transform != 0) { inherit transform; }
       // optionalAttrs (l.mirror != null) { mirror = mirrored; }
