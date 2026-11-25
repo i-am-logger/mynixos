@@ -2488,6 +2488,11 @@ in
   display-refuses-twins = displayRefuses "display-refuses-twins" "set serial or output"
     { my.hardware.display.monitors.dell.aw3225qf = { left = { }; right = { }; }; };
 
+  # Hyprland matches desc: as a PREFIX, so a serial-less selector also catches
+  # the serialled panel of the same model.
+  display-refuses-prefix-twins = displayRefuses "display-refuses-prefix-twins" "would all match"
+    { my.hardware.display.monitors.dell.aw3225qf = { left = { }; right.serial = "SN1"; }; };
+
   display-refuses-duplicate-name = displayRefuses "display-refuses-duplicate-name" "declared more than once"
     {
       my.hardware.display.monitors = {

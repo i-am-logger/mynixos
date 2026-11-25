@@ -75,6 +75,16 @@ let
       want = { a = { x = 0; y = 0; }; b = "auto"; c = "auto"; };
     };
 
+    # A disabled monitor renders only `disabled`, so its scale is never applied
+    # and a fractional one must not be refused.
+    disabled-fractional-scale-is-fine = {
+      got = (resolve {
+        monitors.a.mode = qhd;
+        layout.a = { enable = false; scale = 1.5; };
+      }).errors;
+      want = [ ];
+    };
+
     clean-layout-has-no-errors = {
       got = (resolve {
         monitors = { main.mode = uhd; side.mode = qhd; };
@@ -135,6 +145,35 @@ let
       input = {
         monitors = { a.mode = uhd; b.mode = uhd; };
         layout.b.position = { x = 0; rightOf = "a"; };
+      };
+    };
+    # Hyprland 0.57 setMirror: "Cannot mirror self!" / "Cannot mirror a mirror!"
+    # -- it logs and leaves the output unmirrored, so refuse both at eval.
+    mirror-self = {
+      needle = "cannot mirror itself";
+      input = { monitors.a.mode = uhd; layout.a.mirror = "a"; };
+    };
+    mirror-of-a-mirror = {
+      needle = "is itself a mirror";
+      input = {
+        monitors = { a.mode = uhd; b.mode = uhd; c.mode = uhd; };
+        layout = { b.mirror = "a"; c.mirror = "b"; };
+      };
+    };
+    # setMirror moves every workspace off a mirror.
+    workspaces-on-a-mirror = {
+      needle = "a mirror holds no workspaces";
+      input = {
+        monitors = { a.mode = uhd; b.mode = uhd; };
+        layout = { b = { mirror = "a"; workspaces = [ 3 ]; }; };
+      };
+    };
+    # One workspace, one monitor: two rules for workspace 1 cannot both hold.
+    workspace-on-two-monitors = {
+      needle = "workspace 1 is assigned to";
+      input = {
+        monitors = { a.mode = uhd; b.mode = uhd; };
+        layout = { a.workspaces = [ 1 2 ]; b = { position.rightOf = "a"; workspaces = [ 1 ]; }; };
       };
     };
     beside-a-mirror = {

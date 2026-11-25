@@ -60,8 +60,20 @@ let
   pathsOf = name: map (i: "my.hardware.display.${i.path}") (filter (i: i.name == name) all);
   duplicates = filter (n: lib.length (pathsOf n) > 1) (lib.unique (map (i: i.name) all));
 
-  bySelector = lib.groupBy (i: selectorOf i.cfg) all;
-  clashes = lib.filterAttrs (_: is: lib.length is > 1) bySelector;
+  # Two instances clash when Hyprland would match both rules to one panel:
+  # equal selectors, or -- since desc: is a PREFIX match on "make model
+  # serial" -- one desc: selector that is a prefix of the other (a serial-less
+  # rule also catches the serialled panel of the same model).
+  sameTarget = a: b:
+    let
+      sa = selectorOf a.cfg;
+      sb = selectorOf b.cfg;
+      desc = lib.hasPrefix "desc:";
+    in
+    sa == sb || (desc sa && desc sb && (lib.hasPrefix sa sb || lib.hasPrefix sb sa));
+  clashes = concatLists (lib.imap0
+    (i: a: map (b: { inherit a b; }) (filter (sameTarget a) (lib.drop (i + 1) all)))
+    all);
 
   perInstance = i:
     let
@@ -86,10 +98,10 @@ let
         message = "my.hardware.display: the monitor name \"${n}\" is declared more than once (${concatStringsSep ", " (pathsOf n)}). layout refers to monitors by name, so names must be unique across models.";
       })
       duplicates
-    ++ mapAttrsToList
-      (sel: is: {
+    ++ map
+      (c: {
         assertion = false;
-        message = "my.hardware.display: ${concatStringsSep ", " (map (i: "my.hardware.display.${i.path}") is)} would all match \"${sel}\"; set serial or output on each so they name different panels.";
+        message = "my.hardware.display: my.hardware.display.${c.a.path} (\"${selectorOf c.a.cfg}\") and my.hardware.display.${c.b.path} (\"${selectorOf c.b.cfg}\") would all match the same panel; set serial or output on each so they name different panels.";
       })
       clashes
     ++ map

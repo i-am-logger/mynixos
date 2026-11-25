@@ -160,6 +160,11 @@ let
         && pa.x < pb.x + sb.width && pb.x < pa.x + sa.width
         && pa.y < pb.y + sb.height && pb.y < pa.y + sa.height;
 
+      # workspace number -> the monitors that claim it.
+      workspaceOwners = lib.zipAttrs (lib.concatMap
+        (n: map (ws: { ${toString ws} = n; }) entries0.${n}.workspaces)
+        names);
+
       shiftedNames = lib.attrNames shifted;
       pairs = lib.concatLists (lib.imap0
         (i: a: map (b: { inherit a b; }) (lib.drop (i + 1) shiftedNames))
@@ -172,7 +177,19 @@ let
           (lib.filter (n: entries0.${n}.mirror != null && !(monitors ? ${entries0.${n}.mirror})) names)
         ++ rawErrors
         ++ map (p: "my.hardware.display.layout: \"${p.a}\" and \"${p.b}\" overlap") (lib.filter (p: overlaps p.a p.b) pairs)
-        ++ map (n: "my.hardware.display.layout.${n}.scale = ${builtins.toJSON entries0.${n}.scale}: the mode does not divide into whole logical pixels, which Hyprland requires") (lib.filter fractional names);
+        # Hyprland 0.57 setMirror refuses both ("Cannot mirror self!", "Cannot
+        # mirror a mirror!") at runtime and leaves the output unmirrored.
+        ++ map (n: "my.hardware.display.layout.${n}.mirror: a monitor cannot mirror itself")
+          (lib.filter (n: entries0.${n}.mirror == n) names)
+        ++ map (n: "my.hardware.display.layout.${n}.mirror = \"${entries0.${n}.mirror}\": that monitor is itself a mirror, and Hyprland cannot mirror a mirror")
+          (lib.filter (n: let t = entries0.${n}.mirror; in t != null && t != n && entries0 ? ${t} && entries0.${t}.mirror != null) names)
+        # setMirror moves every workspace off the mirroring output.
+        ++ map (n: "my.hardware.display.layout.${n}.workspaces: a mirror holds no workspaces; give them to the monitor it mirrors")
+          (lib.filter (n: entries0.${n}.mirror != null && entries0.${n}.workspaces != [ ]) names)
+        ++ lib.mapAttrsToList (ws: owners: "my.hardware.display.layout: workspace ${ws} is assigned to ${lib.concatStringsSep " and " (lib.unique owners)}; a workspace lives on one monitor")
+          (lib.filterAttrs (_: owners: lib.length (lib.unique owners) > 1) workspaceOwners)
+        # A disabled monitor renders only `disabled`, so its scale is never applied.
+        ++ map (n: "my.hardware.display.layout.${n}.scale = ${builtins.toJSON entries0.${n}.scale}: the mode does not divide into whole logical pixels, which Hyprland requires") (lib.filter (n: entries0.${n}.enable && fractional n) names);
     in
     {
       inherit errors;
