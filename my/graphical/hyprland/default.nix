@@ -889,7 +889,10 @@ in
                       # rendering PQ, so the picture goes bright and washed out. Mesa
                       # WSI tags every Vulkan swapchain sRGB, so any fullscreen
                       # wgpu/Vulkan app triggers it (seen with telly on ads-dev1).
-                      render.cm_auto_hdr = 0;
+                      # Under `config`: top-level settings keys render as hl.<key>(...)
+                      # calls, and options are only set through hl.config (a bare
+                      # `render` key rendered as hl.render, which does not exist).
+                      config.render.cm_auto_hdr = 0;
                     }
                     // optionalAttrs (displayWorkspaceRulesLua != [ ]) {
                       # Concatenated for the same reason as window_rule:
@@ -964,8 +967,11 @@ in
                   # The engine follows the per-user option; "lua" by default
                   # (Hyprland 0.57 removed hyprlang).
                   inherit configType;
+                  # recursiveUpdate, not //: both sides may carry `config` (the
+                  # infra auto-HDR option, the fallback's look), and // would drop
+                  # the infra one.
                   settings = lib.recursiveUpdate
-                    (infraSettings // fallbackSettings)
+                    (lib.recursiveUpdate infraSettings fallbackSettings)
                     (userHyprland.extraSettings or { });
                 };
             }

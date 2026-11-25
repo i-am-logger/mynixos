@@ -2345,7 +2345,13 @@ in
       # Auto-HDR is off: with monitors always in HDR, Hyprland 0.57 would
       # otherwise send SDR metadata for any fullscreen sRGB-tagged surface
       # (Mesa WSI tags Vulkan swapchains) while still rendering PQ.
-      no-auto-hdr = ((hyprSettings config).render.cm_auto_hdr or null) == 0;
+      no-auto-hdr = ((hyprSettings config).config.render.cm_auto_hdr or null) == 0;
+      # ...and it must reach Hyprland: top-level settings keys render as
+      # hl.<key>(...) calls, and only hl.config sets options (there is no
+      # hl.render), so check the rendered file, not just the attrset.
+      no-auto-hdr-rendered =
+        let text = config.home-manager.users.hypruser.xdg.configFile."hypr/hyprland.lua".text; in
+        !(lib.hasInfix "hl.render(" text) && lib.hasInfix ''["cm_auto_hdr"] = 0'' text;
     });
 
   # (a) A catalogued model: its facts (make, model, 10-bit HDR, fullscreen VRR)
