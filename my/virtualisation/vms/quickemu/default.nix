@@ -33,11 +33,19 @@ let
   # quickemu on the host-only QEMU libvirt and Incus run too, not a second
   # all-architecture build (~1 GiB). nixpkgs asks for
   # `qemu.override { smbdSupport = true; }`; answering with the plain
-  # host-only build drops only quickemu's optional Samba "public folder"
-  # share, which it skips when smbd is absent.
-  quickemu = pkgs.quickemu.override {
+  # host-only build drops quickemu's Samba "public folder" share. nixpkgs
+  # also patches quickemu to pass `smb=` unconditionally (its QEMU has
+  # smbd), and QEMU without smbd then refuses to start the VM -- so the
+  # share is switched off in the script too. ~/Public still reaches the
+  # guest over WebDAV/9P.
+  quickemu = (pkgs.quickemu.override {
     qemu = pkgs.qemu_kvm // { override = _: pkgs.qemu_kvm; };
-  };
+  }).overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace quickemu \
+        --replace-fail 'if true || [ -x "/usr/sbin/smbd" ]' 'if false'
+    '';
+  });
 
   # quickget's autounattend.xml, cut out of the script it is a heredoc in.
   # Failing loudly beats an empty answer file, which Windows setup ignores.

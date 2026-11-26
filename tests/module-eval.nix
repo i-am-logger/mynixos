@@ -2767,6 +2767,12 @@ in
         usbInConf = lib.hasInfix ''usb_devices=("413c:1234")'' conf;
         unattended = hm.home.file ? "VMs/w/unattended.iso";
         packages = lib.elem "quickemu" pkgNames && lib.elem "vm-w" pkgNames;
+        # The host-only QEMU has no smbd; nixpkgs' quickemu always passes
+        # `smb=` regardless, and QEMU then refuses to start the VM.
+        noSmbShare = lib.any
+          (p: (p.pname or "") == "quickemu"
+            && lib.hasInfix "'if false'" (builtins.unsafeDiscardStringContext (p.postPatch or "")))
+          hm.home.packages;
         usbOwned = lib.hasInfix ''ATTRS{idVendor}=="413c", ATTRS{idProduct}=="1234", OWNER="vmuser"'' rules;
         vmsPersisted = lib.elem "VMs" userDirs;
         ignoreMsrs = lib.hasInfix "ignore_msrs=1" config.boot.extraModprobeConfig;
