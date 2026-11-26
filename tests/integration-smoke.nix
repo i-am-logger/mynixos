@@ -357,8 +357,8 @@ in
       in
       # claude-code (unfree) - enabled by ai opinionated defaults
       builtins.elem "claude-code" allowed
-      # github-copilot-cli (unfree) - enabled by helix (graphical default editor)
-      && builtins.elem "github-copilot-cli" allowed
+      # helix is the editor alone now; copilot is development tooling (devenv)
+      && !(builtins.elem "github-copilot-cli" allowed)
       # webapps run on Brave now, which fetches Widevine itself: no Chromium
       # and no widevine-cdm reach the allowlist any more.
       && !(builtins.elem "widevine-cdm" allowed)

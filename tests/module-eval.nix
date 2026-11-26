@@ -2780,6 +2780,7 @@ in
     {
       networking.hostName = "test-lean";
       my = {
+        system.enable = true;
         hardware = { gpu = "amd"; audio.enable = true; };
         ai = { enable = true; ollama.enable = true; };
         virtualisation.containers = { podman.enable = true; docker.enable = true; };
@@ -2801,6 +2802,16 @@ in
       {
         systemHasNoDevTools = none [ "alsa-tools" "hipify" "rocm-runtime" "rocm-device-libs" "minikube" "opencv" ] sys;
         helixHasNoToolchainServers = none [ "clang-tools" "lldb" "rust-analyzer" "cmake-language-server" "tree-sitter" ] hm;
+        # Everything development: language servers, formatters, copilot,
+        # container dev TUIs/compose, interpreters/debuggers, installer tools.
+        helixIsJustTheEditor = none [ "nil" "marksman" "markdown-oxide" "vscode-langservers-extracted" "texlab" "yaml-language-server" "taplo" "github-copilot-cli" "alejandra" "nixfmt" ] hm;
+        helixConfigPinsNoServer = !(lib.hasInfix "/nix/store/" (builtins.unsafeDiscardStringContext
+          (lib.generators.toJSON { } config.home-manager.users.leanuser.programs.helix.languages)));
+        noContainerDevTools = none [ "lazydocker" "podman-tui" "podman-compose" "docker-compose" ] sys;
+        noDevDefaults = none [ "perl" "strace" "nixos-install" "nixos-enter" "nixos-generate-config" "nixos-build-vms" ] sys;
+        rsyncKept = lib.elem "rsync" sys;
+        rebuildKept = lib.any (n: lib.hasPrefix "nixos-rebuild" n) sys;
+        plainGit = !(lib.hasInfix "with-svn" config.home-manager.users.leanuser.programs.git.package.name);
         helixKept = lib.elem "helix" hm;
         rocmSmiKept = lib.elem "rocm-smi" sys;
         alsaUtilsKept = lib.elem "alsa-utils" sys;

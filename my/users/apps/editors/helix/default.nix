@@ -13,49 +13,15 @@ args:
     description = "Helix editor";
     persistedDirectories = [ ".config/helix" ];
   };
-  unfree = [ "github-copilot-cli" ];
   home = { pkgs, userCfg, ... }:
     let
       vogixEnabled = userCfg.theming.vogix.enable or false;
     in
     {
-      home.packages = with pkgs; [
-        helix
-        alejandra
-
-        # Language servers that need a compiler toolchain (clangd, lldb,
-        # rust-analyzer, cmake) are NOT here: each project's devenv supplies
-        # them, matched to its toolchain, and the main OS stays without one.
-        # helix ships its own tree-sitter grammars.
-
-        # pkgs.nodePackages.bash-language-server
-        marksman
-        markdown-oxide
-
-        # zellij
-        # lazygit
-        nil
-        # pkgs.rnix-lsp
-        # ocamlPackages.ocaml-lsp
-        vscode-langservers-extracted
-        # dockerfile-language-server-nodejs
-        # haskellPackages.haskell-language-server
-        # nodePackages.typescript-language-server
-        texlab
-        # lua-language-server
-        # marksman
-        # pkgs.nodePackages.pyright
-        # pkgs.python310Packages.python-lsp-server
-        # nodePackages.vue-language-server
-        yaml-language-server
-        taplo
-        github-copilot-cli
-        # pkgs.vimPlugins.copilot-vim
-        # nixpkgs-fmt
-        # nixfmt
-        nixfmt
-        # nixpkgs-fmt
-      ];
+      # The editor only. Language servers, formatters and copilot are
+      # development tooling: a project's devenv puts them on PATH, and the
+      # commands below name them bare so helix finds whatever that is.
+      home.packages = [ pkgs.helix ];
 
       programs.helix = {
         enable = true;
@@ -201,48 +167,46 @@ args:
         };
         languages = {
 
-          language-server =
-            with pkgs;
-            {
-              typescript-language-server = {
-                command = "${typescript-language-server}/bin/typescript-language-server";
-                args = [ "--stdio" ];
-              };
-              svelteserver.command = "${svelte-language-server}/bin/svelteserver";
-              tailwindcss-ls.command = "${tailwindcss-language-server}/bin/tailwindcss-language-server";
-              # nixd = {
-              #   command = "${nixd}/bin/nixd";
-              # };
-              # eslint = {
-              #   command = "${eslint}/bin/eslint";
-              #   args = [ "--stdin" ];
-              # };
-              copilot = {
-                command = "github-copilot-cli";
-                args = [ "--stdio" ];
-              };
-              nil.command = "${nil}/bin/nil";
-              # From PATH: the project's devenv supplies the one matching its toolchain.
-              rust-analyzer.command = "rust-analyzer";
-              rust-analyzer.config = {
-                "inlayHints.bindingModeHints.enable" = true;
-                "inlayHints.closingBraceHints.minLines" = 10;
-                "inlayHints.closureReturnTypeHints.enable" = "with_block";
-                "inlayHints.discrimiinantHints.enable" = "skip_trivial";
-                "inlayHints.typeHints.hideClosureInitialization" = false;
-              };
+          language-server = {
+            typescript-language-server = {
+              command = "typescript-language-server";
+              args = [ "--stdio" ];
+            };
+            svelteserver.command = "svelteserver";
+            tailwindcss-ls.command = "tailwindcss-language-server";
+            # nixd = {
+            #   command = "${nixd}/bin/nixd";
+            # };
+            # eslint = {
+            #   command = "${eslint}/bin/eslint";
+            #   args = [ "--stdin" ];
+            # };
+            copilot = {
+              command = "github-copilot-cli";
+              args = [ "--stdio" ];
+            };
+            nil.command = "nil";
+            # From PATH: the project's devenv supplies the one matching its toolchain.
+            rust-analyzer.command = "rust-analyzer";
+            rust-analyzer.config = {
+              "inlayHints.bindingModeHints.enable" = true;
+              "inlayHints.closingBraceHints.minLines" = 10;
+              "inlayHints.closureReturnTypeHints.enable" = "with_block";
+              "inlayHints.discrimiinantHints.enable" = "skip_trivial";
+              "inlayHints.typeHints.hideClosureInitialization" = false;
+            };
 
-              yaml-language-server = {
-                command = "${yaml-language-server}/bin/yaml-language-server";
-                args = [ "--stdio" ];
-                config.yaml.schemas = {
-                  "https://json.schemastore.org/github-action.json" = [
-                    "action.yml"
-                    "action.yaml"
-                  ];
-                };
+            yaml-language-server = {
+              command = "yaml-language-server";
+              args = [ "--stdio" ];
+              config.yaml.schemas = {
+                "https://json.schemastore.org/github-action.json" = [
+                  "action.yml"
+                  "action.yaml"
+                ];
               };
             };
+          };
 
           #https://github.com/helix-editor/helix/blob/master/languages.toml
           language = [

@@ -25,6 +25,17 @@ in
     })
 
     (mkIf cfg.enable (mkMerge [
+      # No development or install-time tooling on a running system: NixOS'
+      # defaults bring perl and strace (rsync stays, it is a usage tool), and
+      # the installer's tools (nixos-install, -enter, -generate-config,
+      # -build-vms) belong to the installer ISO. nixos-rebuild, nixos-option
+      # and nixos-version stay.
+      {
+        environment.defaultPackages = mkDefault [ pkgs.rsync ];
+        system.tools = genAttrs [ "nixos-install" "nixos-enter" "nixos-generate-config" "nixos-build-vms" ]
+          (_: { enable = mkDefault false; });
+      }
+
       # Base system configuration
       {
         # Distribution identity and branding

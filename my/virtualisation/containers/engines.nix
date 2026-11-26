@@ -92,9 +92,6 @@ in
       # helpersBin regardless.
       environment.systemPackages = with pkgs; [
         crun
-        podman-compose
-        podman-tui
-        lazydocker
       ];
     })
 
@@ -114,9 +111,7 @@ in
       };
 
       environment.systemPackages = with pkgs; [
-        docker-compose
         runc
-        lazydocker
       ];
     })
 

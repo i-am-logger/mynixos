@@ -38,7 +38,9 @@ in
         programs.git = {
           enable = true;
           lfs.enable = true;
-          package = pkgs.gitFull;
+          # Plain git: gitFull adds Subversion, send-email and Perl -- development
+          # extras, not what the host needs to fetch and commit.
+          package = pkgs.git;
 
           settings = {
             user = optionalAttrs (userCfg.fullName or null != null)
