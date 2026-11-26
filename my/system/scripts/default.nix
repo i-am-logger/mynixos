@@ -242,11 +242,16 @@ let
 
       echo "${description} from $FLAKE_DIR..."
       OVERRIDES=()
-      if [ "$USE_LOCAL" = 1 ]; then
-        ${overrideInputs}
-      else
+      ${if local then ''
+        if [ "$USE_LOCAL" = 1 ]; then
+          ${overrideInputs}
+        else
+          echo "  building from flake.lock"
+        fi
+      '' else ''
+        # A switch: the override block is not even generated here.
         echo "  building from flake.lock"
-      fi
+      ''}
       cd "$FLAKE_DIR"
       $SUDO $REBUILD_CMD --flake .# ''${OVERRIDES[@]+"''${OVERRIDES[@]}"}
     '';
