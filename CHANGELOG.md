@@ -5,6 +5,24 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.34.0...mynixos-v0.35.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **virtualisation:** my.dev.containers.{backend,autoStart}, my.virtualisation.containers (list) and my.virtualisation.libvirt are gone; use my.virtualisation.containers.{podman,docker,darwin,guests} and my.virtualisation.vms.libvirt.
+
+### Features
+
+* **performance:** runs.slice memory budget for releasable's runs ([b6053a9](https://github.com/i-am-logger/mynixos/commit/b6053a9ea52e9e4c25abb83545f07347cc694d01))
+* **virtualisation:** one domain for container engines, Incus and VMs ([c773d18](https://github.com/i-am-logger/mynixos/commit/c773d188091612d215d4a66d6e3a5119f63ee5e8))
+* **vms:** install media pinned by SHA-256 and kept with the VM ([9fa60b3](https://github.com/i-am-logger/mynixos/commit/9fa60b31e335c773a4b61066944a1eb38294f67d))
+
+
+### Bug Fixes
+
+* no build toolchains or dev libraries on the main OS ([ff325c8](https://github.com/i-am-logger/mynixos/commit/ff325c81a9f901bc4d2bbb6ea6d291213edc8584))
+
 ## [0.34.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.33.0...mynixos-v0.34.0) (2026-11-25)
 
 
