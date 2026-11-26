@@ -39,15 +39,25 @@
           default = { };
           example = { mynixos = "/Users/logger/Code/mynixos"; };
           description = ''
-            Local checkouts the rebuild scripts should prefer over the locked
-            inputs, as input name -> path. Each one that is PRESENT at run time
-            becomes `--override-input <name> <path>`.
+            Local checkouts `test-system --local` and `build-system --local`
+            use in place of the locked inputs, as input name -> path. Under
+            --local, each one that is PRESENT at run time (and differs from the
+            locked revision) becomes `--override-input <name> <path>`.
+
+            Only on that explicit opt-in. Without --local every script builds
+            from flake.lock, and rebuild-system never uses these at all: a
+            switch builds what the lock names, and `rebuild-system --local` is
+            refused with a pointer to `test-system --local`. A local change
+            reaches a switch by being locked.
+            So `test-system --local` followed by `rebuild-system` deploys a
+            different build from the one tested: lock the change, then test
+            and switch from the lock.
 
             Existence is checked when the script runs, not when it is built, so
             one configuration serves both the machine that has the checkout and
-            the machine that does not -- the latter silently falls back to
-            flake.lock. That is what makes this safe to state in a profile
-            shared by every host.
+            the machine that does not -- the latter falls back to flake.lock.
+            That is what makes this safe to state in a profile shared by every
+            host.
 
             The alternative it replaces is locking an input to a local path,
             which pins every OTHER host to a directory that exists on one

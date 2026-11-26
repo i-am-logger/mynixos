@@ -31,7 +31,12 @@ let
   '';
 
   # Prefer a local checkout over the locked input, for each entry in
-  # my.system.localInputs whose path is actually there.
+  # my.system.localInputs whose path is actually there -- but only when asked:
+  # `test-system --local` or `build-system --local`. Without the flag every
+  # script builds from flake.lock, and rebuild-system has no such flag at all
+  # (it refuses --local). A switch makes the generation the machine boots
+  # into, so it builds what the lock names: a working tree's change is tried
+  # with test-system --local, and reaches a switch by being locked.
   #
   # Presence is tested at run time rather than baked in, so one configuration
   # serves the machine holding the checkout and a machine that has never seen it
@@ -68,7 +73,6 @@ let
 
   overrideInputs = ''
     ${lockedRevFor}
-    OVERRIDES=()
     ${concatStringsSep "\n" (mapAttrsToList
       (name: path: ''
         if [ -d ${escapeShellArg path} ]; then
@@ -86,6 +90,8 @@ let
       cfg.localInputs)}
     if [ ''${#OVERRIDES[@]} -gt 0 ]; then
       echo "  (this build does NOT match flake.lock)" >&2
+    else
+      echo "  --local: no local input overridden; building from flake.lock" >&2
     fi
   '';
 
@@ -193,15 +199,36 @@ let
   # updaters, then the build. Anything else is rejected rather than ignored --
   # the previous version passed no arguments through at all, so `rebuild-system
   # update` silently did a plain switch and looked like it had worked.
-  mkRebuildScript = { name, action, description }:
+  #
+  # `--local` (scripts built with `local = true` only) is taken out wherever it
+  # appears and the other arguments go on to that parser unchanged. A script
+  # without it refuses the flag rather than ignoring it, for the same reason:
+  # a switch asked for a local build that quietly built from the lock would
+  # look like it had worked.
+  mkRebuildScript = { name, action, description, local ? false }:
     pkgs.writeShellScriptBin name ''
       # ${description}
+      USE_LOCAL=0
+      ARGS=()
+      for _a in "$@"; do
+        case "$_a" in
+          --local)
+            ${if local then "USE_LOCAL=1" else ''
+              echo "${name}: switches build from flake.lock only; try local checkouts with test-system --local" >&2
+              exit 2
+            ''}
+            ;;
+          *) ARGS+=("$_a") ;;
+        esac
+      done
+      set -- ''${ARGS[@]+"''${ARGS[@]}"}
+
       DO_UPDATE=0
       case "''${1-}" in
         update) DO_UPDATE=1 ;;
         "") ;;
         *)
-          echo "Usage: ${name} [update]" >&2
+          echo "Usage: ${name} ${optionalString local "[--local] "}[update]" >&2
           exit 2
           ;;
       esac
@@ -214,7 +241,12 @@ let
       fi
 
       echo "${description} from $FLAKE_DIR..."
-      ${overrideInputs}
+      OVERRIDES=()
+      if [ "$USE_LOCAL" = 1 ]; then
+        ${overrideInputs}
+      else
+        echo "  building from flake.lock"
+      fi
       cd "$FLAKE_DIR"
       $SUDO $REBUILD_CMD --flake .# ''${OVERRIDES[@]+"''${OVERRIDES[@]}"}
     '';
@@ -235,6 +267,7 @@ in
         ${updateStages}
       '')
 
+      # No `local`: a switch builds from flake.lock, and refuses --local.
       (mkRebuildScript {
         name = "rebuild-system";
         action = "switch";
@@ -245,12 +278,14 @@ in
         name = "test-system";
         action = "test";
         description = "Testing system configuration";
+        local = true;
       })
 
       (mkRebuildScript {
         name = "build-system";
         action = "build";
         description = "Building system configuration";
+        local = true;
       })
     ];
   };
