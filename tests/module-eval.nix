@@ -2839,6 +2839,37 @@ in
         no32BitGraphics = !config.hardware.graphics.enable32Bit;
       });
 
+  # Runtime is lean: what nixpkgs ships for building or for features nobody
+  # here uses is overridden away. Building happens in devenv, never at runtime.
+  lean-runtime-overrides = evalClauses "lean-runtime-overrides"
+    {
+      networking.hostName = "test-lean-runtime";
+      my.users.leanuser = {
+        fullName = "Lean User";
+        description = "lean";
+        email = "lean@example.com";
+        graphical = { enable = true; webapps.enable = true; };
+      };
+    }
+    (config:
+      let
+        noRef = needle: s: !(lib.hasInfix needle (builtins.unsafeDiscardStringContext s));
+        hyprland = config.programs.hyprland.package;
+        browser = config.home-manager.users.leanuser.programs.webapps.browser;
+        sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
+      in
+      {
+        # hyprpm's plugin toolchain (binutils, pkgconf) is not on every
+        # program's PATH; the dialogs Hyprland itself spawns still are.
+        hyprlandNoBuildTools = noRef "binutils" (hyprland.postInstall or "")
+          && noRef "pkgconf" (hyprland.postInstall or "");
+        hyprlandDialogsKept = lib.elem "hyprland-guiutils" sys;
+        noSpeechService = !config.services.speechd.enable;
+        webappsOnBrave = (browser.pname or "") == "brave";
+        braveNoSpeech = noRef "speech-dispatcher" (browser.installPhase or "");
+        noChromiumAllowed = !(lib.elem "chromium-unwrapped" config.my.system.allowedUnfreePackages);
+      });
+
   vm-quickemu-off = evalAssert "vm-quickemu-off"
     {
       networking.hostName = "test-vm-off";

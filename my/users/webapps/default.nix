@@ -10,14 +10,6 @@ let
     )
     (attrValues config.my.users);
 
-  # Check if any user has specific apps enabled
-
-
-  # Create chromium with Widevine enabled for DRM content
-  chromiumWithWidevine = pkgs.chromium.override {
-    enableWideVine = true;
-  };
-
   # Helper to create webapp definition
   mkWebapp = { name, url, icon, categories ? [ "Network" ], mimeTypes ? [ ], enabled ? true }:
     optionalAttrs enabled {
@@ -32,15 +24,6 @@ let
 in
 {
   config = mkIf anyUserWebapps (mkMerge [
-    # Allow unfree packages for webapps (chromium, widevine, etc.)
-    {
-      my.system.allowedUnfreePackages = [
-        "chromium"
-        "chromium-unwrapped"
-        "widevine-cdm"
-      ];
-    }
-
     # Browser-based webapps (per-user configuration)
     {
       home-manager.users = mapAttrs
@@ -59,7 +42,10 @@ in
             # Configure webapps (using per-user config)
             programs.webapps = {
               enable = true;
-              browser = chromiumWithWidevine;
+              # Brave, the same lean build as the browser: not a second
+              # Chromium (~750 MiB). Brave fetches Widevine itself the first
+              # time a DRM site (Netflix, Spotify) asks for it.
+              browser = pkgs.brave;
 
               apps = mkMerge [
                 (mkWebapp {

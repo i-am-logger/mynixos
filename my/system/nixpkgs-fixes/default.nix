@@ -1,4 +1,5 @@
-# Applies the fixes in this directory to both pkgs instances a system has.
+# Applies the fixes and the runtime-lean overrides (lean.nix) in this
+# directory to both pkgs instances a system has.
 #
 # mkSystem does not set `home-manager.useGlobalPkgs`, so home-manager
 # instantiates its own nixpkgs and a system-level `nixpkgs.overlays` does not
@@ -15,6 +16,7 @@ let
     (import ./tree-sitter.nix)
     (import ./cava.nix)
     (import ./brave.nix)
+    (import ./lean.nix)
   ];
 in
 {

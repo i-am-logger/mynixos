@@ -359,10 +359,9 @@ in
       builtins.elem "claude-code" allowed
       # github-copilot-cli (unfree) - enabled by helix (graphical default editor)
       && builtins.elem "github-copilot-cli" allowed
-      # brave's widevine (unfree) - pulled in by the graphical webapps module,
-      # which the graphical injector turns on. A second, independently-reached
-      # entry, so the check covers more than one path into the allowlist.
-      && builtins.elem "widevine-cdm" allowed
+      # webapps run on Brave now, which fetches Widevine itself: no Chromium
+      # and no widevine-cdm reach the allowlist any more.
+      && !(builtins.elem "widevine-cdm" allowed)
       # 1password (unfree) - explicitly enabled
       && builtins.elem "1password" allowed
       # slack (unfree) - explicitly enabled

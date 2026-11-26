@@ -30,6 +30,17 @@ in
           xwayland.enable = true;
         };
 
+        # Hyprland's package runs unwrapped here (nixpkgs-fixes/lean.nix), so
+        # the dialogs it spawns (not-responding, update) and the lspci its
+        # systeminfo reads come from the system PATH.
+        environment.systemPackages = [ pkgs.hyprland-guiutils pkgs.pciutils ];
+
+        # nixpkgs' graphical-desktop turns speech-dispatcher on for every
+        # desktop: espeak, mbrola and ~650 MiB of voices. No mynixos host runs a
+        # screen reader; services.orca (or setting this) brings it back.
+        # mkOverride 900: above nixpkgs' own mkDefault, below a plain host setting.
+        services.speechd.enable = mkOverride 900 false;
+
         # vogix writes org.gnome.desktop.interface color-scheme on every theme
         # apply; xdg-desktop-portal-gtk serves it as the portal's
         # color-scheme setting, which is what Chromium-family browsers follow.
