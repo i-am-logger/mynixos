@@ -2806,6 +2806,39 @@ in
         alsaUtilsKept = lib.elem "alsa-utils" sys;
       });
 
+  # One QEMU per host: libvirt, quickemu and Incus all run the host-only
+  # build (x86 guests on an x86 host), instead of two extra all-architecture
+  # QEMUs (~1 GiB each). And no 32-bit graphics stack without a 32-bit
+  # consumer (nixpkgs' programs.steam turns it on itself).
+  lean-one-qemu-no-32bit = evalClauses "lean-one-qemu-no-32bit"
+    {
+      networking.hostName = "test-lean-qemu";
+      my = {
+        hardware.gpu = "amd";
+        users.vmuser = { fullName = "VM User"; description = "vm"; email = "vm@example.com"; };
+        virtualisation = {
+          incus.enable = true;
+          vms = {
+            libvirt.enable = true;
+            machines.w = { owner = "vmuser"; os = "windows"; };
+          };
+        };
+      };
+    }
+    (config:
+      let
+        qemu = config.virtualisation.libvirtd.qemu.package;
+        quickemu = lib.findFirst (p: (p.pname or "") == "quickemu") null config.home-manager.users.vmuser.home.packages;
+      in
+      {
+        libvirtHostOnly = lib.hasPrefix "qemu-host-cpu-only" qemu.name;
+        quickemuSharesIt = quickemu != null && lib.hasInfix
+          (builtins.unsafeDiscardStringContext qemu.outPath)
+          (builtins.unsafeDiscardStringContext (quickemu.installPhase or ""));
+        noFullQemuInSystem = !(lib.any (p: (p.pname or "") == "qemu") config.environment.systemPackages);
+        no32BitGraphics = !config.hardware.graphics.enable32Bit;
+      });
+
   vm-quickemu-off = evalAssert "vm-quickemu-off"
     {
       networking.hostName = "test-vm-off";

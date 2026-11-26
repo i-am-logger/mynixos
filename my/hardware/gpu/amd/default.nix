@@ -70,7 +70,8 @@ in
       # Graphics hardware configuration
       hardware.graphics = {
         enable = true;
-        enable32Bit = true;
+        # No enable32Bit: only Steam/Wine need the 32-bit stack (~0.9 GiB), and
+        # nixpkgs' programs.steam turns it on itself.
         extraPackages = with pkgs; [
           libvdpau-va-gl
           libva-utils

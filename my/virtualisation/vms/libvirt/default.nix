@@ -5,7 +5,7 @@
 # and its NAT network needs no setup. OVMF (UEFI, Secure Boot) ships with
 # QEMU and nixpkgs links it in; swtpm is the TPM 2.0 Windows 11 refuses to
 # install without.
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   cfg = config.my.virtualisation.vms.libvirt;
@@ -15,6 +15,9 @@ in
     virtualisation.libvirtd = {
       enable = true;
       qemu.swtpm.enable = true;
+      # The host-only build (x86 guests), shared with Incus and quickemu --
+      # not a second all-architecture QEMU (~1 GiB).
+      qemu.package = pkgs.qemu_kvm;
     };
 
     programs.virt-manager.enable = true;

@@ -45,7 +45,8 @@ in
     # NVIDIA GPU driver configuration
     hardware.graphics = {
       enable = true;
-      enable32Bit = true;
+      # No enable32Bit: only Steam/Wine need the 32-bit stack, and nixpkgs'
+      # programs.steam turns it on itself.
       extraPackages = with pkgs; [
         libva-vdpau-driver
         libvdpau-va-gl
