@@ -6,7 +6,7 @@ args:
     name = "signal";
     default = false;
     description = "Signal Desktop messenger";
-    persistedDirectories = [ ];
+    persistedDirectories = [ ".config/Signal" ]; # profile + message history; lost = re-link the phone
   };
   home = { pkgs, ... }: {
     home.packages = [

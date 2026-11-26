@@ -6,7 +6,7 @@ args:
     name = "element";
     default = false;
     description = "Element Matrix client";
-    persistedDirectories = [ ];
+    persistedDirectories = [ ".config/Element" ];
   };
   home = { pkgs, ... }: {
     home.packages = with pkgs; [

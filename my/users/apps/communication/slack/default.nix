@@ -6,7 +6,7 @@ args:
     name = "slack";
     default = false;
     description = "Slack communication tool";
-    persistedDirectories = [ ];
+    persistedDirectories = [ ".config/Slack" ];
   };
   unfree = [ "slack" ];
   home = { pkgs, ... }: {

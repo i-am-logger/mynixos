@@ -181,6 +181,30 @@ in
         !(builtins.elem ".bash_history" agg.files);
   };
 
+  # Test: the Electron messengers keep their profile across a tmpfs home --
+  # without it Signal must be re-linked to the phone (history lost) on every
+  # boot, and Slack/Element signed in again.
+  smoke-persistence-messengers = mkSmokeTest {
+    name = "test-persistence-messengers";
+    myConfig = {
+      system.enable = true;
+      system.hostname = "test-persistence-messengers";
+      users.testuser = {
+        fullName = "Test User";
+        description = "Test User";
+        email = "test@example.com";
+        apps.communication.messaging = {
+          signal.enable = true;
+          slack.enable = true;
+          element.enable = true;
+        };
+      };
+    };
+    assertions = config:
+      let agg = config.my.system.persistence.aggregated.testuser; in
+      builtins.all (d: builtins.elem d agg.directories) [ ".config/Signal" ".config/Slack" ".config/Element" ];
+  };
+
   # Test: Disabling an app entirely excludes it from aggregation
   smoke-persistence-app-disabled = mkSmokeTest {
     name = "test-persistence-app-disabled";
