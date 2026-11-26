@@ -5,6 +5,22 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.40.0...mynixos-v0.41.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* password managers and sops are per-user apps; mc is base CLI again
+
+### Features
+
+* password managers and sops are per-user apps; mc is base CLI again ([c326e69](https://github.com/i-am-logger/mynixos/commit/c326e69650bb649b6c0cf6daf91ad5c9abe0755b))
+
+
+### Miscellaneous
+
+* **deps:** baud 7fd7830 ([b8806c4](https://github.com/i-am-logger/mynixos/commit/b8806c48d85aa820e0986b22de4be24e993f4fa0))
+
 ## [0.40.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.39.0...mynixos-v0.40.0) (2026-11-26)
 
 
