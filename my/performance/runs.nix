@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -21,5 +21,19 @@ in
         MemorySwapMax = 0;
       };
     };
+
+    # MemoryMax is the slice's one bound (teamlead, 2026-11-25): systemd-oomd
+    # must not kill a gate inside it under pressure first. mynixos's oomd
+    # setting reaches every user slice as the type-level drop-in
+    # slice.d/overrides.conf, which outranks the unit file, so the exemption
+    # is a drop-in too. Drop-ins apply in lexicographic order of filename
+    # across directories, so it is named to sort after overrides.conf.
+    # systemd.packages also feeds the user unit tree (its lib/systemd/user).
+    systemd.packages = [
+      (pkgs.writeTextDir "lib/systemd/user/runs.slice.d/zz-oomd-exempt.conf" ''
+        [Slice]
+        ManagedOOMMemoryPressure=auto
+      '')
+    ];
   };
 }

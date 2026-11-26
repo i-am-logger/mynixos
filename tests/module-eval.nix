@@ -553,6 +553,21 @@ in
       && !(lib.any (lib.hasPrefix "MemoryHigh") lines)
       && !(lib.any (l: lib.hasPrefix "CPU" l || lib.hasPrefix "AllowedCPUs" l) lines));
 
+  # runs.slice is exempt from systemd-oomd, so MemoryMax is its one bound:
+  # mynixos's oomd drop-in (slice.d/overrides.conf, kill at 80% pressure)
+  # covers every user slice, and a later-sorting runs.slice.d drop-in sets it
+  # back to auto. Read from the generated unit tree systemd loads.
+  performance-runs-oomd-exempt = evalAssert "performance-runs-oomd-exempt"
+    { networking.hostName = "test-runs-oomd"; my.performance.runs.budget = "128G"; }
+    (config:
+      let
+        units = config.environment.etc."systemd/user".source;
+        dropins = builtins.attrNames (builtins.readDir "${units}/runs.slice.d");
+        last = lib.last (lib.sort lib.lessThan (dropins ++ [ "overrides.conf" ]));
+      in
+      last == "zz-oomd-exempt.conf"
+      && lib.hasInfix "ManagedOOMMemoryPressure=auto" (builtins.readFile "${units}/runs.slice.d/${last}"));
+
   performance-runs-no-budget = evalAssert "performance-runs-no-budget"
     { networking.hostName = "test-runs-none"; my.performance.enable = true; }
     (config: !(config.systemd.user.units ? "runs.slice"));
