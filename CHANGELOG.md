@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.40.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.39.0...mynixos-v0.40.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* features own their groups, devices and packages (audit batch 2)
+
+### Code Refactoring
+
+* features own their groups, devices and packages (audit batch 2) ([b2e765c](https://github.com/i-am-logger/mynixos/commit/b2e765c4bedc3cbac93653bdf5d85c64349ba902))
+* **scripts:** the switch script carries no override block ([5dfbd10](https://github.com/i-am-logger/mynixos/commit/5dfbd106d0c8f790802c9ce042d72079b99def23))
+
 ## [0.39.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.38.0...mynixos-v0.39.0) (2026-11-26)
 
 
