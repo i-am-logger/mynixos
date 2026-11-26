@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.35.0...mynixos-v0.36.0) (2026-11-26)
+
+
+### Features
+
+* **performance:** runs.slice is exempt from systemd-oomd ([cddc0eb](https://github.com/i-am-logger/mynixos/commit/cddc0eb170511a414ed5594cab2d79706da2f003))
+
+
+### Bug Fixes
+
+* **communication:** persist Signal, Slack and Element profiles ([54d3247](https://github.com/i-am-logger/mynixos/commit/54d32471b0e8ee1f8a1c101717ad5892e2d3771a))
+
 ## [0.35.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.34.0...mynixos-v0.35.0) (2026-11-26)
 
 
