@@ -179,7 +179,6 @@ let
     "virtualisation.incus" = "LXC system containers and QEMU VMs; Incus needs a Linux kernel.";
     "virtualisation.vms" = "full VMs on KVM (libvirt, quickemu); darwin has no KVM.";
     "theming" = "vogix, which is NixOS + Hyprland.";
-    "video" = "v4l2loopback.";
   };
 
   # `my.virtualisation.containers.{podman,docker}` are deliberately NOT listed on

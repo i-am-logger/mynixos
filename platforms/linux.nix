@@ -59,7 +59,6 @@ in
     (mkOptionsModule ../my/graphical/options.nix { inherit lib; })
     (mkOptionsModule ../my/streaming/options.nix { inherit lib; })
     (mkOptionsModule ../my/ai/options.nix { inherit lib; })
-    (mkOptionsModule ../my/video/virtual/options.nix { inherit lib; })
     (mkOptionsModule ../my/theming/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/options.nix { inherit lib; })
     (mkOptionsModule ../my/infra/radicle/options.nix { inherit lib; })
@@ -129,7 +128,6 @@ in
     ../my/presets
     ../my/performance
     ../my/streaming
-    ../my/video/virtual
 
     # Graphical
     ../my/graphical

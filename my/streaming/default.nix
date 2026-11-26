@@ -39,10 +39,16 @@ in
           (activeUsers config.my.users);
       }
 
-      # Default to enable video.virtual when any user has streaming enabled
-      # The actual kernel module configuration is in my/video/virtual.nix
+      # OBS's virtual camera (v4l2loopback). It exists for OBS alone, so it
+      # follows streaming rather than being a host switch of its own.
       {
-        my.video.virtual.enable = mkDefault true;
+        boot = {
+          kernelModules = [ "v4l2loopback" ];
+          extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
+          extraModprobeConfig = ''
+            options v4l2loopback devices=1 video_nr=1 card_label="OBS Virtual Camera" exclusive_caps=1
+          '';
+        };
       }
 
       # Fix advanced-scene-switcher build on NVIDIA systems

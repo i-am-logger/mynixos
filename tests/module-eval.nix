@@ -2858,6 +2858,41 @@ in
 
   # Runtime is lean: what nixpkgs ships for building or for features nobody
   # here uses is overridden away. Building happens in devenv, never at runtime.
+  # The v4l2loopback virtual camera is OBS's, so it comes and goes with the
+  # user's graphical.streaming -- there is no separate host switch to forget.
+  streaming-virtual-camera = evalClauses "streaming-virtual-camera"
+    {
+      networking.hostName = "test-obs";
+      my.users.obsuser = {
+        fullName = "OBS User";
+        description = "obs";
+        email = "obs@example.com";
+        graphical = { enable = true; streaming.enable = true; };
+      };
+    }
+    (config: {
+      obs = config.home-manager.users.obsuser.programs.obs-studio.enable;
+      moduleLoaded = lib.elem "v4l2loopback" config.boot.kernelModules;
+      cameraNamed = lib.hasInfix ''card_label="OBS Virtual Camera"'' config.boot.extraModprobeConfig;
+      noVideoDomain = !(config.my ? video);
+    });
+
+  streaming-virtual-camera-off = evalClauses "streaming-virtual-camera-off"
+    {
+      networking.hostName = "test-no-obs";
+      my.users.plainuser = {
+        fullName = "Plain User";
+        description = "plain";
+        email = "plain@example.com";
+        graphical.enable = true;
+      };
+    }
+    (config: {
+      noModule = !(lib.elem "v4l2loopback" config.boot.kernelModules);
+      noOptions = !(lib.hasInfix "v4l2loopback" config.boot.extraModprobeConfig);
+      noPackage = !(lib.any (p: lib.hasPrefix "v4l2loopback" (p.name or "")) config.boot.extraModulePackages);
+    });
+
   lean-runtime-overrides = evalClauses "lean-runtime-overrides"
     {
       networking.hostName = "test-lean-runtime";
