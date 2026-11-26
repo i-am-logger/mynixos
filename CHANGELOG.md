@@ -5,6 +5,14 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.36.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.36.0...mynixos-v0.36.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* one QEMU per host, no 32-bit graphics without a 32-bit consumer ([0ec43bb](https://github.com/i-am-logger/mynixos/commit/0ec43bb9c2eea1adc97b5638e06f6a108bb8f517))
+* runtime-lean overrides -- Hyprland unwrapped, no speech stack, webapps on Brave ([6e543ce](https://github.com/i-am-logger/mynixos/commit/6e543cea2c2e874e349a733b113395deea7c8551))
+
 ## [0.36.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.35.0...mynixos-v0.36.0) (2026-11-26)
 
 
