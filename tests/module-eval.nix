@@ -2881,6 +2881,46 @@ in
         noChromiumAllowed = !(lib.elem "chromium-unwrapped" config.my.system.allowedUnfreePackages);
       });
 
+  # The dev workspace: one devenv at ~/Code carries the development CLIs
+  # (forge CLIs, git companions), loaded by direnv without a manual allow and
+  # reaching repos that have their own .envrc. The host itself carries none,
+  # and git's config names them bare so it works without them outside ~/Code.
+  dev-workspace = evalClauses "dev-workspace"
+    {
+      networking.hostName = "test-dev-workspace";
+      my.users.devuser = {
+        fullName = "Dev User";
+        description = "dev";
+        email = "dev@example.com";
+        dev.enable = true;
+        apps.dev.tools.git.protocol = "https";
+        apps.dev.tools.devenv.workspace.directory = "Code";
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.devuser;
+        file = p: hm.home.file.${p}.text or "";
+        names = map (p: p.pname or (lib.getName p)) hm.home.packages;
+        ini = hm.programs.git.iniContent;
+        noStore = s: !(lib.hasInfix "/nix/store/" (builtins.unsafeDiscardStringContext s));
+      in
+      {
+        files = hm.home.file ? "Code/devenv.nix" && hm.home.file ? "Code/devenv.yaml" && hm.home.file ? "Code/.envrc";
+        packagesInDevenv = lib.all (p: lib.hasInfix p (file "Code/devenv.nix")) [ "gh" "glab" "lazygit" "delta" "git-lfs" "jujutsu" ];
+        envrcUsesDevenv = lib.hasInfix "use devenv" (file "Code/.envrc");
+        allowedWithoutPrompt = lib.elem "/home/devuser/Code" (hm.programs.direnv.config.whitelist.prefix or [ ]);
+        reachesNestedRepos = lib.hasInfix "/home/devuser/Code/.devenv/profile/bin" (hm.programs.direnv.stdlib or "");
+        hostCarriesNone = !(lib.any (n: lib.elem n names) [ "gh" "glab" "lazygit" "delta" "git-lfs" "jujutsu" ]);
+        gitNamesThemBare = noStore (ini.credential."https://github.com".helper or "")
+          && noStore (ini.core.pager or "") && noStore (ini.filter.lfs.process or "");
+        lfsNotRequired = (ini.filter.lfs.required or true) == false;
+        # jj's config is still written (HM's own module stays off; see
+        # my/users/apps/jujutsu), and it still carries the merged settings.
+        jjConfigKept = hm.xdg.configFile ? "jj/config.toml" && !hm.programs.jujutsu.enable
+          && hm.programs.jujutsu.settings.git.auto-local-bookmark;
+      });
+
   vm-quickemu-off = evalAssert "vm-quickemu-off"
     {
       networking.hostName = "test-vm-off";

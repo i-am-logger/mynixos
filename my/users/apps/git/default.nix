@@ -21,23 +21,29 @@ let
         "git@bitbucket.org:".insteadOf = "https://bitbucket.org/";
       };
     } else {
-      credential."https://github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
-      credential."https://gitlab.com".helper = "!${pkgs.glab}/bin/glab auth git-credential";
+      # Bare names: gh/glab come from the dev workspace (apps.dev.tools.devenv
+      # .workspace), not the host. Outside it git finds no helper and falls
+      # back to its own prompt.
+      credential."https://github.com".helper = "!gh auth git-credential";
+      credential."https://gitlab.com".helper = "!glab auth git-credential";
     };
 in
 {
   config = {
     home-manager.users = mapAttrs
       (_name: userCfg: {
-        home.packages = with pkgs; [
-          gh
-          glab
-          lazygit
-        ];
-
+        # No gh, glab, lazygit, delta, git-lfs or jujutsu on the host: they are
+        # development tools, carried by the dev workspace's devenv.
         programs.git = {
           enable = true;
-          lfs.enable = true;
+          # The LFS filter, with git-lfs from the dev workspace: named bare and
+          # not `required` (below), so a shell outside the workspace never fails
+          # a checkout over a missing binary.
+          lfs = {
+            enable = true;
+            package = null;
+          };
+          iniContent.filter.lfs.required = mkForce false;
           # Plain git: gitFull adds Subversion, send-email and Perl -- development
           # extras, not what the host needs to fetch and commit.
           package = pkgs.git;
@@ -66,6 +72,26 @@ in
             diff.colorMoved = "default"; # distinguish moved lines from added/removed
 
             core.editor = "hx";
+
+            # delta as the pager when the dev workspace puts it on PATH, less
+            # otherwise -- never a pager command that fails outside ~/Code.
+            # (HM's programs.delta would pin delta by store path onto the host.)
+            core.pager = "command -v delta >/dev/null 2>&1 && exec delta || exec less";
+            interactive.diffFilter = "command -v delta >/dev/null 2>&1 && exec delta --color-only || exec cat";
+            delta = {
+              features = "decorations";
+              decorations = {
+                commit-decoration-style = "bold yellow box ul";
+                file-decoration-style = "none";
+                file-style = "bold yellow ul";
+              };
+              whitespace-error-style = "22 reverse";
+              navigate = true; # n / N jump between diff hunks
+              line-numbers = true;
+              side-by-side = true;
+              hyperlinks = true;
+              syntax-theme = "ansi"; # follows the terminal's light/dark
+            };
           } // transport userCfg;
 
           # Opinionated ignores
@@ -74,28 +100,6 @@ in
             ".direnv"
             "result"
           ];
-        };
-
-        # Delta (diff viewer) - now separate from git
-        programs.delta = {
-          enable = true;
-          enableGitIntegration = true;
-          options = {
-            decorations = {
-              commit-decoration-style = "bold yellow box ul";
-              file-decoration-style = "none";
-              file-style = "bold yellow ul";
-            };
-            features = "decorations";
-            whitespace-error-style = "22 reverse";
-
-            navigate = true; # n / N jump between diff hunks
-            line-numbers = true;
-            side-by-side = true;
-            hyperlinks = true;
-            # mkDefault so a theming layer (vogix) can take it over.
-            syntax-theme = lib.mkDefault "ansi"; # follows the terminal's light/dark
-          };
         };
       })
       (activeUsers config.my.users);
