@@ -5,6 +5,18 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.38.0...mynixos-v0.39.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* each feature owns its plumbing; no root-equivalent or build-tool defaults
+
+### Bug Fixes
+
+* each feature owns its plumbing; no root-equivalent or build-tool defaults ([fae49a0](https://github.com/i-am-logger/mynixos/commit/fae49a05831c6fb5f5ef46a1be02fd478260bf0a))
+* **scripts:** a switch builds from flake.lock only; local trees on --local ([cd14d27](https://github.com/i-am-logger/mynixos/commit/cd14d27c93b2641d8a6ba70e34e0da9510a1b3d5))
+
 ## [0.38.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.37.0...mynixos-v0.38.0) (2026-11-26)
 
 
