@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.36.2...mynixos-v0.37.0) (2026-11-26)
+
+
+### Features
+
+* **dev:** the dev workspace -- development CLIs in one devenv, not on the host ([3a00ff9](https://github.com/i-am-logger/mynixos/commit/3a00ff9359b5d66a0e194f7f5295b264de94b23e))
+
 ## [0.36.2](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.36.1...mynixos-v0.36.2) (2026-11-26)
 
 
