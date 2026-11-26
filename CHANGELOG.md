@@ -5,6 +5,27 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.37.0...mynixos-v0.38.0) (2026-11-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **streaming:** OBS's virtual camera follows graphical.streaming; my.video removed
+
+### Bug Fixes
+
+* **vms:** quickemu starts on the host-only QEMU -- no smb= share without smbd ([007a1d0](https://github.com/i-am-logger/mynixos/commit/007a1d04d6e684aa8457c1ba226f58a9e7437fdd))
+
+
+### Code Refactoring
+
+* **streaming:** OBS's virtual camera follows graphical.streaming; my.video removed ([9b306d5](https://github.com/i-am-logger/mynixos/commit/9b306d54e264e09133a11ba9b9a7dfb0915746f3))
+
+
+### Miscellaneous
+
+* **deps:** vogix 0.16.1 ([5be8d94](https://github.com/i-am-logger/mynixos/commit/5be8d9438dec56a5f7f03456d7166899a4d1aa0f))
+
 ## [0.37.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.36.2...mynixos-v0.37.0) (2026-11-26)
 
 
