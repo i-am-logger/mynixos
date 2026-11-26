@@ -1,3 +1,7 @@
+# my.hardware.audio on Linux: PipeWire (with its PulseAudio, ALSA and JACK
+# faces) and RealtimeKit. macOS needs no audio server; its one audio setting,
+# audio.darwin.maxSampleRate, is ../apple. Machine-specific fixes stay with
+# their machine: the Legion's TAS2781 speaker unit is legion-16irx8h's.
 { activeUsers, config, lib, pkgs, ... }:
 
 with lib;
@@ -38,15 +42,5 @@ in
       # Not alsa-tools: its fltk GUIs pin the whole gcc toolchain (1.3 GiB).
       alsa-utils
     ];
-
-    # Audio service dependencies (for hardware that needs specific initialization)
-    systemd.services.fix-audio-speaker = {
-      after = [
-        "sound.target"
-        "pipewire.service"
-        "wireplumber.service"
-      ];
-      wants = [ "pipewire.service" ];
-    };
   };
 }

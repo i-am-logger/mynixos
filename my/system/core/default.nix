@@ -8,7 +8,6 @@ with lib;
 
 let
   cfg = config.my.system;
-  f = config.my.forensics;
 
   # Read mynixos version from version.txt
   mynixosVersion = lib.strings.removeSuffix "\n" (builtins.readFile ../../../version.txt);
@@ -85,10 +84,7 @@ in
           };
 
           initrd.enable = true;
-          # Kernel panic/oops capture (my.forensics.kernel): load pstore-ramoops
-          # early so it is armed to record a splat across the reboot.
-          initrd.kernelModules = lib.optionals (f.enable && f.kernel.enable) [ "ramoops" ];
-          kernelModules = lib.optionals (f.enable && f.kernel.enable) [ "ramoops" ];
+          # The ramoops reservation and module are my.forensics' (my/forensics).
           kernelParams = [
             # Plymouth boot splash
             "splash"
@@ -96,23 +92,11 @@ in
             "vt.global_cursor_default=0"
             # Console verbosity is a boot/display concern, kept quiet here and
             # decoupled from my.forensics.level - the forensic retention lever is
-            # journald MaxLevelStore (set from the level in my/system/systemd).
+            # journald MaxLevelStore (set from the level in my/forensics).
             "loglevel=3"
             "rd.systemd.show_status=false"
             "rd.udev.log_level=3"
             "acpi_osi=Linux"
-          ]
-          # Reserve a RAM region for pstore-ramoops (the persist + tree live in
-          # my/system/systemd).
-          ++ lib.optionals (f.enable && f.kernel.enable) [
-            "reserve_mem=4M:4096:oops"
-            "ramoops.mem_name=oops"
-            # Without explicit record/console sizes, ramoops_probe() rejects a
-            # non-zero region and pstore never appears - nothing would be
-            # captured. 128 KiB each holds a full panic/oops dmesg + console.
-            "ramoops.record_size=0x20000"
-            "ramoops.console_size=0x20000"
-            "ramoops.ecc=1"
           ];
 
           # Boot loader configuration (opinionated)
@@ -192,12 +176,10 @@ in
           ];
         };
 
-        # DRM device permissions (generic, not NVIDIA-specific)
+        # Device services (trezord, usbmuxd) are my.hardware.peripherals'.
         services = {
           # Opinionated system services (can be disabled with mkForce)
-          usbmuxd.enable = lib.mkDefault true; # iOS device support
           fwupd.enable = lib.mkDefault true; # Firmware updates
-          trezord.enable = lib.mkDefault true; # Trezor hardware wallet
           timesyncd.enable = lib.mkDefault true; # Network time synchronization
 
           # Power management - prevent unwanted sleep/suspend (opinionated for workstations)
@@ -225,9 +207,6 @@ in
           earlySetup = true;
           useXkbConfig = true;
         };
-
-        # Graphics hardware support
-        hardware.graphics.enable = true;
 
         # Network configuration (NetworkManager is a system service, not hardware)
         networking.networkmanager.enable = lib.mkDefault true;
@@ -281,8 +260,6 @@ in
             experimental-features = nix-command flakes auto-allocate-uids
             keep-outputs          = false
             keep-derivations      = false
-            extra-substituters = https://devenv.cachix.org
-            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
           '';
         };
       }

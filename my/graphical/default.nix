@@ -70,6 +70,25 @@ in
         # Without dconf the write has nowhere to land.
         programs.dconf.enable = true;
 
+        # No GNOME keyring: secrets live in a GPG-backed pass store (with a
+        # security key, in its card), and browsers keep their own store
+        # (Brave runs with --password-store=basic). All three are needed --
+        # the service, its PAM hook at login, and the variables that stop
+        # libraries starting one on demand. glib-networking stays, for TLS in
+        # GLib apps, which gnome-keyring used to pull in.
+        services.gnome = {
+          gnome-keyring.enable = false;
+          glib-networking.enable = true;
+        };
+        security.pam.services = {
+          login.enableGnomeKeyring = false;
+          gdm.enableGnomeKeyring = false;
+        };
+        environment.sessionVariables = {
+          GNOME_KEYRING_CONTROL = "";
+          DISABLE_GNOME_KEYRING = "1";
+        };
+
         # The login itself (display manager, greeter look, autologin) is
         # my.environment.login — implemented in ./login, beside this file.
       }
@@ -138,17 +157,16 @@ in
         # Notifications are the vogix shell's own server (mako is gone from
         # the fleet — the shell replaced it, per surface, like waybar).
 
-        # Add users to graphical-related groups
+        # GPU and video nodes for the users who run a desktop, and only them.
+        # No `input`: it reads every /dev/input node (a keylogger's access),
+        # and seat devices already come through logind's uaccess. vogix's
+        # input engine, which does grab keyboards, adds `input` and `uinput`
+        # to its own users itself. No `gpu`: no such group exists.
         users.users = mapAttrs
           (_name: _userCfg: {
-            extraGroups = [
-              "input"
-              "gpu"
-              "video"
-              "render"
-            ];
+            extraGroups = [ "video" "render" ];
           })
-          (activeUsers config.my.users);
+          (filterAttrs (_: userCfg: userCfg.graphical.enable) (activeUsers config.my.users));
       }
 
       # Audio tools are now in my.hardware.audio, not in graphical

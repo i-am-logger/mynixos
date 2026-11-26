@@ -39,6 +39,9 @@ in
     # Touch ID / Watch ID. Merges into the cross-platform my.hardware submodule.
     (mkOptionsModule ../my/hardware/biometrics/options.nix { inherit lib; })
 
+    # my.hardware.audio.darwin: the CoreAudio sample-rate agent.
+    (mkOptionsModule ../my/hardware/audio/apple/options.nix { inherit lib; })
+
     # my.dev.builderHost: accepting remote nix builds is a nix-darwin account
     # plus a nix.conf drop-in, so the option exists here only.
     (mkOptionsModule ../my/dev/remote-builders/options-darwin.nix { inherit lib; })

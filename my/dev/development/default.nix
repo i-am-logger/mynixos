@@ -1,4 +1,4 @@
-{ activeUsers, config, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -16,14 +16,9 @@ in
     # Set system flag
     { my.dev.enable = mkDefault anyUserDev; }
 
-    # Base development groups
-    (mkIf cfg.enable {
-      users.users = mapAttrs
-        (_name: _userCfg: {
-          extraGroups = [ "disk" "dialout" ];
-        })
-        (activeUsers config.my.users);
-    })
+    # No groups. `disk` is raw block-device access (root-equivalent) and
+    # nothing in development needs it; `dialout` belongs to the serial device
+    # that needs it (my/hardware/peripherals/sipeed/tang-primer-25k).
 
     # Binfmt emulation (dev feature)
     (mkIf cfg.enable {

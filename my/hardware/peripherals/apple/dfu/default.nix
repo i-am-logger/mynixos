@@ -18,9 +18,6 @@ let
 in
 {
   config = {
-    # Master switch propagates to device udev via mkDefault
-    my.hardware.peripherals.apple.dfu.udev = mkDefault config.my.system.udev.enable;
-
     # Only when device is enabled
     services.udev.packages = mkIf (cfg.enable && cfg.udev) [ udevRules ];
   };

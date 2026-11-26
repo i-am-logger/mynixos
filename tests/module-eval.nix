@@ -2988,6 +2988,17 @@ in
         # A compiler cache is a build tool; the host builds nothing.
         noCcache = !config.programs.ccache.enable && !(lib.elem "ccache" sys)
           && !(config.environment.sessionVariables ? CCACHE_DIR);
+        # Devices, GPU stacks and firmware are turned on by what needs them.
+        noDeviceServices = !config.services.trezord.enable && !config.services.usbmuxd.enable;
+        fwupdKept = config.services.fwupd.enable;
+        noGraphicsStack = !config.hardware.graphics.enable;
+        noFirmwareWithoutProfile = !config.hardware.enableRedistributableFirmware;
+        noDevenvCache = !(lib.hasInfix "devenv.cachix" config.nix.extraOptions)
+          && !(lib.any (lib.hasInfix "devenv.cachix") (config.nix.settings.extra-substituters or [ ]));
+        # The base CLI set is curl, wget and tree; the rest are per-user apps.
+        baseCliOnly = !(lib.any (n: lib.elem n sys) [ "mc" "yazi" "helix" "fastfetch" "btop" "screen" "sops" "password-store" ])
+          && lib.all (n: lib.elem n sys) [ "curl" "wget" "tree" ];
+        notAdmin = !(lib.elem "wheel" config.users.users.bareuser.extraGroups);
       });
 
   yubico-owns-gpg-agent = evalClauses "yubico-owns-gpg-agent"
@@ -3034,6 +3045,10 @@ in
         # ollama-cuda carries no marker of its own; the CUDA licence is granted
         # only on the CUDA branch, so its presence is the branch.
         cudaLicenceWithOllama = lib.elem "CUDA EULA" config.my.system.allowedUnfreeLicenses;
+        # One kernel module build: the open one hardware.nvidia adds.
+        openModuleOnly = lib.any (p: lib.hasPrefix "nvidia-open" p.name) config.boot.extraModulePackages
+          && !(lib.any (p: lib.hasPrefix "nvidia-x11" p.name) config.boot.extraModulePackages);
+        drmLoaded = lib.elem "nvidia_drm" config.boot.kernelModules;
       });
 
   lean-nvidia-no-ai = evalClauses "lean-nvidia-no-ai"
@@ -3351,4 +3366,275 @@ in
         };
       };
     };
+
+  # --- placement batch 2 ------------------------------------------------------
+
+  # Groups follow each user's own switches: a second user who turned nothing on
+  # gets none of the feature groups, nobody gets raw disks or every input
+  # device, every granted group exists, and only an admin is in wheel (and only
+  # an admin gets the passwordless rebuild).
+  per-user-groups = evalClauses "per-user-groups"
+    {
+      networking.hostName = "test-groups";
+      my = {
+        security = { enable = true; nopasswdRebuild = true; passwordAuthOnly = true; };
+        hardware.peripherals = {
+          elgato.streamdeck.enable = true;
+          sipeed.tangPrimer25k = { enable = true; users = [ "alice" ]; };
+        };
+        users = {
+          alice = {
+            fullName = "Alice";
+            description = "alice";
+            email = "alice@example.com";
+            admin = true;
+            dev.enable = true;
+            graphical = { enable = true; streaming.enable = true; };
+          };
+          bob = {
+            fullName = "Bob";
+            description = "bob";
+            email = "bob@example.com";
+            # vogix's own NixOS module adds input and uinput to every user it
+            # themes (its input engine); that grant is vogix's, not mynixos'.
+            theming.vogix.enable = false;
+          };
+        };
+      };
+    }
+    (config:
+      let
+        groupsOf = u: config.users.users.${u}.extraGroups;
+        has = u: g: lib.elem g (groupsOf u);
+        sudoUsers = lib.concatMap (r: r.users or [ ]) config.security.sudo.extraRules;
+      in
+      {
+        # `audio` is my.hardware.audio's, a host device every account uses.
+        bobNoFeatureGroups = !(lib.any (has "bob") [ "disk" "dialout" "input" "gpu" "video" "render" "udev" "usb" ]);
+        aliceGraphical = has "alice" "video" && has "alice" "render";
+        nobodyRawDisk = !(has "alice" "disk") && !(has "bob" "disk");
+        noPhantomGroups = !(lib.any (has "alice") [ "gpu" "udev" "usb" ]);
+        allGroupsExist = lib.all
+          (u: lib.all (g: config.users.groups ? ${g}) (groupsOf u))
+          [ "alice" "bob" ];
+        noStreamdeckGroup = !(config.users.groups ? streamdeck);
+        serialForItsUsers = has "alice" "dialout" && !(has "bob" "dialout");
+        wheelIsAdmin = has "alice" "wheel" && !(has "bob" "wheel");
+        rebuildForAdmins = lib.elem "alice" sudoUsers && !(lib.elem "bob" sudoUsers);
+      });
+
+  # Trezor and iOS are devices a host turns on, never core defaults.
+  peripheral-devices-opt-in = evalClauses "peripheral-devices-opt-in"
+    {
+      networking.hostName = "test-devices";
+      my.hardware.peripherals = {
+        trezor.enable = true;
+        apple.ios.enable = true;
+      };
+    }
+    (config: {
+      trezord = config.services.trezord.enable;
+      usbmuxd = config.services.usbmuxd.enable;
+    });
+
+  # devenv's binary cache arrives with devenv.
+  devenv-owns-its-cache = evalClauses "devenv-owns-its-cache"
+    {
+      networking.hostName = "test-devenv-cache";
+      my = {
+        system.enable = true;
+        users.devuser = {
+          fullName = "Dev User";
+          description = "dev";
+          email = "dev@example.com";
+          apps.dev.tools.devenv.enable = true;
+        };
+      };
+    }
+    (config: {
+      substituter = lib.elem "https://devenv.cachix.org" (config.nix.settings.extra-substituters or [ ]);
+      key = lib.any (lib.hasPrefix "devenv.cachix.org-1:") (config.nix.settings.extra-trusted-public-keys or [ ]);
+      nixosCacheKept = lib.elem "https://cache.nixos.org/" config.nix.settings.substituters;
+    });
+
+  # Forensics is its own domain: it does not depend on my.system, and the
+  # knobs that only gated it are gone.
+  forensics-own-domain = evalClauses "forensics-own-domain"
+    {
+      networking.hostName = "test-forensics";
+      my.system.enable = false;
+    }
+    (config: {
+      journald = (config.services.journald.settings.Journal.Storage or null) == "persistent";
+      ramoops = lib.elem "ramoops" config.boot.kernelModules
+        && lib.elem "ramoops.mem_name=oops" config.boot.kernelParams;
+      pstore = config.systemd.services ? forensics-pstore-persist;
+      coredump = config.systemd.coredump.enable;
+      noSystemdKnob = !(config.my.system ? systemd);
+      noUdevKnob = !(config.my.system ? udev);
+    });
+
+  # PipeWire lives under my.hardware.audio; the Legion speaker unit is the
+  # Legion's, and the CoreAudio sample-rate agent is declared on darwin only.
+  audio-pipewire = evalClauses "audio-pipewire"
+    {
+      networking.hostName = "test-audio";
+      my.hardware.audio.enable = true;
+    }
+    (config: {
+      pipewire = config.services.pipewire.enable;
+      noHollowSpeakerUnit = !(config.systemd.services ? fix-audio-speaker);
+      noDarwinKnob = !(config.my.hardware.audio ? maxSampleRate) && !(config.my.hardware.audio ? darwin);
+    });
+
+  # Brave's GPU log rides on the amdgpu capture, but Brave owns that half.
+  brave-gpu-log-snapshot = evalClauses "brave-gpu-log-snapshot"
+    {
+      networking.hostName = "test-brave-gpu";
+      my = {
+        hardware.gpu = "amd";
+        users.braveuser = {
+          fullName = "Brave User";
+          description = "brave";
+          email = "brave@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let unit = config.systemd.services."amdgpu-devcoredump-capture@".serviceConfig;
+      in {
+        snapshotWithBrave = lib.hasInfix "brave-gpu-log-snapshot" (toString (unit.ExecStartPre or ""));
+      });
+
+  amd-capture-without-brave = evalClauses "amd-capture-without-brave"
+    {
+      networking.hostName = "test-amd-nobrave";
+      my.hardware.gpu = "amd";
+    }
+    (config:
+      let unit = config.systemd.services."amdgpu-devcoredump-capture@".serviceConfig;
+      in {
+        capture = unit ? ExecStart;
+        noBraveSnapshot = !(lib.hasInfix "brave" (toString (unit.ExecStartPre or "")));
+      });
+
+  # The window manager carries no audio mixer, media player or tray apps of
+  # its own; those follow their app switches and services. With no browser
+  # or terminal selected, nothing is hard-coded in their place.
+  hyprland-own-packages-only = evalClauses "hyprland-own-packages-only"
+    {
+      networking.hostName = "test-hypr-pkgs";
+      networking.networkmanager.enable = false;
+      services.udisks2.enable = false;
+      my.users.hypruser = {
+        fullName = "Hypr User";
+        description = "hypr";
+        email = "hypr@example.com";
+        graphical.enable = true;
+        environment = { BROWSER = null; TERMINAL = null; };
+      };
+    }
+    (config:
+      let
+        hm = config.home-manager.users.hypruser;
+        names = map (p: p.pname or (lib.getName p)) hm.home.packages;
+        envNames = map (e: lib.head (e._args or [ "" ])) (hm.wayland.windowManager.hyprland.settings.env or [ ]);
+      in
+      {
+        noMixer = !(lib.elem "pavucontrol" names) && !(lib.elem "pamixer" names);
+        noVlc = !(lib.elem "vlc" names);
+        noTrayWithoutServices = !(lib.elem "udiskie" names) && !(lib.elem "network-manager-applet" names);
+        noBrowserFallback = !(lib.elem "BROWSER" envNames);
+        noTerminalFallback = !(lib.elem "TERMINAL" envNames);
+        noDefaultsTree = !(config.my.users.hypruser ? defaults);
+      });
+
+  hyprland-media-apps = evalClauses "hyprland-media-apps"
+    {
+      networking.hostName = "test-hypr-media";
+      networking.networkmanager.enable = true;
+      services.udisks2.enable = true;
+      my.users.mediauser = {
+        fullName = "Media User";
+        description = "media";
+        email = "media@example.com";
+        graphical = { enable = true; media.enable = true; };
+      };
+    }
+    (config:
+      let names = map (p: p.pname or (lib.getName p)) config.home-manager.users.mediauser.home.packages;
+      in {
+        mixer = lib.elem "pavucontrol" names && lib.elem "pamixer" names;
+        vlc = lib.elem "vlc" names;
+        nmApplet = lib.elem "network-manager-applet" names;
+        udiskie = lib.elem "udiskie" names;
+      });
+
+  # The YubiKey module is key plumbing; desktop keyring policy is the
+  # desktop's and password managers are per-user apps.
+  yubico-key-plumbing-only = evalClauses "yubico-key-plumbing-only"
+    {
+      networking.hostName = "test-yubico-plain";
+      my = {
+        hardware.securityKeys.yubico.enable = true;
+        users.keyuser = {
+          fullName = "Key User";
+          description = "key";
+          email = "key@example.com";
+        };
+      };
+    }
+    (config:
+      let sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
+      in {
+        noKeyringPolicy = !(config.environment.sessionVariables ? DISABLE_GNOME_KEYRING)
+          && !config.services.gnome.glib-networking.enable;
+        noPasswordManagers = !(lib.any (n: lib.elem n sys) [ "gopass" "ripasso-cursive" "libsecret" ]);
+        pcscd = config.services.pcscd.enable;
+      });
+
+  graphical-keyring-policy = evalClauses "graphical-keyring-policy"
+    {
+      networking.hostName = "test-keyring";
+      my.users.desk = {
+        fullName = "Desk User";
+        description = "desk";
+        email = "desk@example.com";
+        graphical.enable = true;
+        apps.security.passwords = { gopass.enable = true; ripasso.enable = true; pass.enable = true; };
+      };
+    }
+    (config:
+      let names = map (p: p.pname or (lib.getName p)) config.home-manager.users.desk.home.packages;
+      in {
+        keyringOff = !config.services.gnome.gnome-keyring.enable
+          && config.environment.sessionVariables.DISABLE_GNOME_KEYRING or null == "1";
+        glibNetworking = config.services.gnome.glib-networking.enable;
+        dconf = config.programs.dconf.enable;
+        passwordApps = lib.all (n: lib.elem n names) [ "gopass" "ripasso-cursive" "password-store" ];
+      });
+
+  # The hardware profiles bring firmware only when the profile is the machine.
+  profiles-firmware-gated = evalClauses "profiles-firmware-gated"
+    {
+      networking.hostName = "test-profile";
+      my.hardware.motherboards.gigabyte.trx50-aero-d.enable = true;
+    }
+    (config: {
+      firmware = config.hardware.enableRedistributableFirmware;
+    });
+
+  # Every module platforms/common.nix imports must be meaningful on darwin:
+  # none of them may read a Linux-only option through `or`.
+  common-imports-portable = evalAssert "common-imports-portable"
+    { networking.hostName = "test-common"; }
+    (_:
+      let common = builtins.readFile ../platforms/common.nix;
+      in !(lib.any (p: lib.hasInfix p common) [
+        "users/graphical/media/mynixos.nix"
+        "users/webapps/mynixos.nix"
+        "../my/users/defaults\n"
+      ])
+      && !(lib.hasInfix "my.infra" (builtins.readFile ../my/users/apps/dev/radicle/insecure.nix)));
 }

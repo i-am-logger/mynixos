@@ -91,7 +91,10 @@ in
               else null;
             home = "/home/${name}";
             group = name; # Create a group with the same name as the user
-            extraGroups = [ "wheel" "networkmanager" ]; # Base groups, features add more
+            # Base groups; each feature adds its own, for the users who turned
+            # it on. Only an admin is in wheel (root via sudo, nix trust).
+            extraGroups = optional userCfg.admin "wheel"
+              ++ optional config.networking.networkmanager.enable "networkmanager";
             shell =
               if userCfg.shell == "fish" then pkgs.fish
               else if userCfg.shell == "zsh" then pkgs.zsh

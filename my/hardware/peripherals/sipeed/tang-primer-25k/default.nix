@@ -22,11 +22,12 @@ let
   };
 in
 {
-  config = {
-    # Master switch propagates to device udev via mkDefault
-    my.hardware.peripherals.sipeed.tangPrimer25k.udev = mkDefault config.my.system.udev.enable;
+  config = mkIf cfg.enable {
+    services.udev.packages = mkIf cfg.udev [ udevRules ];
 
-    # Only when device is enabled
-    services.udev.packages = mkIf (cfg.enable && cfg.udev) [ udevRules ];
+    # The dock's second FT2232 channel is the board's UART, /dev/ttyUSB*, which
+    # udev gives to `dialout`. That group reaches EVERY serial port on the
+    # host, so it goes to the people named here rather than to everyone.
+    users.users = genAttrs cfg.users (_: { extraGroups = [ "dialout" ]; });
   };
 }

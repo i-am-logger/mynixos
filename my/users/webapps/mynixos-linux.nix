@@ -7,6 +7,9 @@
 # persistence and unfree handling run through the app modules like everything
 # else, and there is one place that decides what "slack is on" means.
 #
+# Linux only, like `graphical.webapps` itself (my/users/graphical/options-linux.nix):
+# on a Mac those apps are set directly. Imported only by platforms/linux.nix.
+#
 # The rest of `graphical.webapps` really is browser-based and stays in
 # ./default.nix.
 
@@ -15,14 +18,14 @@
 {
   options.my.users = lib.mkOption {
     type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
-      config = lib.mkIf (config.graphical.webapps.enable or false) {
+      config = lib.mkIf config.graphical.webapps.enable {
         apps = {
           communication.messaging.slack.enable =
-            lib.mkDefault (config.graphical.webapps.slack or false);
+            lib.mkDefault config.graphical.webapps.slack;
           communication.messaging.signal.enable =
-            lib.mkDefault (config.graphical.webapps.signal or false);
+            lib.mkDefault config.graphical.webapps.signal;
           security.passwords.onePassword.enable =
-            lib.mkDefault (config.graphical.webapps.onePassword or false);
+            lib.mkDefault config.graphical.webapps.onePassword;
         };
       };
     }));

@@ -7,7 +7,6 @@
 # here is what is true of THIS BOARD and nothing else.
 { config
 , lib
-, modulesPath
 , ...
 }:
 
@@ -15,17 +14,11 @@ let
   cfg = config.my.hardware.motherboards.gigabyte.trx50-aero-d;
 in
 {
-  imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-  ];
-
   # Everything below is gated on the board being the one in the machine. A
   # module's `imports` cannot be conditional, so this file is evaluated on every
   # host that has the motherboard set in scope — ungated, its firmware default
   # would land on hardware that is not this board.
   config = lib.mkIf cfg.enable {
-    boot.extraModulePackages = [ ];
-
     # All three onboard network controllers are in-tree, so none needs an
     # out-of-tree package — but the Qualcomm WCN785x loads its firmware from
     # linux-firmware, which is redistributable-but-unfree. Without this the radio

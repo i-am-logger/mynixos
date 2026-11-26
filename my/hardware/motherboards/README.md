@@ -9,25 +9,27 @@ Machines contain **pure hardware configuration** - everything needed to make the
 ## Structure
 
 ```
-Machines/
-├── gigabyte-x870e-aorus-elite-wifi7/
-│   ├── default.nix                        # Main hardware config + imports
-│   └── drivers/
-│       ├── amd-integrated-gpu.nix         # AMD Radeon graphics driver
-│       ├── realtek-audio.nix              # Audio chipset driver
-│       ├── network.nix                    # Network hardware (Ethernet + WiFi7)
-│       └── uefi-boot.nix                  # Boot configuration
-│
-└── lenovo-legion-16irx8h/
-    ├── default.nix                        # Main hardware config
-    └── drivers/
-        ├── intel-13900hx-cpu.nix          # Intel CPU driver
-        ├── nvidia-rtx4070.nix             # NVIDIA GPU driver
-        ├── realtek-audio.nix              # Audio chipset + speaker fix
-        ├── network.nix                    # Network hardware (WiFi 6E)
-        ├── uefi-boot.nix                  # Boot configuration
-        └── windows-dual-boot.nix          # Dual-boot hardware setup
+motherboards/
+├── options.nix                            # my.hardware.motherboards.*
+└── gigabyte/
+    ├── x870e-aorus-elite-wifi7/
+    │   ├── default.nix                    # Profile: component options, firmware, networking
+    │   ├── drivers/
+    │   │   ├── amd-integrated-gpu.nix     # Raphael iGPU quirks
+    │   │   └── uefi-boot.nix              # Boot configuration
+    │   └── scripts/
+    └── trx50-aero-d/
+        ├── default.nix                    # Profile: component options, networking
+        └── hardware-configuration.nix     # Board facts: linux-firmware for the WCN785x
 ```
+
+Laptops live under `my/hardware/laptops/<vendor>/<model>/` with the same shape
+(e.g. `lenovo/legion-16irx8h/drivers/`).
+
+Firmware is a profile fact: each profile sets
+`hardware.enableRedistributableFirmware` inside its own `enable`, instead of
+importing nixpkgs' `installer/scan/not-detected.nix`, which (being an import)
+would apply to every Linux host whether or not the board is in it.
 
 ## What Goes in Machines?
 

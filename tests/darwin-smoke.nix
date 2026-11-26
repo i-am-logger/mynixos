@@ -246,7 +246,7 @@ in
   darwin-smoke-base-packages = check "base-packages"
     (
       let names = map (p: p.pname or p.name or "") base.environment.systemPackages;
-      in builtins.all (n: builtins.elem n names) [ "tree" "wget" "sops" ]
+      in builtins.all (n: builtins.elem n names) [ "tree" "wget" "curl" ]
     )
     "the portable base package set should be installed on darwin";
 

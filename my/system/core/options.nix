@@ -1,10 +1,11 @@
 # System options whose implementation is Linux-only.
 #
-# All four are consumed by ./default.nix (my/system/core), which platforms/linux.nix
-# imports and platforms/darwin.nix does not. Declared here rather than in the
-# central my/system/options.nix so that setting them on a Mac is "does not
-# exist" rather than a silent no-op: macOS has no kernel to choose, no udev, no
-# systemd, and dual-booting Windows is not a thing it does.
+# Each is read where it is implemented: architecture and kernel by
+# my/system/kernel, dualBoot by my/system/core, etcNixos by my/system/etc-nixos
+# and my/storage/impermanence. All of those are imported by platforms/linux.nix
+# only. Declared here rather than in the central my/system/options.nix so that
+# setting them on a Mac is "does not exist" rather than a silent no-op: macOS has
+# no kernel to choose, and dual-booting Windows is not a thing it does.
 #
 # Type-only: my/system/options.nix carries `default` and `description` for the
 # `system` submodule, and only one declaration may.
@@ -66,27 +67,10 @@
           };
         };
 
-        udev = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Master switch for custom device udev rules. When false, sets all device udev options to false via mkDefault. Individual devices can override with mkForce.";
-          };
-        };
-
         dualBoot = {
           windows = lib.mkEnableOption "Windows dual-boot support (NTFS, local time clock)";
         };
 
-        systemd = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Master switch for mynixos-managed systemd configuration (journald, coredump). When false, the host keeps NixOS defaults.";
-          };
-        };
-
-        # Read by my/system/etc-nixos (the link) and my/storage/impermanence
         # (which then stops persisting /etc/nixos).
         etcNixos.link = lib.mkOption {
           type = lib.types.nullOr lib.types.nonEmptyStr;

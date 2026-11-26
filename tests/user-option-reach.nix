@@ -110,6 +110,7 @@ let
     "apps.art.editing.gimp" = "gimp: no aarch64-darwin build in nixpkgs.";
     "apps.media.editors.kdenlive" = "kdenlive: no aarch64-darwin build in nixpkgs.";
     "apps.media.players.audacious" = "audacious: no aarch64-darwin build in nixpkgs.";
+    "apps.media.players.vlc" = "vlc: no aarch64-darwin build in nixpkgs.";
     "apps.media.players.qobine" = "packages/qobine builds against alsa-lib; upstream's own macOS build is not packaged here.";
     "input.accelSpeed" = "libinput's acceleration scale and com.apple.mouse.scaling have no common ground.";
     "input.keyboardLayouts" = "XKB layout list rendered into Hyprland's kb_layout; macOS input sources are not XKB.";
@@ -173,8 +174,6 @@ let
     "system.kernel" = "there is no kernel to choose on macOS.";
     "system.ociImage" = "names the container image a Linux system can be built as (system.build.image); nix-darwin has no such output, and an OCI image is a Linux closure regardless.";
     "system.persistence" = "impermanence's collection point; nothing wipes the disk on macOS.";
-    "system.systemd" = "systemd.";
-    "system.udev" = "udev.";
     "virtualisation.containers.guests" = "running other systems and images inside this one; rootless podman and virtualisation.oci-containers are Linux by construction.";
     "virtualisation.incus" = "LXC system containers and QEMU VMs; Incus needs a Linux kernel.";
     "virtualisation.vms" = "full VMs on KVM (libvirt, quickemu); darwin has no KVM.";
@@ -188,6 +187,7 @@ let
   # in the implementation, not the reach.
   topDarwinOnly = {
     "hardware.biometrics" = "Touch ID / Apple Watch unlock.";
+    "hardware.audio.darwin" = "the CoreAudio sample-rate agent; PipeWire needs no such pin.";
     "hardware.laptops.apple" = "Apple Silicon laptop profiles.";
     "homebrew" = "Mac App Store apps and the one cask Nix cannot package.";
     "network.sshFirewall" = "pf, because sshd_config's ListenAddress does nothing when launchd owns the socket.";

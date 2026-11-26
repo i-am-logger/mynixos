@@ -261,7 +261,11 @@ let
       # it; a selected launcher brings its own modes).
       bind = [
         "$mainMod, Space, exec, $LAUNCHER"
-        "$mainMod, E, exec, ${browserCmd}"
+      ]
+      # Only for a selected browser/terminal (environment.BROWSER/TERMINAL).
+      ++ optional (browserCmd != null) "$mainMod, E, exec, ${browserCmd}"
+      ++ optional (terminalCmd != null) "$mainMod, T, exec, ${terminalCmd}"
+      ++ [
         "$mainMod SHIFT, E, exec, chromium"
         "SHIFT, Print, exec, grimblast save area - | swappy -f -"
         ", Print, exec, grimblast --notify copy area"
@@ -274,7 +278,6 @@ let
 
 
         # general bindings
-        "$mainMod, T, exec, ${terminalCmd}"
         "$mainMod, Q, killactive,"
         "$mainMod, Y, togglefloating,"
         "$mainMod, F, fullscreen"
@@ -702,23 +705,15 @@ in
               # Get user-level hyprland config (with mynixos opinionated defaults)
               userHyprland = userCfg.apps.graphical.windowManagers.hyprland or { };
 
-              # Get browser/terminal from environment API (single source of truth)
-              browserApp = userCfg.environment.BROWSER or null;
-              terminalApp = userCfg.environment.TERMINAL or null;
-
-              # Derive command paths from packages
-              # Falls back to opinionated defaults if environment not set
-              browserCmd =
-                if browserApp != null && (browserApp.enable or false) then
-                  browserApp.package.meta.mainProgram or browserApp.package.pname or "brave"
-                else
-                  "brave";
-
-              terminalCmd =
-                if terminalApp != null && (terminalApp.enable or false) then
-                  terminalApp.package.meta.mainProgram or terminalApp.package.pname or "wezterm"
-                else
-                  "wezterm";
+              # The per-user environment selectors are the only source: with
+              # no browser or terminal selected there is no bind or variable
+              # for one, rather than a hard-coded program that may not exist.
+              selectedCmd = app:
+                if app != null && app.enable
+                then app.package.meta.mainProgram or (getName app.package)
+                else null;
+              browserCmd = selectedCmd userCfg.environment.BROWSER;
+              terminalCmd = selectedCmd userCfg.environment.TERMINAL;
 
               # The cursor theme (home.pointerCursor below), named once for
               # both home-manager and Hyprland's own environment.
@@ -804,17 +799,17 @@ in
                 swappy
                 wl-clipboard
                 cliphist
-                udiskie
-                vlc
                 hyprpicker
                 # wlogout is gone: the power menu is the vogix shell's
                 # (`vogix desktop power`, Super+Escape).
-                networkmanagerapplet
-                pavucontrol
-                pamixer
                 playerctl
                 gtk3
-              ];
+              ]
+              # Tray front ends follow the services they front. The audio
+              # mixer (pavucontrol, pamixer) is apps.media.tools.audioUtils and
+              # VLC is apps.media.players.vlc, both set by graphical.media.
+              ++ optional config.services.udisks2.enable udiskie
+              ++ optional config.networking.networkmanager.enable networkmanagerapplet;
 
               # Hyprland configuration
               # Appearance + behavior handled by vogix hyprland module (via mkDefault)
@@ -861,13 +856,14 @@ in
                       # The wildcard (built-in defaults) and one rule per
                       # monitor in my.hardware.display.
                       monitor = displayMonitorsLua;
-                      env = [
-                        { _args = [ "TERMINAL" terminalCmd ]; }
-                        { _args = [ "BROWSER" browserCmd ]; }
-                        { _args = [ "COLORTERM" "truecolor" ]; }
-                        { _args = [ "XCURSOR_THEME" cursorName ]; }
-                        { _args = [ "XCURSOR_SIZE" (toString cursorSize) ]; }
-                      ];
+                      env =
+                        optional (terminalCmd != null) { _args = [ "TERMINAL" terminalCmd ]; }
+                          ++ optional (browserCmd != null) { _args = [ "BROWSER" browserCmd ]; }
+                          ++ [
+                          { _args = [ "COLORTERM" "truecolor" ]; }
+                          { _args = [ "XCURSOR_THEME" cursorName ]; }
+                          { _args = [ "XCURSOR_SIZE" (toString cursorSize) ]; }
+                        ];
                       on = [
                         {
                           _args = [
@@ -900,13 +896,14 @@ in
                       workspace_rule = vogixWorkspaceRulesLua ++ displayWorkspaceRulesLua;
                     } else {
                       inherit (environment) monitor;
-                      env = [
-                        "TERMINAL,${terminalCmd}"
-                        "BROWSER,${browserCmd}"
-                        "COLORTERM,truecolor"
-                        "XCURSOR_THEME,${cursorName}"
-                        "XCURSOR_SIZE,${toString cursorSize}"
-                      ];
+                      env =
+                        optional (terminalCmd != null) "TERMINAL,${terminalCmd}"
+                        ++ optional (browserCmd != null) "BROWSER,${browserCmd}"
+                        ++ [
+                          "COLORTERM,truecolor"
+                          "XCURSOR_THEME,${cursorName}"
+                          "XCURSOR_SIZE,${toString cursorSize}"
+                        ];
                       exec-once = autostart;
                       windowrule = vogixWindowrules ++ windowRules;
                     };

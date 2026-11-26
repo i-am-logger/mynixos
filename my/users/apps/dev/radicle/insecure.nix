@@ -11,18 +11,18 @@
 # protocol has a new name, is not marked, and makes this inert.
 #
 # Both the per-user CLI (mkApp builds it from the system's pkgs) and the
-# Linux services read the system nixpkgs, so this is set there. Loaded from
-# platforms/common.nix; my.infra is Linux-only, hence `or false`.
+# Linux services read the system nixpkgs, so this is set there. This file is
+# the per-user half, loaded from platforms/common.nix; the forge's option is
+# Linux-only, so its half is ./insecure-linux.nix.
 { config, lib, ... }:
 
 let
   anyUser = lib.any
-    (userCfg: userCfg.apps.dev.tools.radicle.enable or false)
+    (userCfg: userCfg.apps.dev.tools.radicle.enable)
     (lib.attrValues config.my.users);
-  infra = config.my.infra.radicle.enable or false;
 in
 {
-  config = lib.mkIf (anyUser || infra) {
-    nixpkgs.config.permittedInsecurePackages = [ "radicle-node-1.10.3" ];
+  config = lib.mkIf anyUser {
+    nixpkgs.config.permittedInsecurePackages = [ (import ./insecure-package.nix) ];
   };
 }

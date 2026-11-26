@@ -321,9 +321,11 @@ in
     assertions = config:
       # System graphical should be on because guiuser has it
       config.my.graphical.enable
-      # guiuser should have graphical groups
+      # graphical groups go to the graphical user only (no `input`: see
+      # my/graphical; vogix adds it to its own users)
       && builtins.elem "video" config.users.users.guiuser.extraGroups
-      && builtins.elem "input" config.users.users.guiuser.extraGroups
+      && builtins.elem "render" config.users.users.guiuser.extraGroups
+      && !(builtins.elem "video" config.users.users.cliuser.extraGroups)
       # Hyprland should be enabled at system level
       && config.programs.hyprland.enable;
   };

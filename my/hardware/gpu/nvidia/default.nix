@@ -44,10 +44,12 @@ in
 
     environment.systemPackages = [ pkgs.nvtopPackages.full ];
 
-    # NVIDIA kernel modules
+    # The module BUILD is hardware.nvidia's: with `open = true` it adds the
+    # open module for boot.kernelPackages. Listing the closed nvidia_x11 here
+    # too put both builds on the system. It loads only nvidia_uvm itself, so
+    # the load list stays.
     boot = {
       kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm" ];
-      extraModulePackages = [ config.boot.kernelPackages.nvidia_x11 ];
 
       kernelParams = [
         "nvidia-drm.modeset=1" # Enable DRM kernel mode setting

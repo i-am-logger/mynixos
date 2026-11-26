@@ -6,10 +6,6 @@ let
   cfg = config.my.hardware.motherboards.gigabyte.x870e-aorus-elite-wifi7;
 in
 {
-  imports = [
-    ./hardware-configuration.nix
-  ];
-
   config = mkMerge [
     # Import motherboard-specific boot configuration (conditionally)
     (mkIf cfg.enable (import ./drivers/uefi-boot.nix { inherit config lib pkgs; }))
@@ -25,6 +21,10 @@ in
     # Platform architecture (conditionally)
     (mkIf cfg.enable {
       nixpkgs.hostPlatform = mkDefault "x86_64-linux";
+
+      # Wi-Fi 7, Bluetooth and iGPU firmware from linux-firmware (what nixpkgs'
+      # not-detected.nix sets), for this board only.
+      hardware.enableRedistributableFirmware = mkDefault true;
 
       # Networking configuration
       networking.useDHCP = mkIf cfg.networking.enable (mkDefault cfg.networking.useDHCP);

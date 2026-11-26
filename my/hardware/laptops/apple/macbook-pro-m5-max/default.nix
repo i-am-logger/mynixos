@@ -29,7 +29,7 @@ in
         gpu = lib.mkIf cfg.enable "apple";
 
         biometrics.enable = lib.mkIf cfg.enable cfg.biometrics.enable;
-        audio.maxSampleRate.enable = lib.mkIf cfg.enable cfg.audio.maxSampleRate;
+        audio.darwin.maxSampleRate.enable = lib.mkIf cfg.enable cfg.audio.maxSampleRate;
       };
     }
 

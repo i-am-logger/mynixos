@@ -6,9 +6,9 @@
       Crash/fault diagnostics. Captures every diagnostic artifact - GPU faults,
       kernel panics, userspace coredumps - and retains the ambient system log,
       so a fault is diagnosable to root cause without sudo (artifacts land under
-      /var/log/forensics, wheel-readable). Cross-cutting intent only: each
-      subsystem owner (systemd, kernel/boot, the active GPU driver) reads this
-      and configures itself. On by default; opt a host out if undesired.
+      /var/log/forensics, readable by admins through wheel). my/forensics
+      implements the journal, coredump and ramoops parts; the active GPU
+      driver adds its own devcoredump capture. On by default.
     '';
     default = { };
     type = lib.types.submodule {

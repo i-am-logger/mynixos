@@ -100,7 +100,8 @@ pkgs.testers.runNixOSTest {
           description = "Alice Example";
           email = "alice@example.com";
           shell = "fish"; # exercises the shell -> login-shell mapping
-          dev.enable = true; # => disk/dialout groups + rootless podman subids
+          admin = true; # wheel: the base-groups subtest below
+          dev.enable = true; # => rootless podman subids
           terminal.enable = true; # mkApp pipeline => bat/lsd/... installed via HM
           # Trim the heaviest terminal defaults to keep the VM closure lean:
           apps.terminal = {
@@ -157,7 +158,7 @@ pkgs.testers.runNixOSTest {
         # dockerCompat gives `docker` as an alias for podman, so the name still
         # works -- what must be gone is the GROUP, whose members could bind-mount
         # / into a container and come back as root. (This says nothing about the
-        # other groups mynixos grants; `disk` is handed out separately.)
+        # other groups mynixos grants.)
         machine.succeed("podman --version")
         machine.fail("getent group docker")
         for u in ["alice", "carol"]:

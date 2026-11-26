@@ -257,9 +257,6 @@ in
       SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="0084", MODE="0664", GROUP="users"
     '';
 
-    # Ensure the user is in the required groups
-    users.groups.streamdeck = { };
-
     # The device's UI for every graphical user; nixpkgs already wraps it with
     # its Qt plugins, so nothing Qt-related is exported host-wide.
     home-manager.users = mapAttrs

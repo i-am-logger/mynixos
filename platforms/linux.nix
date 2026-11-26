@@ -111,6 +111,7 @@ in
     ../my/users/users/mynixos-linux.nix
     ../my/users/graphical/mynixos-linux.nix
     ../my/users/graphical/media/mynixos-linux.nix
+    ../my/users/webapps/mynixos-linux.nix # graphical.webapps.{slack,signal,onePassword} set those apps
     ../my/users/terminal/mynixos-linux.nix
     ../my/users/apps/xdg/linux.nix
   ]
@@ -122,7 +123,7 @@ in
     ../my/ai
     ../my/ai/claude-code-proxy
     ../my/ai/openclaw
-    ../my/audio
+    ../my/hardware/audio/pipewire # my.hardware.audio on Linux; the darwin half is ../my/hardware/audio/apple
     ../my/dev/development
     ../my/environment
     ../my/presets
@@ -144,7 +145,7 @@ in
     ../my/system/etc-nixos
     ../my/system/nix-registry/linux.nix # channels off; the registry pin comes from nixpkgs itself
     ../my/system/kernel
-    ../my/system/systemd
+    ../my/forensics
     # A duplicate uid or gid makes two accounts one principal, and neither
     # NixOS nor `getent` objects. Fleet-wide because it is a property of any
     # machine with accounts, not of anything radicle-specific.
@@ -189,6 +190,7 @@ in
     ../my/hardware/peripherals/keychron
     ../my/hardware/peripherals/logitech
     ../my/hardware/peripherals/sipeed
+    ../my/hardware/peripherals/trezor
 
     ../my/hardware/storage/nvme
     ../my/hardware/storage/sata
@@ -283,10 +285,13 @@ in
     ../my/users/apps/media/kdenlive
     ../my/users/apps/art/mypaint
     ../my/users/apps/media/audacious
+    ../my/users/apps/media/vlc
     ../my/users/apps/media/audio-utils
     ../my/users/apps/media/qobine # alsa-lib; packages/qobine is Linux-only
+    ../my/users/apps/dev/devenv/linux.nix # devenv.cachix.org, where someone uses devenv
     ../my/users/apps/dev/radicle/options-linux.nix # its option: HM-only, Linux-only
     ../my/users/apps/dev/radicle/linux.nix # user radicle-node: HM systemd.user service
+    ../my/users/apps/dev/radicle/insecure-linux.nix # radicle-node 1.10.3 permitted where the forge runs
     ../my/users/apps/ai/claude-code/options-linux.nix # its fleetWake option: HM user units, Linux-only
     ../my/users/apps/ai/claude-code/linux.nix # fleet-new.path + fleet-new.service
     ../my/users/apps/security/1password # programs._1password{,-gui}

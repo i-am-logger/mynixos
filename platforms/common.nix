@@ -119,7 +119,6 @@ in
     # an attribute path nix-darwin provides too, so they port unchanged.
     # ---------------------------------------------------------------------
     ++ [
-      ../my/users/defaults
       ../my/users/environment-defaults
       ../my/users/terminal
 
@@ -222,11 +221,15 @@ in
       ../my/users/apps/xdg
       ../my/fonts
       ../my/system/base-packages
-      ../my/users/graphical/media/mynixos.nix
-      ../my/users/webapps/mynixos.nix
       ../my/users/apps/tools/fd
       ../my/users/apps/tools/ripgrep
       ../my/users/apps/tools/zoxide
       ../my/users/apps/tools/fzf
+      ../my/users/apps/tools/screen
+
+      # Password managers (1Password is declared above, in options)
+      ../my/users/apps/security/pass
+      ../my/users/apps/security/gopass
+      ../my/users/apps/security/ripasso
     ];
 }

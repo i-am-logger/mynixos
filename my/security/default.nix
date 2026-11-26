@@ -96,7 +96,8 @@ in
             { command = "/run/current-system/sw/bin/nixos-rebuild"; options = [ "NOPASSWD" ]; }
           ];
         })
-        (attrNames (activeUsers config.my.users));
+        # A passwordless rebuild is root (any --flake), so it is an admin's.
+        (attrNames (filterAttrs (_: userCfg: userCfg.admin) (activeUsers config.my.users)));
     })
 
     # sudo answered by the caller's forwarded SSH agent.

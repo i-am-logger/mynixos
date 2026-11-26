@@ -146,6 +146,7 @@
                   kdenlive = lib.mkOption { type = lib.types.bool; default = false; description = "Kdenlive video editor"; };
                   musikcube = lib.mkOption { type = lib.types.bool; default = false; description = "Musikcube music player"; };
                   audacious = lib.mkOption { type = lib.types.bool; default = false; description = "Audacious music player"; };
+                  vlc = lib.mkOption { type = lib.types.bool; default = true; description = "VLC media player"; };
                   pipewireTools = lib.mkOption { type = lib.types.bool; default = true; description = "PipeWire CLI tools"; };
                   audioUtils = lib.mkOption { type = lib.types.bool; default = true; description = "Audio utilities (pavucontrol, pamixer)"; };
                 };

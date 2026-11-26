@@ -20,7 +20,7 @@
 with lib;
 
 let
-  cfg = config.my.hardware.audio.maxSampleRate;
+  cfg = config.my.hardware.audio.darwin.maxSampleRate;
   audioMaxRate = pkgs.callPackage ../../../../packages/audio-max-rate { };
 in
 {

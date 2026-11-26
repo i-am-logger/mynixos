@@ -2,5 +2,6 @@
 {
   imports = [
     ./dfu
+    ./ios
   ];
 }

@@ -26,6 +26,20 @@
       description = "Email for git, etc (required for git configuration)";
     };
 
+    admin = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether this person administers the machine. On NixOS an admin is in
+        `wheel`, which is what sudo, nix's trusted-users (`@wheel`), the
+        passwordless rebuild (my.security.nopasswdRebuild) and the
+        wheel-readable forensics tree all key on. Root-equivalent, so it is
+        stated per person and never implied by having an account.
+
+        On darwin macOS owns admin membership; this is not read there.
+      '';
+    };
+
     shell = lib.mkOption {
       type = lib.types.nullOr (lib.types.enum [ "fish" "bash" "zsh" ]);
       default = null;

@@ -1,19 +1,21 @@
+# Crash and fault diagnostics (my.forensics), the kernel and userspace halves.
+#
+# The domain owns what it captures: the ramoops reservation that keeps a panic
+# across the reboot, the journal kept on disk at the forensics level, systemd's
+# coredumps, and the copy of each pstore record into /var/log/forensics. None
+# of it depends on my.system: a host that turns forensics on gets forensics.
+#
+# The GPU half stays a driver hook (my/hardware/gpu/amd), because a
+# devcoredump is the driver's own format.
 { config, lib, pkgs, ... }:
 
 with lib;
 
 let
-  sys = config.my.system;
   f = config.my.forensics;
 in
 {
-  # Systemd subsystem owner. Reads the cross-cutting my.forensics intent and
-  # configures the systemd-side diagnostics - journald retention, userspace
-  # coredumps, and kernel pstore persistence. Driver-specific captures (GPU
-  # devcoredumps) live with their driver; the kernel boot params live in
-  # my/system/core. This module owns only the systemd half.
-  config = mkIf (sys.enable && sys.systemd.enable) (mkMerge [
-
+  config = mkMerge [
     # Foundation: retain the system log across reboot, at the forensics level,
     # and provide the wheel-readable capture root.
     (mkIf f.enable {
@@ -38,10 +40,26 @@ in
       };
     })
 
-    # Kernel: copy the surviving pstore panic/oops record into the forensics
-    # tree, wheel-readable, on boot. The boot-param half (reserve_mem + the
-    # ramoops module) lives in my/system/core.
-    (mkIf (f.enable && f.kernel.enable) {
+    # Kernel: pstore-ramoops records a panic/oops across the reboot, and the
+    # surviving record is copied into the forensics tree, wheel-readable.
+    # A container has no kernel of its own to capture.
+    (mkIf (f.enable && f.kernel.enable && !config.boot.isContainer) {
+      boot = {
+        # Loaded early so it is armed before anything can splat.
+        initrd.kernelModules = [ "ramoops" ];
+        kernelModules = [ "ramoops" ];
+        kernelParams = [
+          "reserve_mem=4M:4096:oops"
+          "ramoops.mem_name=oops"
+          # Without explicit record/console sizes, ramoops_probe() rejects a
+          # non-zero region and pstore never appears - nothing would be
+          # captured. 128 KiB each holds a full panic/oops dmesg + console.
+          "ramoops.record_size=0x20000"
+          "ramoops.console_size=0x20000"
+          "ramoops.ecc=1"
+        ];
+      };
+
       systemd.tmpfiles.rules = [ "d /var/log/forensics/kernel 2750 root wheel -" ];
       systemd.services.forensics-pstore-persist = {
         description = "Persist kernel pstore records (panics/oopses) to /var/log/forensics/kernel";
@@ -68,5 +86,5 @@ in
         '';
       };
     })
-  ]);
+  ];
 }

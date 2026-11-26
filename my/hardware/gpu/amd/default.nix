@@ -8,8 +8,9 @@ let
   f = config.my.forensics;
 
   # Rescue an amdgpu devcoredump (the faulting shader / IB disassembly) before
-  # the kernel auto-expires it (~5 min), plus a snapshot of each browser's GPU
-  # debug log, into the forensics tree wheel-readable. Driven by my.forensics.gpu.
+  # the kernel auto-expires it (~5 min), into the forensics tree wheel-readable.
+  # Driven by my.forensics.gpu. An app with a GPU log of its own adds it to the
+  # capture unit itself (Brave: my/users/apps/browsers/brave/linux.nix).
   captureDevcoredump = pkgs.writeShellScript "amdgpu-devcoredump-capture" ''
     set -euo pipefail
     inst="''${1:?usage: amdgpu-devcoredump-capture <devcdN>}"
@@ -39,19 +40,6 @@ let
     else
       echo "amdgpu-devcoredump: ''${src} not readable; nothing captured" >&2
     fi
-
-    # Snapshot each browser's GPU debug log before the browser relaunches and
-    # truncates it; it ties the reset to the page and shader that triggered it.
-    for blog in /home/*/.cache/brave-gpu-debug.log; do
-      [ -r "''${blog}" ] || continue
-      u="''${blog#/home/}"; u="''${u%%/*}"
-      snap="''${outdir}/brave-gpu-''${u}-$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)-''${inst}.log"
-      if ${pkgs.coreutils}/bin/cp "''${blog}" "''${snap}" 2>/dev/null; then
-        ${pkgs.coreutils}/bin/chgrp wheel "''${snap}" 2>/dev/null || true
-        ${pkgs.coreutils}/bin/chmod 0640 "''${snap}"
-        echo "amdgpu-devcoredump: snapshotted browser log ''${blog}"
-      fi
-    done
   '';
 in
 {

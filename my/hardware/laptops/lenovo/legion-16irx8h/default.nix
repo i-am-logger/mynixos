@@ -1,4 +1,4 @@
-{ config, lib, pkgs, modulesPath, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -6,10 +6,6 @@ let
   cfg = config.my.hardware.laptops.lenovo.legion-16irx8h;
 in
 {
-  imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-  ];
-
   config = mkMerge [
     # Auto-enable hardware modules based on laptop options (unconditional to avoid recursion)
     {
@@ -72,6 +68,10 @@ in
 
           # Intel microcode handled by intel-13900hx-cpu driver
         };
+
+        # Wi-Fi, Bluetooth and GPU firmware from linux-firmware (what
+        # nixpkgs' not-detected.nix sets), for this machine only.
+        hardware.enableRedistributableFirmware = mkDefault true;
 
         # Platform architecture
         nixpkgs.hostPlatform = mkDefault "x86_64-linux";

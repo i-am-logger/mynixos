@@ -1,7 +1,7 @@
 # Hardware options that mean something on BOTH platforms.
 #
 # cpu/gpu are metadata a host states about itself (my/infra/github-runner reads
-# `hardware.gpu`); audio is the Apple sample-rate agent. Everything vendor- or
+# `hardware.gpu`); audio.enable is PipeWire on Linux. Everything vendor- or
 # bus-specific is declared next to its implementation instead --
 # my/hardware/{bluetooth,motherboards,cooling,peripherals,laptops/*}/options.nix
 # -- so it exists only on the platform that can act on it.
@@ -38,34 +38,6 @@
 
 
         audio = {
-          maxSampleRate = lib.mkOption {
-            description = ''
-              Pin CoreAudio devices to their highest supported sample rate
-              (darwin only; macOS exposes no declarative mechanism for this).
-
-              Higher is not automatically better — every consumer pays for it.
-              For a spectrum visualiser it is wasted: cava's 22 kHz cutoff is
-              already fully covered by 44.1 kHz (Nyquist).
-            '';
-            default = { };
-            type = lib.types.submodule {
-              options = {
-                enable = lib.mkEnableOption "pinning CoreAudio devices to their maximum sample rate at login";
-
-                exclude = lib.mkOption {
-                  type = lib.types.listOf lib.types.str;
-                  default = [ ];
-                  example = [ "Microphone" ];
-                  description = ''
-                    Skip devices whose name contains any of these, matched
-                    case-insensitively. Inputs are the usual candidates: a 96 kHz
-                    microphone doubles the data for voice with nothing to show.
-                  '';
-                };
-              };
-            };
-          };
-
           enable = lib.mkOption {
             type = lib.types.bool;
             default = true;

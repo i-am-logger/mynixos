@@ -19,13 +19,10 @@ in
       {
         # Enable polkit for streaming (mkDefault so security module can also enable it)
         security.polkit.enable = lib.mkDefault true;
-
-        # Add users to streaming-related groups
-        users.users = mapAttrs
-          (_name: _userCfg: {
-            extraGroups = [ "udev" "usb" "audio" ];
-          })
-          (activeUsers config.my.users);
+        # No groups: `udev` and `usb` exist on no NixOS system, and `audio` is
+        # my.hardware.audio's (with PipeWire and uaccess it only adds raw ALSA).
+        # The virtual camera is a v4l2 node, which a seat's user reaches
+        # through uaccess.
       }
 
       # OBS's virtual camera (v4l2loopback). It exists for OBS alone, so it

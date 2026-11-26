@@ -495,7 +495,7 @@ in
 
   # --- Udev Master Switch Tests ---
 
-  # Test: Keychron udev rules load when device enabled (master defaults true)
+  # Test: Keychron udev rules load when the device is enabled
   smoke-udev-keychron-default = mkSmokeTest {
     name = "test-udev-keychron-default";
     myConfig = {
@@ -508,22 +508,7 @@ in
       && (builtins.length config.services.udev.packages) > 0;
   };
 
-  # Test: Master udev off disables device udev via mkDefault
-  smoke-udev-master-off = mkSmokeTest {
-    name = "test-udev-master-off";
-    myConfig = {
-      system = {
-        enable = true;
-        hostname = "test-udev-master-off";
-        udev.enable = false;
-      };
-      hardware.peripherals.keychron.k2-he.enable = true;
-    };
-    assertions = config:
-      !config.my.hardware.peripherals.keychron.k2-he.udev;
-  };
-
-  # Test: Device udev explicitly false overrides master on
+  # Test: a device's udev = false drops its rules
   smoke-udev-device-off = mkSmokeTest {
     name = "test-udev-device-off";
     myConfig = {
@@ -536,24 +521,6 @@ in
     };
     assertions = config:
       !config.my.hardware.peripherals.keychron.k2-he.udev;
-  };
-
-  # Test: Device udev mkForce true overrides master off
-  smoke-udev-device-force = mkSmokeTest {
-    name = "test-udev-device-force";
-    myConfig = {
-      system = {
-        enable = true;
-        hostname = "test-udev-device-force";
-        udev.enable = false;
-      };
-      hardware.peripherals.keychron.k2-he = {
-        enable = true;
-        udev = lib.mkForce true;
-      };
-    };
-    assertions = config:
-      config.my.hardware.peripherals.keychron.k2-he.udev;
   };
 
   # Two independent features may each need the SAME directory to survive a wipe,

@@ -34,11 +34,20 @@
               udev = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
+                description = "Install this device's udev rules.";
               };
             };
-          };
 
+            ios = {
+              enable = lib.mkEnableOption ''
+                iPhone/iPad over USB in normal mode: usbmuxd, the daemon every
+                libimobiledevice tool (idevicebackup2, ideviceinfo, and mvt's
+                iOS backups through them) reaches the device through.
+
+                Vendor: Apple (05ac)
+              '';
+            };
+          };
 
           keychron = {
             k2-he = {
@@ -55,7 +64,7 @@
               udev = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Enable udev rules for this device. Gated by my.hardware.udev.enable unless set with mkForce.";
+                description = "Install this device's udev rules.";
               };
             };
           };
@@ -99,9 +108,30 @@
               udev = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Enable udev rules for this device. Gated by my.system.udev.enable unless set with mkForce.";
+                description = "Install this device's udev rules.";
+              };
+
+              users = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                example = [ "alice" ];
+                description = ''
+                  Accounts added to `dialout`, for the board's UART
+                  (/dev/ttyUSB*). The group opens every serial port on the
+                  host, so the list is explicit, never every user. JTAG needs
+                  no group: uaccess covers it.
+                '';
               };
             };
+          };
+
+          trezor = {
+            enable = lib.mkEnableOption ''
+              Trezor hardware wallets: trezord, the bridge Trezor Suite and
+              browser wallets talk to, with its udev rules.
+
+              Vendor: SatoshiLabs (1209:53c1, 534c:0001)
+            '';
           };
         };
       };
