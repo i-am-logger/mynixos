@@ -84,6 +84,10 @@ in
     hardware.gpgSmartcards.enable = true;
 
     environment = {
+      # Every session reaches the key through gpg-agent's SSH socket unless an
+      # agent was forwarded in (my/security's sshAgentSudo relies on both).
+      sessionVariables.SSH_AUTH_SOCK = "\${SSH_AUTH_SOCK:-$(gpgconf --list-dirs agent-ssh-socket)}";
+
       systemPackages = with pkgs; [
         pinentry-qt
         gopass

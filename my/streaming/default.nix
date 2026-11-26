@@ -20,17 +20,6 @@ in
         # Enable polkit for streaming (mkDefault so security module can also enable it)
         security.polkit.enable = lib.mkDefault true;
 
-        # Allow users group to run modprobe (needed for v4l2loopback and other kernel modules)
-        security.polkit.extraConfig = ''
-          polkit.addRule(function(action, subject) {
-              if (action.id == "org.freedesktop.policykit.exec" &&
-                  action.lookup("program") == "/run/current-system/sw/bin/modprobe" &&
-                  subject.isInGroup("users")) {
-                  return polkit.Result.YES;
-              }
-          });
-        '';
-
         # Add users to streaming-related groups
         users.users = mapAttrs
           (_name: _userCfg: {
@@ -50,20 +39,6 @@ in
           '';
         };
       }
-
-      # Fix advanced-scene-switcher build on NVIDIA systems
-      # OpenCV with CUDA requires cudatoolkit in build inputs
-      (mkIf (config.my.hardware.gpu == "nvidia") {
-        nixpkgs.overlays = [
-          (_final: prev: {
-            obs-studio-plugins = prev.obs-studio-plugins // {
-              advanced-scene-switcher = prev.obs-studio-plugins.advanced-scene-switcher.overrideAttrs (old: {
-                nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.cudatoolkit ];
-              });
-            };
-          })
-        ];
-      })
 
       # OBS Studio with plugins (per-user configuration)
       {

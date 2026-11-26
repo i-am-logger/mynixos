@@ -112,7 +112,7 @@ in
     # (2026-11-15: "keep full trust", "for all yubikeys"), resident ones
     # included. The cost is stated, not hidden: a key plugged into this machine
     # signs without a touch through the local gpg-agent, which every session
-    # reaches (my/system/core falls SSH_AUTH_SOCK back to it when nothing was
+    # reaches (the yubico module falls SSH_AUTH_SOCK back to it when nothing was
     # forwarded), so on a host whose own key is trusted here sudo is
     # passwordless for every process running as the user. sudo still gets its
     # own root-owned file rather than the user's writable authorized_keys, so

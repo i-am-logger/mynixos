@@ -10,6 +10,11 @@ with lib;
 let
   # Auto-enable graphical when any user has graphical.enable = true
   anyUserGraphical = any (userCfg: userCfg.graphical.enable or false) (attrValues config.my.users);
+  # Hyprland is the per-user app switch (on by default for graphical users),
+  # and the system half follows it rather than graphical.enable alone.
+  anyUserHyprland = any
+    (userCfg: userCfg.graphical.enable && userCfg.apps.graphical.windowManagers.hyprland.enable)
+    (attrValues config.my.users);
 in
 {
   config = mkMerge [
@@ -18,9 +23,8 @@ in
 
     # Feature configuration
     (mkIf config.my.graphical.enable (mkMerge [
-      # Base desktop configuration with Hyprland
-      {
-        # System-level Hyprland setup
+      # System-level Hyprland, for the users who run it
+      (mkIf anyUserHyprland {
         systemd.tmpfiles.rules = [
           "d /tmp/hypr 1777 root root -"
         ];
@@ -34,18 +38,6 @@ in
         # the dialogs it spawns (not-responding, update) and the lspci its
         # systeminfo reads come from the system PATH.
         environment.systemPackages = [ pkgs.hyprland-guiutils pkgs.pciutils ];
-
-        # nixpkgs' graphical-desktop turns speech-dispatcher on for every
-        # desktop: espeak, mbrola and ~650 MiB of voices. No mynixos host runs a
-        # screen reader; services.orca (or setting this) brings it back.
-        # mkOverride 900: above nixpkgs' own mkDefault, below a plain host setting.
-        services.speechd.enable = mkOverride 900 false;
-
-        # vogix writes org.gnome.desktop.interface color-scheme on every theme
-        # apply; xdg-desktop-portal-gtk serves it as the portal's
-        # color-scheme setting, which is what Chromium-family browsers follow.
-        # Without dconf the write has nowhere to land.
-        programs.dconf.enable = true;
 
         # The hyprland package ships TWO session files, and programs.hyprland
         # registers both — including hyprland-uwsm.desktop, whose `uwsm
@@ -62,6 +54,21 @@ in
                 $out/share/wayland-sessions/hyprland.desktop
             '')
         ];
+      })
+
+      # Base desktop configuration
+      {
+        # nixpkgs' graphical-desktop turns speech-dispatcher on for every
+        # desktop: espeak, mbrola and ~650 MiB of voices. No mynixos host runs a
+        # screen reader; services.orca (or setting this) brings it back.
+        # mkOverride 900: above nixpkgs' own mkDefault, below a plain host setting.
+        services.speechd.enable = mkOverride 900 false;
+
+        # vogix writes org.gnome.desktop.interface color-scheme on every theme
+        # apply; xdg-desktop-portal-gtk serves it as the portal's
+        # color-scheme setting, which is what Chromium-family browsers follow.
+        # Without dconf the write has nowhere to land.
+        programs.dconf.enable = true;
 
         # The login itself (display manager, greeter look, autologin) is
         # my.environment.login — implemented in ./login, beside this file.

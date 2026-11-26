@@ -37,8 +37,7 @@ with lib;
                     --add-flags "--enable-gpu-driver-debug-logging" \
                     --add-flags "--vmodule=*gpu*=2,*command_buffer*=2,*gl_context*=1,*shared_image*=1,*webgl*=1" \
                     --set GNOME_KEYRING_CONTROL "" \
-                    --set DISABLE_GNOME_KEYRING "1" \
-                    --set SSH_AUTH_SOCK "$(gpgconf --list-dirs agent-ssh-socket)"
+                    --set DISABLE_GNOME_KEYRING "1"
                 '';
               };
             in

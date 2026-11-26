@@ -10,9 +10,6 @@ let
   cfg = config.my.system;
   f = config.my.forensics;
 
-  # Get list of all user names from my.features.users
-  userNames = attrNames config.my.users;
-
   # Read mynixos version from version.txt
   mynixosVersion = lib.strings.removeSuffix "\n" (builtins.readFile ../../../version.txt);
 in
@@ -73,12 +70,6 @@ in
           # Override system derivation name to use mynixos branding
           systemBuilderArgs = {
             name = "mynixos-system-${config.system.name}-${mynixosVersion}";
-          };
-
-          # Auto-upgrade configuration
-          autoUpgrade = {
-            enable = mkDefault true;
-            channel = mkDefault "https://nixos.org/channels/nixos-unstable";
           };
         };
 
@@ -149,12 +140,7 @@ in
           };
         };
 
-        # PAM fixes for SSH/GPG agent
         environment = {
-          sessionVariables = {
-            SSH_AUTH_SOCK = "\${SSH_AUTH_SOCK:-$(gpgconf --list-dirs agent-ssh-socket)}";
-          };
-
           # Prevent NetworkManager from managing container interfaces.
           #
           # podman* is netavark's default bridge (podman0, plus podman1..n for
@@ -206,18 +192,8 @@ in
           ];
         };
 
-        programs.gnupg.agent = {
-          enable = true;
-          enableSSHSupport = true;
-        };
-
         # DRM device permissions (generic, not NVIDIA-specific)
         services = {
-          udev.extraRules = ''
-            # Fix X11 socket permissions for all GPUs
-            KERNEL=="card[0-9]*", SUBSYSTEM=="drm", GROUP="video", MODE="0666"
-          '';
-
           # Opinionated system services (can be disabled with mkForce)
           usbmuxd.enable = lib.mkDefault true; # iOS device support
           fwupd.enable = lib.mkDefault true; # Firmware updates
@@ -282,8 +258,9 @@ in
               "x86_64-linux"
             ];
 
-            # Add all users as trusted
-            trusted-users = [ "root" ] ++ userNames;
+            # Trust is root-equivalent (substituters, unsigned imports), so it
+            # follows the admin role rather than every account.
+            trusted-users = [ "root" "@wheel" ];
 
             substituters = mkDefault [
               "https://cache.nixos.org/"

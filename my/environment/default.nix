@@ -1,12 +1,10 @@
-{ activeUsers, config, lib, pkgs, ... }:
+{ activeUsers, config, lib, ... }:
 
 with lib;
 
 let
   cfg = config.my.environment;
   motdCfg = cfg.motd;
-  editor = if cfg.editor != null then cfg.editor else pkgs.helix;
-  browser = if cfg.browser != null then cfg.browser else pkgs.brave;
 in
 {
   config = mkMerge [
@@ -29,34 +27,10 @@ in
         };
       }
 
-      # Base environment configuration
+      # EDITOR, BROWSER and the MIME defaults are per-user selections
+      # (my/users/environment-defaults), never host-wide store paths.
       {
-        # Environment variables (from mynixos defaults in flake.nix)
-        # Use regular assignments (priority 100) to override nixpkgs mkDefault (priority 1000)
-        # Note: BROWSER needs full path to binary for XDG to work correctly
-        environment = {
-          variables = {
-            EDITOR = "${editor}/bin/${editor.meta.mainProgram or editor.pname or "hx"}";
-            VIEWER = "${editor}/bin/${editor.meta.mainProgram or editor.pname or "hx"}";
-            BROWSER = "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
-            DEFAULT_BROWSER = "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
-          };
-
-          pathsToLink = [ "libexec" ];
-          sessionVariables.DEFAULT_BROWSER = mkDefault "${browser}/bin/${browser.meta.mainProgram or browser.pname or "brave"}";
-        };
-
-        # XDG MIME defaults - using .desktop file pattern
-        xdg.mime.defaultApplications =
-          let browserDesktop = "${browser.pname or "brave"}-browser.desktop";
-          in
-          mkDefault {
-            "text/html" = browserDesktop;
-            "x-scheme-handler/http" = browserDesktop;
-            "x-scheme-handler/https" = browserDesktop;
-            "x-scheme-handler/about" = browserDesktop;
-            "x-scheme-handler/unknown" = browserDesktop;
-          };
+        environment.pathsToLink = [ "libexec" ];
       }
 
       # Common environment configuration (always enabled with environment feature)

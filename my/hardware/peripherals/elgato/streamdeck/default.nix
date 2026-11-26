@@ -193,7 +193,8 @@ let
   '';
 
   # Stream Deck UI configuration for ~/.streamdeck_ui.json
-  streamdeckConfig = builtins.toJSON {
+  # The OBS button only for a user who runs OBS (graphical.streaming).
+  streamdeckConfig = withObs: builtins.toJSON {
     streamdeck_ui_version = 2;
     state = {
       "0fd9:0063" = {
@@ -219,6 +220,7 @@ let
               change_brightness = false;
             };
           };
+        } // lib.optionalAttrs withObs {
           "2" = {
             "0" = {
               command = toString obsVirtualCamToggleScript;
@@ -258,22 +260,14 @@ in
     # Ensure the user is in the required groups
     users.groups.streamdeck = { };
 
-    # Add streamdeck-ui with Qt platform fixes (only for users with streaming enabled)
+    # The device's UI for every graphical user; nixpkgs already wraps it with
+    # its Qt plugins, so nothing Qt-related is exported host-wide.
     home-manager.users = mapAttrs
       (_name: userCfg:
-        mkIf (userCfg.graphical.streaming.enable or false) {
-          home.packages = with pkgs; [
-            streamdeck-ui
-            # Qt platform dependencies
-            qt5.qtwayland
-            qt6.qtwayland
-            # Audio utilities (already have pamixer from your config)
-            pamixer
-            # Notification support
-            libnotify
-            # Additional useful packages for Stream Deck
-            imagemagick # For image processing
-          ];
+        let withObs = userCfg.graphical.streaming.enable or false;
+        in
+        mkIf (userCfg.graphical.enable or false) {
+          home.packages = [ pkgs.streamdeck-ui ];
 
           # Create symbolic links for easy access to scripts
           home.file = {
@@ -306,7 +300,7 @@ in
               source = audioColorScript;
               executable = true;
             };
-
+          } // lib.optionalAttrs withObs {
             ".local/bin/obs-virtualcam-toggle" = {
               source = obsVirtualCamToggleScript;
               executable = true;
@@ -321,7 +315,7 @@ in
               source = obsVirtualCamColorScript;
               executable = true;
             };
-
+          } // {
             # Stream Deck icons directory
             ".local/share/streamdeck/icons/mic-muted.png" = {
               # You can replace this with a custom icon file
@@ -345,7 +339,7 @@ in
 
             # Stream Deck UI configuration file
             ".streamdeck_ui.json" = {
-              text = streamdeckConfig;
+              text = streamdeckConfig withObs;
             };
           };
 
@@ -360,16 +354,6 @@ in
         }
       )
       (activeUsers config.my.users);
-
-    # Fix Qt platform plugin issues for streamdeck-ui
-    environment.sessionVariables = {
-      # Set Qt platform plugins path
-      QT_QPA_PLATFORM_PLUGIN_PATH = "${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins/platforms:${pkgs.qt6.qtbase}/lib/qt-6/plugins/platforms";
-      # Prefer Wayland but fallback to xcb
-      QT_QPA_PLATFORM = "wayland;xcb";
-      # Enable Qt logging for debugging
-      QT_LOGGING_RULES = "qt.qpa.plugin.debug=false";
-    };
 
     # Disable streamdeck-ui system service if it's causing issues
     # Users should run it manually from their desktop session

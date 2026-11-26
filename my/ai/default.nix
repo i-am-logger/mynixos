@@ -5,19 +5,12 @@ with lib;
 let
   cfg = config.my.ai;
   inherit (config.my.hardware) gpu;# "amd" | "nvidia" | "intel" | null
-  # cudaSupport is the system-wide "this host uses CUDA" signal, set by the
-  # NVIDIA GPU profile (my/hardware/gpu/nvidia). AI consumers follow it instead
-  # of re-deriving CUDA from the GPU vendor, so one flag governs the whole CUDA
-  # story here: ollama's package variant and opencv's build alike. AMD keeps
-  # deriving ROCm from the vendor -- there is no equivalent global rocmSupport.
-  # Read it off the resolved package set, not config.nixpkgs.config: the latter
-  # forces the nixpkgs.config option, which clashes with read-only nixpkgs
-  # (where pkgs is provided externally).
-  cudaSupport = pkgs.config.cudaSupport or false;
-  # Acceleration: explicit override > cudaSupport (CUDA) > AMD (ROCm) > CPU.
+  # Acceleration: explicit override > the GPU vendor (CUDA on NVIDIA, ROCm on
+  # AMD) > CPU. Only the consumer selects its CUDA build; nothing sets a
+  # global cudaSupport that would rebuild every package with CUDA.
   acceleration =
     if cfg.ollama.acceleration != "auto" then cfg.ollama.acceleration
-    else if cudaSupport then "cuda"
+    else if gpu == "nvidia" then "cuda"
     else if gpu == "amd" then "rocm"
     else "cpu";
   isRocm = acceleration == "rocm";
@@ -65,11 +58,14 @@ in
     (mkIf cfg.enable (mkMerge [
       # No OpenCV in the system path: a library is linked by the software that
       # needs it (or a project's devenv), never installed globally. Its CUDA
-      # build still follows cudaSupport wherever a package pulls it in.
+      # build is the consumer's choice, never a global flag.
 
-      # Ollama service — package variant follows `acceleration`: CUDA when
-      # cudaSupport is on, ROCm on an AMD GPU, else CPU.
+      # Ollama service — package variant follows `acceleration`: CUDA on an
+      # NVIDIA GPU, ROCm on an AMD GPU, else CPU. CUDA's libraries are under
+      # NVIDIA's CUDA EULA, accepted only on that branch.
       (mkIf cfg.ollama.enable {
+        my.system.allowedUnfreeLicenses = mkIf isCuda [ "CUDA EULA" ];
+
         services.ollama = {
           enable = true;
           package =

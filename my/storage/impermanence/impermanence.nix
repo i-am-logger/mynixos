@@ -44,42 +44,15 @@ in
       neededForBoot = true;
     };
 
-    # Bind-mount ccache from persist to /tmp/ccache
-    fileSystems."/tmp/ccache" = mkIf cfg.enableCcache {
-      device = "${persistPath}/cache/ccache";
-      fsType = "none";
-      options = [ "bind" ];
-      neededForBoot = false; # ccache isn't needed for boot
-    };
-
-    # Enable ccache system-wide with proper configuration
-    programs.ccache = mkIf cfg.enableCcache {
-      enable = true;
-      cacheDir = "/tmp/ccache";
-      # Note: This will automatically set up proper permissions (0770 root:nixbld)
-      # and wrap compilers system-wide
-    };
-
-    # Set CCACHE_DIR environment variable system-wide for all users
-    # This ensures manual use of ccache (e.g., in nix-shell) uses the system cache
-    environment.sessionVariables = mkIf cfg.enableCcache {
-      CCACHE_DIR = "/tmp/ccache";
-    };
-
     # Create persist directory if not using dedicated partition
     systemd.tmpfiles.rules =
-      (optionals (!cfg.useDedicatedPartition) (
+      optionals (!cfg.useDedicatedPartition) (
         [
           "d ${persistPath} 0755 root root -"
           "d ${persistPath}/home 0755 root root -"
         ]
         ++ (map (user: "d ${persistPath}/home/${user} 0755 ${user} users -") userNames)
-      ))
-      ++ (optionals cfg.enableCcache [
-        "d ${persistPath}/cache 0755 root root -"
-        "d ${persistPath}/cache/ccache 0775 root nixbld -"
-        "d /tmp/ccache 0775 root nixbld -"
-      ]);
+      );
 
     # Persistence configuration
     environment.persistence."${persistPath}" = {

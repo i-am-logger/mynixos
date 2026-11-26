@@ -7,39 +7,12 @@ let
 in
 {
   config = mkIf (cfg == "nvidia") {
-    # Allow NVIDIA unfree packages
+    # The driver only. CUDA is not the GPU profile's: whatever uses it
+    # (ollama-cuda under my.ai) brings it, and its licence, along.
     my.system.allowedUnfreePackages = [
       "nvidia-x11"
       "nvidia-settings"
       "nvidia-persistenced"
-      "cudatoolkit"
-      # The single derivation nixpkgs' cuda-modules now merges the redistributable
-      # components into. Referencing `cudatoolkit` anywhere -- my/streaming adds it
-      # to OpenCV's nativeBuildInputs so OBS gets CUDA -- pulls this in, and it
-      # carries its own "CUDA EULA" license, so the component names below do not
-      # cover it.
-      "cuda-merged"
-      "cuda_cccl"
-      "cuda_cudart"
-      "cuda_cuobjdump"
-      "cuda_cupti"
-      "cuda_cuxxfilt"
-      "cuda_gdb"
-      "cuda_nvcc"
-      "cuda_nvdisasm"
-      "cuda_nvml_dev"
-      "cuda_nvprune"
-      "cuda_nvrtc"
-      "cuda_nvtx"
-      "cuda_profiler_api"
-      "cuda_sanitizer_api"
-      "libcublas"
-      "libcufft"
-      "libcurand"
-      "libcusolver"
-      "libcusparse"
-      "libnpp"
-      "libnvjitlink"
     ];
 
     # NVIDIA GPU driver configuration
@@ -56,8 +29,6 @@ in
     # Video drivers (can be extended by hardware-specific configs)
     services.xserver.videoDrivers = mkDefault [ "nvidia" ];
 
-    nixpkgs.config.cudaSupport = true;
-
     hardware.nvidia = {
       open = true;
       modesetting.enable = true;
@@ -71,11 +42,7 @@ in
       package = config.boot.kernelPackages.nvidiaPackages.stable;
     };
 
-    environment.systemPackages = with pkgs; [
-      cudatoolkit
-      linuxPackages.nvidia_x11
-      nvtopPackages.full
-    ];
+    environment.systemPackages = [ pkgs.nvtopPackages.full ];
 
     # NVIDIA kernel modules
     boot = {
@@ -87,12 +54,6 @@ in
       ];
     };
 
-    # NVIDIA udev rules for proper device permissions
-    services.udev.extraRules = ''
-      KERNEL=="nvidia*", GROUP="video", MODE="0666"
-      KERNEL=="nvidiactl", GROUP="video", MODE="0666"
-    '';
-
     # NVIDIA persistenced service configuration
     systemd.services.nvidia-persistenced = {
       serviceConfig = {
@@ -103,12 +64,6 @@ in
     };
 
     my.system = {
-      # cudaSupport pulls CUDA's libraries into whatever builds against them
-      # (opencv under OBS's scene switcher, for one), and they are all under
-      # NVIDIA's CUDA EULA: accept that licence where CUDA is asked for. The
-      # names in allowedUnfreePackages above predate it and stay harmless.
-      allowedUnfreeLicenses = [ "CUDA EULA" ];
-
       # Persistence configuration
       persistence.features = {
         systemDirectories = [

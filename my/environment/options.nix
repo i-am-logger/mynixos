@@ -8,19 +8,6 @@
       options = {
         enable = lib.mkEnableOption "environment configuration (variables, XDG, locale)";
 
-
-        editor = lib.mkOption {
-          type = lib.types.nullOr lib.types.package;
-          default = null;
-          description = "Default text editor package (mynixos default: helix). Null means use the mynixos default.";
-        };
-
-        browser = lib.mkOption {
-          type = lib.types.nullOr lib.types.package;
-          default = null;
-          description = "Default web browser package (mynixos default: brave). Null means use the mynixos default.";
-        };
-
         # Graphical login as INTENT (mechanism vs look, typed) — the
         # my.environment.displayManager tree is hard-removed (repo policy:
         # no renames, no stubs). `backend` picks the display manager;

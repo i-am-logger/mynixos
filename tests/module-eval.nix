@@ -647,6 +647,73 @@ in
       touch $out
     '';
 
+  # rebuild-system / test-system / build-system, RUN against a scratch flake
+  # with nixos-rebuild and sudo stubbed to print their argv. A switch builds
+  # from flake.lock and nothing else: rebuild-system never adds a localInputs
+  # override and refuses --local. test-system and build-system add one only
+  # under --local, only for a checkout that is actually there, and say which.
+  #
+  # The checkout is a store path, so it exists inside the sandbox; vogix names
+  # a path that does not, and must never be overridden.
+  system-scripts-local-inputs =
+    let
+      checkout = pkgs.emptyDirectory;
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [
+          baseConfig
+          {
+            my.system = {
+              enable = true;
+              localInputs = { mynixos = "${checkout}"; vogix = "/nonexistent/vogix"; };
+            };
+          }
+        ];
+      };
+      script = name: lib.findFirst (p: (p.name or "") == name)
+        (throw "FAIL: module-eval-system-scripts-local-inputs -- no ${name} package")
+        eval.config.environment.systemPackages;
+      bin = name: "${script name}/bin/${name}";
+    in
+    pkgs.runCommand "module-eval-system-scripts-local-inputs" { } ''
+      set -u
+      mkdir -p stub home/.flake
+      export HOME=$PWD/home
+      echo '{}' > home/.flake/flake.nix
+      echo '{"nodes":{"root":{"inputs":{}}},"root":"root","version":7}' > home/.flake/flake.lock
+      printf '#!${pkgs.runtimeShell}\necho "ARGV: $0 $*"\n' > stub/nixos-rebuild
+      printf '#!${pkgs.runtimeShell}\nexec "$@"\n' > stub/sudo
+      chmod +x stub/*
+      export PATH=$PWD/stub:$PATH
+
+      fail() { echo "FAIL: $*"; echo "--- stdout"; cat out; echo "--- stderr"; cat err; exit 1; }
+      run() { rc=0; "$@" >out 2>err || rc=$?; }
+      ok() { [ "$rc" = 0 ] || fail "$1 exited $rc"; grep -q "^ARGV: .*nixos-rebuild $2 --flake \.#" out || fail "$1 did not run nixos-rebuild $2"; }
+      lock_only() { ! grep -q -- --override-input out || fail "$1 overrode an input"; }
+      overrides() {
+        grep -q "^ARGV: .*nixos-rebuild $2 --flake \.# --override-input mynixos ${checkout}$" out || fail "$1 did not override mynixos"
+        grep -q "local input: mynixos -> ${checkout}" err || fail "$1 did not say what it overrode"
+        ! grep -q vogix out || fail "$1 overrode an absent checkout"
+      }
+
+      run ${bin "rebuild-system"}; ok rebuild-system switch; lock_only rebuild-system
+      run ${bin "rebuild-system"} --local
+      [ "$rc" != 0 ] || fail "rebuild-system --local did not refuse"
+      ! grep -q ARGV out || fail "rebuild-system --local still ran nixos-rebuild"
+      grep -q "test-system --local" err || fail "rebuild-system --local did not point at test-system --local"
+
+      for s in ${bin "test-system"}:test ${bin "build-system"}:build; do
+        bin=''${s%:*} action=''${s##*:} name=''${bin##*/}
+        run "$bin"; ok "$name" "$action"; lock_only "$name"
+        run "$bin" --local; ok "$name --local" "$action"; overrides "$name --local" "$action"
+        run "$bin" --local bogus
+        [ "$rc" = 2 ] && grep -q Usage err || fail "$name --local did not pass the other arguments through"
+      done
+
+      echo "PASS: system-scripts-local-inputs"
+      touch $out
+    '';
+
   user-features = evalTest "user-features" {
     networking.hostName = "test-user-features";
     my.users.testuser = {
@@ -2875,6 +2942,179 @@ in
       moduleLoaded = lib.elem "v4l2loopback" config.boot.kernelModules;
       cameraNamed = lib.hasInfix ''card_label="OBS Virtual Camera"'' config.boot.extraModprobeConfig;
       noVideoDomain = !(config.my ? video);
+      # The module loads at boot; nobody needs root's modprobe through polkit.
+      noModprobeGrant = !(lib.hasInfix "policykit.exec" config.security.polkit.extraConfig)
+        && !(lib.hasInfix "modprobe" config.security.polkit.extraConfig);
+    });
+
+  # A host with only the base domains on carries nothing that belongs to a
+  # feature it did not enable, and grants nothing root-equivalent by default.
+  bare-host-defaults = evalClauses "bare-host-defaults"
+    {
+      networking.hostName = "test-bare";
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my = {
+        system.enable = true;
+        environment.enable = true;
+        storage.impermanence.enable = true;
+        users.bareuser = {
+          fullName = "Bare User";
+          description = "bare";
+          email = "bare@example.com";
+        };
+      };
+    }
+    (config:
+      let sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
+      in {
+        # Rebuilds are the owner's action, never a 04:40 timer's.
+        noAutoUpgrade = !config.system.autoUpgrade.enable;
+        # gpg-agent and its SSH socket are the security key's (yubico).
+        noGpgAgent = !config.programs.gnupg.agent.enable;
+        noSshAuthSock = !(config.environment.sessionVariables ? SSH_AUTH_SOCK);
+        # EDITOR/BROWSER are per-user selections, not host store paths.
+        noHostEditorBrowser = !(lib.hasInfix "helix" (config.environment.variables.EDITOR or ""))
+          && !(config.environment.variables ? BROWSER)
+          && !(config.environment.sessionVariables ? DEFAULT_BROWSER)
+          && !(lib.elem "brave" sys);
+        # Trust follows the admin role, not mere existence of an account.
+        trustedByRole = lib.all (u: lib.elem u [ "root" "@wheel" ]) config.nix.settings.trusted-users
+          && !(lib.elem "bareuser" config.nix.settings.trusted-users);
+        noWorldWritableDevices = !(lib.hasInfix "0666" config.services.udev.extraRules);
+        # A compiler cache is a build tool; the host builds nothing.
+        noCcache = !config.programs.ccache.enable && !(lib.elem "ccache" sys)
+          && !(config.environment.sessionVariables ? CCACHE_DIR);
+      });
+
+  yubico-owns-gpg-agent = evalClauses "yubico-owns-gpg-agent"
+    {
+      networking.hostName = "test-yubico-agent";
+      my = {
+        system.enable = true;
+        hardware.securityKeys.yubico.enable = true;
+        users.keyuser = {
+          fullName = "Key User";
+          description = "key";
+          email = "key@example.com";
+        };
+      };
+    }
+    (config: {
+      agent = config.programs.gnupg.agent.enable && config.programs.gnupg.agent.enableSSHSupport;
+      sshAuthSock = config.environment.sessionVariables ? SSH_AUTH_SOCK;
+    });
+
+  # The NVIDIA profile is the driver, not a CUDA toolchain: no nvcc on the
+  # host, no global cudaSupport rebuilding everything with CUDA, and no
+  # world-writable device nodes. CUDA arrives with the thing that uses it.
+  lean-nvidia = evalClauses "lean-nvidia"
+    {
+      networking.hostName = "test-nvidia";
+      my = {
+        system.enable = true;
+        hardware.gpu = "nvidia";
+        ai = { enable = true; ollama.enable = true; };
+        users.gpuuser = {
+          fullName = "GPU User";
+          description = "gpu";
+          email = "gpu@example.com";
+        };
+      };
+    }
+    (config:
+      let sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
+      in {
+        noToolkit = !(lib.any (n: lib.elem n sys) [ "cudatoolkit" "cuda_nvcc" "cuda-merged" ]);
+        noGlobalCuda = !(config.nixpkgs.config.cudaSupport or false);
+        noWorldWritableDevices = !(lib.hasInfix "0666" config.services.udev.extraRules);
+        # ollama-cuda carries no marker of its own; the CUDA licence is granted
+        # only on the CUDA branch, so its presence is the branch.
+        cudaLicenceWithOllama = lib.elem "CUDA EULA" config.my.system.allowedUnfreeLicenses;
+      });
+
+  lean-nvidia-no-ai = evalClauses "lean-nvidia-no-ai"
+    {
+      networking.hostName = "test-nvidia-plain";
+      my = {
+        system.enable = true;
+        hardware.gpu = "nvidia";
+        users.gpuuser = {
+          fullName = "GPU User";
+          description = "gpu";
+          email = "gpu@example.com";
+        };
+      };
+    }
+    (config: {
+      noCudaLicence = !(lib.elem "CUDA EULA" config.my.system.allowedUnfreeLicenses);
+      noCudaUnfree = !(lib.any (lib.hasPrefix "cuda") config.my.system.allowedUnfreePackages);
+    });
+
+  # The Stream Deck is a device: its UI follows the device switch, and only
+  # its OBS buttons follow OBS. Its Qt fixes stay inside its own wrapper.
+  streamdeck-without-obs = evalClauses "streamdeck-without-obs"
+    {
+      networking.hostName = "test-deck";
+      my = {
+        hardware.peripherals.elgato.streamdeck.enable = true;
+        users.deckuser = {
+          fullName = "Deck User";
+          description = "deck";
+          email = "deck@example.com";
+          graphical.enable = true;
+        };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.deckuser;
+      in {
+        ui = lib.elem "streamdeck-ui" (map (p: p.pname or "") hm.home.packages);
+        micButton = hm.home.file ? ".local/bin/mic-toggle";
+        noObsButtons = !(hm.home.file ? ".local/bin/obs-virtualcam-toggle")
+          && !(lib.hasInfix "obs-virtualcam" (hm.home.file.".streamdeck_ui.json".text or ""));
+        noGlobalQtHack = !(config.environment.sessionVariables ? QT_QPA_PLATFORM_PLUGIN_PATH)
+          && !(config.environment.sessionVariables ? QT_LOGGING_RULES);
+      });
+
+  streamdeck-with-obs = evalClauses "streamdeck-with-obs"
+    {
+      networking.hostName = "test-deck-obs";
+      my = {
+        hardware.peripherals.elgato.streamdeck.enable = true;
+        users.deckuser = {
+          fullName = "Deck User";
+          description = "deck";
+          email = "deck@example.com";
+          graphical = { enable = true; streaming.enable = true; };
+        };
+      };
+    }
+    (config:
+      let hm = config.home-manager.users.deckuser;
+      in {
+        obsButtons = hm.home.file ? ".local/bin/obs-virtualcam-toggle"
+          && lib.hasInfix "obs-virtualcam" (hm.home.file.".streamdeck_ui.json".text or "");
+      });
+
+  # The per-user Hyprland switch decides the system-level Hyprland too.
+  hyprland-follows-user-switch = evalClauses "hyprland-follows-user-switch"
+    {
+      networking.hostName = "test-no-hypr";
+      my.users.nohypr = {
+        fullName = "No Hypr";
+        description = "nohypr";
+        email = "nohypr@example.com";
+        graphical.enable = true;
+        apps.graphical.windowManagers.hyprland.enable = false;
+      };
+    }
+    (config: {
+      noHyprland = !config.programs.hyprland.enable;
+      noSession = !(lib.any (p: lib.elem "hyprland" (p.providedSessions or [ ])) config.services.displayManager.sessionPackages);
     });
 
   streaming-virtual-camera-off = evalClauses "streaming-virtual-camera-off"
