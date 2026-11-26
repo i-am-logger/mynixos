@@ -153,7 +153,6 @@ in
       ../my/users/apps/editors/marktext
 
       # File managers / utils
-      ../my/users/apps/file-managers/mc
       ../my/users/apps/file-managers/yazi
       ../my/users/apps/file-utils/lsd
 
@@ -231,5 +230,6 @@ in
       ../my/users/apps/security/pass
       ../my/users/apps/security/gopass
       ../my/users/apps/security/ripasso
+      ../my/users/apps/security/sops
     ];
 }

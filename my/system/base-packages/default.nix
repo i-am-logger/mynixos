@@ -5,9 +5,10 @@
 # x86_64-linux and aarch64-darwin and does the same job on each.
 #
 # Only what every host needs before anyone has chosen anything. The rest has an
-# owner: sops comes with my.secrets, pass with the password app
-# (apps.security.passwords.pass), and mc, yazi, helix, fastfetch, btop and
-# screen are per-user apps -- so turning one off removes it.
+# owner: sops and pass are per-user apps (apps.security.secrets.sops,
+# apps.security.passwords.pass), as are yazi, helix, fastfetch, btop and
+# screen -- so turning one off removes it. mc is here: it is the rescue file
+# manager, wanted on a host before (or without) any user's apps.
 #
 # Deliberately NOT here: usbutils, pciutils, tcpdump and plymouth. They stay in
 # my/system/core because lsusb/lspci report nothing useful on macOS (which has
@@ -23,6 +24,7 @@ in
       tree
       wget
       curl
+      mc
     ];
   };
 }

@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
@@ -105,7 +105,8 @@ in
       };
     };
 
-    # Ensure sops CLI is available
-    environment.systemPackages = [ pkgs.sops ];
+    # No sops CLI on the host: activation decrypts with sops-nix's own
+    # sops-install-secrets, and editing the file is a person's job
+    # (apps.security.secrets.sops).
   };
 }

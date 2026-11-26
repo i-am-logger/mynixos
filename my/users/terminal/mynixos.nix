@@ -30,10 +30,6 @@
           # File utilities
           fileUtils.lsd.enable = lib.mkDefault true;
 
-          # File managers
-          # environment.FILE_MANAGER picks the primary file manager.
-          fileManagers.mc.enable = lib.mkDefault false;
-
           # System info
           sysinfo = {
             fastfetch.enable = lib.mkDefault true;

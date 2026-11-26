@@ -2995,10 +2995,46 @@ in
         noFirmwareWithoutProfile = !config.hardware.enableRedistributableFirmware;
         noDevenvCache = !(lib.hasInfix "devenv.cachix" config.nix.extraOptions)
           && !(lib.any (lib.hasInfix "devenv.cachix") (config.nix.settings.extra-substituters or [ ]));
-        # The base CLI set is curl, wget and tree; the rest are per-user apps.
-        baseCliOnly = !(lib.any (n: lib.elem n sys) [ "mc" "yazi" "helix" "fastfetch" "btop" "screen" "sops" "password-store" ])
-          && lib.all (n: lib.elem n sys) [ "curl" "wget" "tree" ];
+        # The base CLI set is curl, wget, tree and mc; the rest are per-user apps.
+        baseCliOnly = !(lib.any (n: lib.elem n sys) [ "yazi" "helix" "fastfetch" "btop" "screen" "sops" "password-store" "pass-env" ])
+          && lib.all (n: lib.elem n sys) [ "curl" "wget" "tree" "mc" ];
         notAdmin = !(lib.elem "wheel" config.users.users.bareuser.extraGroups);
+      });
+
+  # sops and pass belong to the person who edits the store, not the host:
+  # my.secrets decrypts at activation without the CLI.
+  secrets-tools-per-user = evalClauses "secrets-tools-per-user"
+    {
+      networking.hostName = "test-secrets-tools";
+      my = {
+        system.enable = true;
+        secrets.enable = true;
+        users.editor = {
+          fullName = "Editor";
+          description = "editor";
+          email = "editor@example.com";
+          apps.security = {
+            secrets.sops.enable = true;
+            passwords.pass.enable = true;
+          };
+        };
+        users.other = {
+          fullName = "Other";
+          description = "other";
+          email = "other@example.com";
+        };
+      };
+    }
+    (config:
+      let
+        names = ps: map (p: p.pname or (lib.getName p)) ps;
+        sys = names config.environment.systemPackages;
+        hm = u: names config.home-manager.users.${u}.home.packages;
+      in
+      {
+        notOnHost = !(lib.elem "sops" sys) && !(lib.elem "pass-env" sys);
+        editorHasBoth = lib.elem "sops" (hm "editor") && lib.elem "pass-env" (hm "editor");
+        otherHasNeither = !(lib.elem "sops" (hm "other")) && !(lib.elem "pass-env" (hm "other"));
       });
 
   yubico-owns-gpg-agent = evalClauses "yubico-owns-gpg-agent"
@@ -3582,15 +3618,31 @@ in
           fullName = "Key User";
           description = "key";
           email = "key@example.com";
+          # A user WITH a key: the per-user half of the module is what used
+          # to install gopass and pass-import. Placeholder, evaluation only.
+          yubikeys = [{
+            serial = "1";
+            keyId = "AAAAAAAA";
+            fingerprint = "AAAA";
+            sshKeygrip = "GRIP";
+            publicKeyPath = ./module-eval.nix;
+            u2fKeyHandle = "HANDLE";
+            u2fPublicKey = "PUB";
+          }];
         };
       };
     }
     (config:
-      let sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
-      in {
+      let
+        sys = map (p: p.pname or (lib.getName p)) config.environment.systemPackages;
+        hm = map (p: p.pname or (lib.getName p)) config.home-manager.users.keyuser.home.packages;
+        managers = [ "gopass" "gopass-jsonapi" "pass-import" "pass-env" "password-store" "ripasso-cursive" "libsecret" ];
+      in
+      {
         noKeyringPolicy = !(config.environment.sessionVariables ? DISABLE_GNOME_KEYRING)
           && !config.services.gnome.glib-networking.enable;
-        noPasswordManagers = !(lib.any (n: lib.elem n sys) [ "gopass" "ripasso-cursive" "libsecret" ]);
+        noPasswordManagers = !(lib.any (n: lib.elem n sys) managers);
+        noUserPasswordManagers = !(lib.any (n: lib.elem n hm) managers);
         pcscd = config.services.pcscd.enable;
       });
 
@@ -3612,7 +3664,7 @@ in
           && config.environment.sessionVariables.DISABLE_GNOME_KEYRING or null == "1";
         glibNetworking = config.services.gnome.glib-networking.enable;
         dconf = config.programs.dconf.enable;
-        passwordApps = lib.all (n: lib.elem n names) [ "gopass" "ripasso-cursive" "password-store" ];
+        passwordApps = lib.all (n: lib.elem n names) [ "gopass" "ripasso-cursive" "pass-env" ];
       });
 
   # The hardware profiles bring firmware only when the profile is the machine.

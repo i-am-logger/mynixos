@@ -34,12 +34,10 @@ in
           hasYubikeys = (length userCfg.yubikeys) > 0;
         in
         mkIf hasYubikeys {
-          # Install YubiKey-related packages
+          # Install YubiKey-related packages. Password managers are not key
+          # plumbing: they are apps.security.passwords.{pass,gopass,ripasso}.
           home = {
             packages = with pkgs; [
-              gopass
-              gopass-jsonapi # Browser integration
-              pkgs.passExtensions.pass-import # Import from other password managers
 
               # Smart GPG wrapper that detects which YubiKey is available
               (pkgs.writeShellScriptBin "gpg-smart" ''
@@ -137,68 +135,11 @@ in
                 force = true;
               };
 
-              # Initialize password store with all YubiKey GPG keys for redundancy
+              # The key's half of a pass store: which keys encrypt it (all of
+              # them, for redundancy). The store itself, and the tools that
+              # read it, are apps.security.passwords.{pass,gopass,ripasso}.
               ".password-store/.gpg-id" = {
                 text = concatMapStringsSep "\n" (yk: yk.keyId) userCfg.yubikeys;
-                force = true;
-              };
-
-              # Gopass configuration with auto-sync
-              ".config/gopass/config.yml" = {
-                text = ''
-                  core:
-                    autopush: true
-                    autosync: true
-                    cliptimeout: 45
-                    exportkeys: true
-                    notifications: true
-                    follow-references: false
-                  pwgen:
-                    xkcd-lang: en
-                  mounts:
-                    path: /home/${name}/.password-store
-                '';
-                force = true;
-              };
-
-              # Gopass browser integration for Brave
-              ".config/BraveSoftware/Brave-Browser/NativeMessagingHosts/com.justwatch.gopass.json" = {
-                text = builtins.toJSON {
-                  name = "com.justwatch.gopass";
-                  description = "Gopass wrapper to search and return passwords";
-                  path = "/home/${name}/.config/gopass/gopass_wrapper.sh";
-                  type = "stdio";
-                  allowed_origins = [
-                    "chrome-extension://kkhfnlkhiapbiehimabddjbimfaijdhk/"
-                  ];
-                };
-                force = true;
-              };
-
-              # Gopass wrapper script for browser integration
-              ".config/gopass/gopass_wrapper.sh" = {
-                text = ''
-                  #!/bin/sh
-
-                  export PATH="$PATH:$HOME/.nix-profile/bin"
-                  export PATH="$PATH:/usr/local/bin"
-                  export PATH="$PATH:/usr/local/MacGPG2/bin"
-                  GPG_TTY="$(tty 2>/dev/null)" && export GPG_TTY
-
-                  if [ -f ~/.gpg-agent-info ] && [ -n "$(pgrep gpg-agent)" ]; then
-                    source ~/.gpg-agent-info
-                    export GPG_AGENT_INFO
-                  else
-                    eval $(gpg-agent --daemon)
-                  fi
-
-                  export PATH="$PATH:/usr/local/bin"
-
-                  ${pkgs.gopass-jsonapi}/bin/gopass-jsonapi listen
-
-                  exit $?
-                '';
-                executable = true;
                 force = true;
               };
             };
@@ -340,27 +281,6 @@ in
                 };
               };
             };
-
-            # Password store configuration
-            password-store = {
-              enable = true;
-              package = pkgs.pass.withExtensions (exts: [ exts.pass-otp ]);
-              settings = {
-                PASSWORD_STORE_DIR = "$HOME/.password-store";
-                PASSWORD_STORE_CLIP_TIME = "45";
-              };
-            };
-
-            # Browser integration for pass
-            browserpass = {
-              enable = true;
-              browsers = [
-                "firefox"
-                "chrome"
-                "chromium"
-                "brave"
-              ];
-            };
           };
 
           # GPG agent configuration
@@ -417,7 +337,6 @@ in
       ];
       userDirectories = [
         ".gnupg"
-        ".password-store"
         ".yubico"
         ".ssh"
       ];
