@@ -94,7 +94,6 @@ in
         crun
         podman-compose
         podman-tui
-        minikube
         lazydocker
       ];
     })
@@ -116,7 +115,6 @@ in
 
       environment.systemPackages = with pkgs; [
         docker-compose
-        minikube
         runc
         lazydocker
       ];

@@ -23,8 +23,12 @@ args:
         helix
         alejandra
 
+        # Language servers that need a compiler toolchain (clangd, lldb,
+        # rust-analyzer, cmake) are NOT here: each project's devenv supplies
+        # them, matched to its toolchain, and the main OS stays without one.
+        # helix ships its own tree-sitter grammars.
+
         # pkgs.nodePackages.bash-language-server
-        cmake-language-server
         marksman
         markdown-oxide
 
@@ -32,9 +36,6 @@ args:
         # lazygit
         nil
         # pkgs.rnix-lsp
-        rust-analyzer
-        lldb
-        clang-tools
         # ocamlPackages.ocaml-lsp
         vscode-langservers-extracted
         # dockerfile-language-server-nodejs
@@ -50,8 +51,6 @@ args:
         taplo
         github-copilot-cli
         # pkgs.vimPlugins.copilot-vim
-        tree-sitter
-        (tree-sitter.withPlugins (_: tree-sitter.allGrammars))
         # nixpkgs-fmt
         # nixfmt
         nixfmt
@@ -223,7 +222,8 @@ args:
                 args = [ "--stdio" ];
               };
               nil.command = "${nil}/bin/nil";
-              rust-analyzer.command = "${rust-analyzer-unwrapped}/bin/rust-analyzer";
+              # From PATH: the project's devenv supplies the one matching its toolchain.
+              rust-analyzer.command = "rust-analyzer";
               rust-analyzer.config = {
                 "inlayHints.bindingModeHints.enable" = true;
                 "inlayHints.closingBraceHints.minLines" = 10;

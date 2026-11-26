@@ -2757,6 +2757,40 @@ in
         ignoreMsrs = lib.hasInfix "ignore_msrs=1" config.boot.extraModprobeConfig;
       });
 
+  # The main OS carries no build toolchains or dev libraries: compilers,
+  # debuggers, toolchain-bound language servers and source converters come
+  # per project from devenv. Each name below dragged a C/C++ toolchain or
+  # gigabytes of dev closure into every host that enabled its module.
+  lean-no-dev-tools = evalClauses "lean-no-dev-tools"
+    {
+      networking.hostName = "test-lean";
+      my = {
+        hardware = { gpu = "amd"; audio.enable = true; };
+        ai = { enable = true; ollama.enable = true; };
+        virtualisation.containers = { podman.enable = true; docker.enable = true; };
+        users.leanuser = {
+          fullName = "Lean User";
+          description = "lean";
+          email = "lean@example.com";
+          apps.graphical.editors.helix.enable = true;
+        };
+      };
+    }
+    (config:
+      let
+        names = map (p: p.pname or (lib.getName p));
+        sys = names config.environment.systemPackages;
+        hm = names config.home-manager.users.leanuser.home.packages;
+        none = bad: list: !(lib.any (n: lib.elem n bad) list);
+      in
+      {
+        systemHasNoDevTools = none [ "alsa-tools" "hipify" "rocm-runtime" "rocm-device-libs" "minikube" "opencv" ] sys;
+        helixHasNoToolchainServers = none [ "clang-tools" "lldb" "rust-analyzer" "cmake-language-server" "tree-sitter" ] hm;
+        helixKept = lib.elem "helix" hm;
+        rocmSmiKept = lib.elem "rocm-smi" sys;
+        alsaUtilsKept = lib.elem "alsa-utils" sys;
+      });
+
   vm-quickemu-off = evalAssert "vm-quickemu-off"
     {
       networking.hostName = "test-vm-off";

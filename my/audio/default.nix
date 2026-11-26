@@ -35,7 +35,7 @@ in
 
     # Audio utilities
     environment.systemPackages = with pkgs; [
-      alsa-tools
+      # Not alsa-tools: its fltk GUIs pin the whole gcc toolchain (1.3 GiB).
       alsa-utils
     ];
 

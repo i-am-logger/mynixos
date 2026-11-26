@@ -63,12 +63,9 @@ in
     { my.ai.enable = mkDefault anyUserAI; }
 
     (mkIf cfg.enable (mkMerge [
-      # OpenCV for AI/vision workloads. Its enableCuda defaults to
-      # nixpkgs.config.cudaSupport, so this is the CUDA build wherever
-      # cudaSupport is on and the plain CPU build otherwise.
-      {
-        environment.systemPackages = [ pkgs.opencv ];
-      }
+      # No OpenCV in the system path: a library is linked by the software that
+      # needs it (or a project's devenv), never installed globally. Its CUDA
+      # build still follows cudaSupport wherever a package pulls it in.
 
       # Ollama service — package variant follows `acceleration`: CUDA when
       # cudaSupport is on, ROCm on an AMD GPU, else CPU.
@@ -114,10 +111,7 @@ in
       # ROCm-specific configuration (AMD GPU)
       (mkIf (cfg.ollama.enable && isRocm) {
         environment.systemPackages = with pkgs; [
-          rocmPackages.rocm-runtime
-          rocmPackages.rocm-device-libs
           rocmPackages.rocm-smi
-          rocmPackages.hipify
         ];
 
         environment.variables = {
