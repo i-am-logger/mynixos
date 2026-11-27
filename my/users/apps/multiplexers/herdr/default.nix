@@ -25,11 +25,14 @@ let
 
   packages = {
     projects = pkgs.callPackage ../../../../../packages/herdr-projects { };
-    clauth = pkgs.callPackage ../../../../../packages/clauth { };
     radar = pkgs.callPackage ../../../../../packages/herdr-radar { };
     usage = pkgs.callPackage ../../../../../packages/herdr-claude-usage-multi { };
     reviewr = pkgs.callPackage ../../../../../packages/herdr-reviewr { };
   };
+
+  # Plugin ids mynixos used to link and no longer packages (clauth, removed
+  # 2026-11-27). Unlink only touches an entry whose root is a store path.
+  retired = [ "clauth" ];
 
   # herdr 0.9.5's built-in bindings with a default (`herdr --default-config`,
   # [keys]; src/config/keys). `prefix+1..9` (switch_tab) is expanded, and
@@ -73,7 +76,6 @@ let
   # Every enabled plugin key as { owner, key }, for the collision checks.
   pluginKeys = plugins:
     optional plugins.projects.enable { owner = "projects.popupKey"; key = plugins.projects.popupKey; }
-    ++ optional plugins.clauth.enable { owner = "clauth.popupKey"; key = plugins.clauth.popupKey; }
     ++ optional plugins.usage.enable { owner = "usage.popupKey"; key = plugins.usage.popupKey; }
     ++ optional plugins.reviewr.enable { owner = "reviewr.toggleKey"; key = plugins.reviewr.toggleKey; };
 
@@ -168,12 +170,6 @@ let
               command = "herdr-projects.open-popup";
               description = "Projects";
             }
-          ++ optional (on "clauth") {
-            key = plugins.clauth.popupKey;
-            type = "plugin_action";
-            command = "clauth.open";
-            description = "clauth accounts";
-          }
           # The plugin's pane, opened the way its README does: herdr sets
           # HERDR_BIN_PATH to its own binary for every command it runs.
           ++ optional (on "usage") {
@@ -226,21 +222,6 @@ let
           optional (on "projects") projectsSpaceCard
           ++ optionals (on "usage") usageSpaceRows;
       })
-
-      # rows_by_agent.claude REPLACES `rows` for every Claude pane -- here,
-      # nearly every pane. clauth's own row (herdr-plugin/README.md) would drop
-      # herdr-projects' card and sub-line wherever both are on, so the combined
-      # form keeps the card, appends $clauth, and keeps the sub-line.
-      (optionalAttrs (on "clauth") {
-        ui.sidebar.agents.rows_by_agent.claude =
-          if on "projects"
-          then [ (projectsAgentCard ++ [ "$clauth" ]) projectsSubRow ]
-          else [
-            [ "state_icon" "workspace" "tab" ]
-            [ "terminal_title_stripped" ]
-            [ "agent" "$clauth" ]
-          ];
-      })
     ];
 
   configFor = paths: userCfg:
@@ -272,10 +253,6 @@ in
             })
             enabled
           ++ [
-            {
-              assertion = !plugins.clauth.enable || userCfg.apps.ai.tools.clauth.enable;
-              message = "my.users.${name}.terminal.herdr.plugins.clauth needs apps.ai.tools.clauth.enable";
-            }
             {
               assertion = length (unique normalised) == length normalised;
               message = "my.users.${name}.terminal.herdr.plugins: two plugins bind one key (${concatMapStringsSep ", " (k: "${k.owner} = ${k.key}") keys})";
@@ -315,11 +292,14 @@ in
 
             # Runs after linkGeneration so a new config.toml is in place first.
             # Every plugin is listed, on or off, so turning one off unlinks it.
+            # So is every plugin mynixos has dropped (`retired`): its store
+            # entry would otherwise stay in plugins.json until a GC broke it.
             home.activation.herdrPlugins = lib.hm.dag.entryAfter [ "linkGeneration" ] (registry.script {
               inherit configHome stateHome;
               plugins = mapAttrsToList
                 (n: pkg: { id = pkg.pluginId; root = rootOf pkg; inherit (plugins.${n}) enable; })
-                packages;
+                packages
+              ++ map (id: { inherit id; enable = false; }) retired;
             });
           }
 

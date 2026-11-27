@@ -67,15 +67,6 @@ in
                   popupKey = key "prefix+a" "opens the Projects popup (the plugin's own default)";
                 };
 
-                clauth = {
-                  enable = lib.mkEnableOption ''
-                    clauth's herdr plugin: an accounts popup and a per-pane
-                    account tag in the sidebar. Requires apps.ai.tools.clauth
-                  '';
-                  # clauth's own default is prefix+a, which is herdr-projects'.
-                  popupKey = key "prefix+u" "opens the clauth popup";
-                };
-
                 radar = {
                   enable = lib.mkEnableOption ''
                     the herdr-radar plugin. It publishes its own pane and Space
@@ -90,10 +81,8 @@ in
                   enable = lib.mkEnableOption ''
                     the Claude plan usage gauge (herdr-claude-usage-multi):
                     Session/Week percentages on every Space row. It reads the
-                    global Claude Code login, so with clauth it follows
-                    whichever profile clauth has switched to
+                    global Claude Code login
                   '';
-                  # The plugin's README suggests prefix+u, which clauth has.
                   popupKey = key "prefix+shift+u" "opens the usage popup";
                 };
 

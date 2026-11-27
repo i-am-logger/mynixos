@@ -409,29 +409,27 @@ in
   herdr-plugins-reviewr-old-herdr = herdrRefuses "herdr-plugins-reviewr-old-herdr" "0.9.2" "reviewr needs herdr >= 0.9.3"
     (herdrUser { plugins.reviewr.enable = true; } { });
 
-  # clauth's plugin needs the clauth app, both directions; with herdr-projects
-  # on, the claude row is herdr-projects' card plus $clauth.
-  herdr-plugins-clauth = herdrAccepts "herdr-plugins-clauth" "0.9.5" "needs apps.ai.tools.clauth.enable"
-    (herdrUser { plugins = { projects.enable = true; clauth.enable = true; }; } { apps.ai.tools.clauth.enable = true; })
+  # clauth is gone (app, package, daemon, herdr plugin). Its herdr
+  # registration from earlier generations is unlinked on activation, so the
+  # registry never keeps an entry naming a garbage-collected store path.
+  no-clauth = evalAssert "no-clauth"
+    (herdrUser { plugins.projects.enable = true; } { })
     (config:
       let
+        u = config.my.users.muxuser;
         hm = hmOf config;
-        claudeRows = (herdrSettings hm).ui.sidebar.agents.rows_by_agent.claude;
       in
-      hasPname "clauth" hm
-      && keysOf hm == [ "herdr-projects.open-popup" "clauth.open" ]
-      && lib.last (builtins.head claudeRows) == "$clauth"
-      && builtins.length claudeRows == 2
-      && lib.hasInfix "share/herdr-plugins/clauth" (activation hm));
-
-  herdr-plugins-clauth-needs-app = herdrRefuses "herdr-plugins-clauth-needs-app" "0.9.5" "needs apps.ai.tools.clauth.enable"
-    (herdrUser { plugins.clauth.enable = true; } { });
+      !(u.apps.ai.tools ? clauth)
+      && !(u.terminal.herdr.plugins ? clauth)
+      && !(hasPname "clauth" hm)
+      && lib.hasInfix "plugin unlink clauth" (activation hm)
+      && !((herdrSettings hm).ui.sidebar.agents ? rows_by_agent));
 
   # Two plugins on one key, and a plugin on a herdr built-in.
   herdr-plugins-key-collision = herdrRefuses "herdr-plugins-key-collision" "0.9.5" "two plugins bind one key"
     (herdrUser
-      { plugins = { projects.enable = true; clauth = { enable = true; popupKey = "prefix+a"; }; }; }
-      { apps.ai.tools.clauth.enable = true; });
+      { plugins = { projects.enable = true; usage = { enable = true; popupKey = "prefix+a"; }; }; }
+      { });
 
   herdr-plugins-key-builtin = herdrRefuses "herdr-plugins-key-builtin" "0.9.5" "is a herdr built-in binding"
     (herdrUser { plugins.projects = { enable = true; popupKey = "prefix+s"; }; } { });
@@ -442,9 +440,9 @@ in
   # Every plugin on at its default keys: no key assertion fires.
   herdr-plugins-all-keys-distinct = herdrAccepts "herdr-plugins-all-keys-distinct" "0.9.5" "bind"
     (herdrUser
-      { plugins = { projects.enable = true; clauth.enable = true; radar.enable = true; usage.enable = true; reviewr.enable = true; }; }
-      { apps.ai.tools.clauth.enable = true; })
-    (config: builtins.length (keysOf (hmOf config)) == 4);
+      { plugins = { projects.enable = true; radar.enable = true; usage.enable = true; reviewr.enable = true; }; }
+      { })
+    (config: builtins.length (keysOf (hmOf config)) == 3);
 
   # radar: its tab-bar entry beside herdr-projects', its own config, and no
   # sidebar rows of its own.
@@ -470,7 +468,7 @@ in
       && !((herdrSettings hm).ui ? tab_bar_right_separator));
 
   # usage: the gauge rows after herdr-projects' Space card. No account roster:
-  # the plugin reads the global login, the one clauth switches.
+  # the plugin reads the global Claude Code login.
   herdr-plugins-usage = herdrAccepts "herdr-plugins-usage" "0.9.5" "usage needs herdr"
     (herdrUser { plugins = { projects.enable = true; usage.enable = true; }; } {
       apps.ai.tools.claude-code.enable = true;
@@ -491,44 +489,6 @@ in
       let hm = hmOf config; in
       !(hm.xdg.configFile ? "herdr/plugins/config/houser.claude-usage/accounts.json")
       && builtins.length (herdrSettings hm).ui.sidebar.spaces.rows == 4);
-
-  # The clauth app on its own.
-  clauth-app = evalAssert "clauth-app"
-    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
-    (config: hasPname "clauth" (hmOf config));
-
-  clauth-app-off = evalAssert "clauth-app-off"
-    (herdrUser { } { })
-    (config: !(hasPname "clauth" (hmOf config)));
-
-  # clauth's daemon: a user service only when asked for, run through the
-  # starter script.
-  clauth-daemon = evalAssert "clauth-daemon"
-    (herdrUser { } { apps.ai.tools.clauth = { enable = true; daemon.enable = true; }; })
-    (config:
-      let svc = (hmOf config).systemd.user.services.clauth-daemon; in
-      svc.Service.KillMode == "process"
-      && svc.Service.Restart == "on-failure"
-      && lib.hasSuffix "-clauth-daemon" (toString svc.Service.ExecStart));
-
-  # clauth's herdr plugin is on wherever clauth is and herdr is the
-  # multiplexer; without clauth it stays off (it would fail its assertion),
-  # and a user's explicit false wins.
-  clauth-herdr-plugin-default = evalAssert "clauth-herdr-plugin-default"
-    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
-    (config: config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
-
-  clauth-herdr-plugin-default-off = evalAssert "clauth-herdr-plugin-default-off"
-    (herdrUser { } { })
-    (config: !config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
-
-  clauth-herdr-plugin-user-off = evalAssert "clauth-herdr-plugin-user-off"
-    (herdrUser { plugins.clauth.enable = false; } { apps.ai.tools.clauth.enable = true; })
-    (config: !config.my.users.muxuser.terminal.herdr.plugins.clauth.enable);
-
-  clauth-daemon-off = evalAssert "clauth-daemon-off"
-    (herdrUser { } { apps.ai.tools.clauth.enable = true; })
-    (config: !((hmOf config).systemd.user.services ? clauth-daemon));
 
   # Claude Code is upstream's package: no account wrapper.
   claude-code-plain = evalAssert "claude-code-plain"

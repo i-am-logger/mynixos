@@ -16,12 +16,8 @@
 # data", the same as a logged-out account. --set-default keeps a caller's
 # own SSL_CERT_FILE.
 #
-# Account discovery is upstream's, unchanged. Where clauth switches the
-# login in ~/.claude, the default account is whichever profile clauth has
-# active; clauth's other profiles live in ~/.clauth/profiles/<name>/
-# credentials.json, which no accounts.json entry can name (monitor.py reads
-# `<config_dir>/.credentials.json` and a Keychain item clauth does not
-# write), so they show only once clauth makes them active.
+# Account discovery is upstream's, unchanged: the default account is the
+# global Claude Code login in ~/.claude.
 { lib
 , stdenvNoCC
 , fetchFromGitHub
