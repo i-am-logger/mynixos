@@ -612,8 +612,15 @@ in
 
       # not JSON: untouched
       fresh; echo 'not json' > "$(s)"
-      ${step} 2>/dev/null
+      # The step's text ends in a newline, so `''${step} 2>/dev/null` would leave
+      # the redirect on a line of its own; a group takes the whole step.
+      ( {
+        ${step}
+      } 2>/dev/null ) 2>leak
       [ "$(cat "$(s)")" = 'not json' ]
+      # The step warns about the non-JSON file; that warning must be silenced
+      # here, not left in the build log.
+      if [ -s leak ]; then echo "FAIL: stderr leaked past the redirect:"; cat leak; exit 1; fi
 
       echo "PASS: claude-code-merged-settings-step"
       touch $out
