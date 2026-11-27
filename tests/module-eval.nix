@@ -656,6 +656,25 @@ in
     then builtins.throw "FAIL: module-eval-claude-code-usage-record -- statusLine added with usageRecord off"
     else pkgs.runCommand "module-eval-claude-code-usage-record" { } "echo PASS: claude-code-usage-record; touch $out";
 
+  # usageRecord off: the real merge step leaves the settings untouched, a
+  # status line the user set themselves included (C9 `-off`).
+  claude-code-usage-record-off =
+    let step = usageRecordStep false; in
+    pkgs.runCommand "module-eval-claude-code-usage-record-off" { nativeBuildInputs = [ pkgs.jq ]; } ''
+      set -eu
+      run() { "$@"; }
+      export HOME=$(mktemp -d); mkdir -p "$HOME/.claude"
+      own='{"type":"command","command":"/home/u/own-status-line"}'
+      echo "{\"statusLine\":$own}" > "$HOME/.claude/settings.json"
+      ${step}
+      got=$(jq -c -S .statusLine "$HOME/.claude/settings.json")
+      if [ "$got" != "$(echo "$own" | jq -c -S .)" ]; then
+        echo "FAIL: the user's statusLine was changed: $got"; exit 1
+      fi
+      echo "PASS: claude-code-usage-record-off"
+      touch $out
+    '';
+
   # usageRecord: the status-line script itself, taken from the settings.json
   # the real step writes. Each account writes usage-latest.json into its own
   # folder (CLAUDE_CONFIG_DIR), the default account into ~/.claude, never
