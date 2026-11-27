@@ -697,6 +697,81 @@ in
         onlyDotClaude = builtins.filter (lib.hasPrefix ".claude") dirs == [ ".claude" ];
       });
 
+  # accounts on impermanence: home-manager-<user> waits for each account
+  # folder's persist mount (RequiresMountsFor), and a guard step runs before
+  # the links step. Without it, the first switch that adds an account fills a
+  # tmpfs folder the bind mount then covers.
+  claude-code-accounts-mounts-ordered = evalClauses "claude-code-accounts-mounts-ordered"
+    (accountsOnPersist [ "a1" "a2" ])
+    (config:
+      let
+        req = lib.toList (config.systemd.services."home-manager-muxuser".unitConfig.RequiresMountsFor or [ ]);
+        guard = (hmOf config).home.activation.claudeAccountsMounts or { };
+      in
+      {
+        a1 = builtins.elem "/home/muxuser/.claude-a1" req;
+        a2 = builtins.elem "/home/muxuser/.claude-a2" req;
+        guardBeforeLinks = builtins.elem "claudeAccounts" (guard.before or [ ]);
+      });
+
+  # Its opposites: no accounts, or accounts without persistence -- no account
+  # folder in RequiresMountsFor, and no guard step.
+  claude-code-accounts-mounts-none =
+    let
+      check = name: testConfig: evalClauses name testConfig (config: {
+        noReq = builtins.filter (lib.hasInfix "/.claude-")
+          (lib.toList (config.systemd.services."home-manager-muxuser".unitConfig.RequiresMountsFor or [ ])) == [ ];
+        noGuard = !((hmOf config).home.activation ? claudeAccountsMounts);
+      });
+    in
+    pkgs.linkFarm "module-eval-claude-code-accounts-mounts-none" {
+      none = check "claude-code-accounts-mounts-none-noaccounts" (accountsOnPersist [ ]);
+      nopersist = check "claude-code-accounts-mounts-none-nopersist"
+        (herdrUser { } { apps.ai.tools.claude-code = { enable = true; accounts = [ "a1" ]; }; });
+    };
+
+  # The guard and the links step, run as home-manager runs them (one shell,
+  # guard first), against a scratch home, with the guard's util-linux
+  # mountpoint swapped for a stub. "Not a mount point": the run fails with one
+  # line naming the folder and creates no links. "A mount point": links as
+  # before.
+  claude-code-accounts-mount-guard =
+    let
+      hm = hmOf (lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [ baseConfig (accountsOnPersist [ "a1" ]) ];
+      }).config;
+      guard = pkgs.writeText "guard" (hm.home.activation.claudeAccountsMounts.data or "exit 0");
+      links = pkgs.writeText "links" hm.home.activation.claudeAccounts.data;
+    in
+    pkgs.runCommand "module-eval-claude-code-accounts-mount-guard" { } ''
+      set -eu
+      grep -Eq '/nix/store/[^ ]*util-linux[^ ]*/bin/mountpoint -q' ${guard}
+      sed -E 's#/nix/store/[^ ]*/bin/mountpoint#"$STUB"#' ${guard} > guard.sh
+      run() { "$@"; }
+      export HOME=$(mktemp -d)
+      mkdir -p "$HOME/.claude"
+      printf '#!${pkgs.runtimeShell}\nexit 1\n' > no; printf '#!${pkgs.runtimeShell}\nexit 0\n' > yes
+      chmod +x no yes
+
+      STUB=$PWD/no
+      if ( . ./guard.sh; . ${links} ) 2> err.log; then
+        echo "FAIL: not a mount point, yet the run succeeded"; exit 1
+      fi
+      cat err.log
+      grep -q "$HOME/.claude-a1 is not a mount point" err.log
+      [ -z "$(find "$HOME" -type l)" ]
+
+      STUB=$PWD/yes
+      ( . ./guard.sh; . ${links} )
+      for l in projects sessions CLAUDE.md settings.json; do
+        [ "$(readlink "$HOME/.claude-a1/$l")" = "$HOME/.claude/$l" ]
+      done
+
+      echo "PASS: claude-code-accounts-mount-guard"
+      touch $out
+    '';
+
   # accounts: a name is one path segment. "../x" and "a/b" fail to evaluate,
   # and a name listed twice fails its assertion. The valid control evaluates
   # first, so "the option does not exist" cannot pass as a refusal.
