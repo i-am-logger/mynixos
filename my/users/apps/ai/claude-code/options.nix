@@ -10,7 +10,7 @@ let
 in
 {
   options.my.users = lib.mkOption {
-    type = lib.types.attrsOf (lib.types.submodule {
+    type = lib.types.attrsOf (lib.types.submodule ({ config, ... }: {
       options.apps.ai.tools.claude-code = appLib.mkAppOption {
         name = "Claude Code";
         default = false;
@@ -43,8 +43,29 @@ in
               still save its settings. An empty set leaves the file alone.
             '';
           };
+
+          accounts = lib.mkOption {
+            type = lib.types.listOf (lib.types.strMatching "[a-z0-9][a-z0-9-]*");
+            default = [ ];
+            description = ''
+              Extra Claude Code accounts. Each name gets its own folder,
+              ~/.claude-<name>, to run with CLAUDE_CONFIG_DIR pointing at it;
+              the default account keeps ~/.claude and runs with
+              CLAUDE_CONFIG_DIR unset. Each folder is persisted like
+              ~/.claude, and holds that account's login (.claude.json,
+              .credentials.json); projects, sessions, CLAUDE.md and
+              settings.json in it are links to ~/.claude's. Names are one
+              path segment and unique. An empty list changes nothing.
+            '';
+          };
         };
       };
-    });
+
+      # One more persisted folder per account, merged with the ".claude"
+      # default (mkOptionDefault, the default's own priority; an ordinary
+      # definition would replace ".claude" instead).
+      config.apps.ai.tools.claude-code.persistedDirectories = lib.mkOptionDefault
+        (map (n: ".claude-${n}") config.apps.ai.tools.claude-code.accounts);
+    }));
   };
 }

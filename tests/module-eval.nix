@@ -175,6 +175,18 @@ let
   };
 
   hmOf = config: config.home-manager.users.muxuser;
+
+  # A herdr user with claude-code and `accounts`, on the /persist fixture.
+  accountsOnPersist = accounts: lib.recursiveUpdate
+    (herdrUser { } { apps.ai.tools.claude-code = { enable = true; inherit accounts; }; })
+    {
+      fileSystems."/persist" = {
+        device = "/dev/disk/by-label/persist";
+        fsType = "ext4";
+        neededForBoot = true;
+      };
+      my.storage.impermanence.enable = true;
+    };
   hasPname = name: hm: builtins.any (p: (p.pname or "") == name) hm.home.packages;
   # What config.toml is generated from. pkgs.formats.toml keeps the value on
   # the derivation (`value`, structured attrs), so it reads without a build.
@@ -606,6 +618,107 @@ in
       echo "PASS: claude-code-merged-settings-step"
       touch $out
     '';
+
+  # accounts: each name is one more persisted folder of the claude-code app,
+  # beside ~/.claude (not instead of it), through the same persistedDirectories
+  # path as ~/.claude itself.
+  claude-code-accounts-persisted = evalClauses "claude-code-accounts-persisted"
+    (accountsOnPersist [ "a1" "a2" ])
+    (config:
+      let
+        dirs = map (d: d.directory or d) config.environment.persistence."/persist".users.muxuser.directories;
+      in
+      {
+        default = builtins.elem ".claude" dirs;
+        a1 = builtins.elem ".claude-a1" dirs;
+        a2 = builtins.elem ".claude-a2" dirs;
+      });
+
+  # accounts: the real activation step, run against a scratch home. The four
+  # links per account resolve to $HOME/.claude/<same>; a second run changes
+  # nothing; a regular settings.json already in an account folder is kept,
+  # with a warning (account data is never deleted).
+  claude-code-accounts-links-step =
+    let
+      eval = lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [
+          baseConfig
+          (herdrUser { } { apps.ai.tools.claude-code = { enable = true; accounts = [ "a1" "a2" ]; }; })
+        ];
+      };
+      hm = eval.config.home-manager.users.muxuser;
+      step = hm.home.activation.claudeAccounts.data;
+    in
+    pkgs.runCommand "module-eval-claude-code-accounts-links-step" { } ''
+      set -eu
+      run() { "$@"; }
+      export HOME=$(mktemp -d)
+      mkdir -p "$HOME/.claude"
+      snap() { find "$HOME" -printf '%p %y %l %T@\n' | sort; }
+
+      ${step}
+      for a in a1 a2; do
+        for l in projects sessions CLAUDE.md settings.json; do
+          [ -L "$HOME/.claude-$a/$l" ]
+          [ "$(readlink "$HOME/.claude-$a/$l")" = "$HOME/.claude/$l" ]
+        done
+      done
+
+      # idempotent: a second run changes nothing
+      before=$(snap)
+      ${step}
+      [ "$(snap)" = "$before" ]
+
+      # a regular settings.json is kept, and the step warns
+      rm "$HOME/.claude-a1/settings.json"
+      echo '{"own":true}' > "$HOME/.claude-a1/settings.json"
+      {
+      ${step}
+      } 2> warn.log
+      [ ! -L "$HOME/.claude-a1/settings.json" ]
+      [ "$(cat "$HOME/.claude-a1/settings.json")" = '{"own":true}' ]
+      grep -q "WARNING" warn.log
+
+      echo "PASS: claude-code-accounts-links-step"
+      touch $out
+    '';
+
+  # accounts [ ] (the default): no step, and ~/.claude is the only Claude
+  # folder persisted -- today's configuration unchanged.
+  claude-code-accounts-none = evalClauses "claude-code-accounts-none"
+    (accountsOnPersist [ ])
+    (config:
+      let
+        dirs = map (d: d.directory or d) config.environment.persistence."/persist".users.muxuser.directories;
+      in
+      {
+        noStep = !((hmOf config).home.activation ? claudeAccounts);
+        onlyDotClaude = builtins.filter (lib.hasPrefix ".claude") dirs == [ ".claude" ];
+      });
+
+  # accounts: a name is one path segment. "../x" and "a/b" fail to evaluate,
+  # and a name listed twice fails its assertion. The valid control evaluates
+  # first, so "the option does not exist" cannot pass as a refusal.
+  claude-code-accounts-refuses =
+    let
+      evalWith = accounts: (lib.nixosSystem {
+        inherit specialArgs;
+        modules = baseModules ++ [
+          baseConfig
+          (herdrUser { } { apps.ai.tools.claude-code = { enable = true; inherit accounts; }; })
+        ];
+      }).config;
+      read = accounts: builtins.tryEval
+        (builtins.deepSeq (evalWith accounts).my.users.muxuser.apps.ai.tools.claude-code.accounts true);
+      control = read [ "a1" "a-2" ];
+      dupFails = failing "must be unique" (evalWith [ "a1" "a1" ]) != [ ];
+    in
+    if !control.success then builtins.throw "FAIL: module-eval-claude-code-accounts-refuses -- valid control did not evaluate"
+    else if (read [ "../x" ]).success then builtins.throw "FAIL: module-eval-claude-code-accounts-refuses -- \"../x\" accepted"
+    else if (read [ "a/b" ]).success then builtins.throw "FAIL: module-eval-claude-code-accounts-refuses -- \"a/b\" accepted"
+    else if !dupFails then builtins.throw "FAIL: module-eval-claude-code-accounts-refuses -- duplicate accepted"
+    else pkgs.runCommand "module-eval-claude-code-accounts-refuses" { } "echo PASS: claude-code-accounts-refuses; touch $out";
 
   # rebuild-system / test-system / build-system, RUN against a scratch flake
   # with nixos-rebuild and sudo stubbed to print their argv. A switch builds

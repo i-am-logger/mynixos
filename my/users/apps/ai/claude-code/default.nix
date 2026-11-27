@@ -19,6 +19,17 @@ in
       my.system.allowedUnfreePackages = [ "claude-code" ];
     })
 
+    # accounts: one folder per name, so a name may appear once.
+    {
+      assertions = mapAttrsToList
+        (name: userCfg:
+          let accounts = userCfg.apps.ai.tools.claude-code.accounts or [ ]; in {
+            assertion = length (unique accounts) == length accounts;
+            message = "my.users.${name}.apps.ai.tools.claude-code.accounts: names must be unique (${concatStringsSep ", " accounts})";
+          })
+        config.my.users;
+    }
+
     # Per-user claude-code installation and config repo cloning via home-manager
     {
       home-manager.users = mapAttrs
@@ -83,6 +94,38 @@ in
                       echo "WARNING: $_settings is not JSON; mynixos's Claude Code settings not merged" >&2
                     fi
                     rm -f "$_new"
+                  '';
+              })
+
+              # accounts: ~/.claude-<name> per account, with projects,
+              # sessions, CLAUDE.md and settings.json linked to ~/.claude's
+              # (absolute links, not store paths). An activation step rather
+              # than home.file, which refuses to clobber: if Claude Code ever
+              # replaces settings.json by rename, a rebuild would fail. A
+              # link already right is left alone (idempotent); a regular
+              # file or directory in its place is account data, so it is
+              # kept and reported, never deleted.
+              (lib.mkIf (cfg.accounts != [ ]) {
+                home.activation.claudeAccounts = lib.hm.dag.entryAfter
+                  ([ "writeBoundary" ]
+                    ++ lib.optional (cfg.cloneConfigRepo != null) "cloneClaudeConfig"
+                    ++ lib.optional (cfg.mergedSettings != { }) "claudeMergedSettings")
+                  ''
+                    for _acct in ${concatMapStringsSep " " escapeShellArg cfg.accounts}; do
+                      _dir="$HOME/.claude-$_acct"
+                      [ -d "$_dir" ] || run mkdir -p "$_dir"
+                      for _name in projects sessions CLAUDE.md settings.json; do
+                        _link="$_dir/$_name"
+                        _target="$HOME/.claude/$_name"
+                        if [ -L "$_link" ] || [ ! -e "$_link" ]; then
+                          if [ "$(readlink "$_link" 2>/dev/null)" != "$_target" ]; then
+                            run ln -sfn "$_target" "$_link"
+                          fi
+                        else
+                          echo "WARNING: $_link is not a link -- left as it is (Claude account data is never deleted)" >&2
+                        fi
+                      done
+                    done
                   '';
               })
             ])
