@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.43.1...mynixos-v0.44.0) (2026-11-27)
+
+
+### Features
+
+* **claude-code:** usageRecord, a status line that records rate limits ([91b5a42](https://github.com/i-am-logger/mynixos/commit/91b5a428016c0e36ffa62414a15b4b61eee5f987))
+
 ## [0.43.1](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.43.0...mynixos-v0.43.1) (2026-11-27)
 
 
