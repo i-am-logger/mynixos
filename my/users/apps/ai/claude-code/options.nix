@@ -44,6 +44,15 @@ in
             '';
           };
 
+          usageRecord.enable = lib.mkEnableOption ''
+            a status line that records usage: a store script, added to
+            mergedSettings as statusLine, that writes the rate_limits Claude
+            Code hands it to usage-latest.json in the running account's
+            folder (CLAUDE_CONFIG_DIR, or ~/.claude when unset), atomically,
+            then prints the line. settings.json is shared by every account
+            folder, so every account records into its own folder
+          '';
+
           accounts = lib.mkOption {
             type = lib.types.listOf (lib.types.strMatching "[a-z0-9][a-z0-9-]*");
             default = [ ];

@@ -39,6 +39,38 @@ in
             { lib, ... }:
             let
               cfg = userCfg.apps.ai.tools.claude-code;
+              # usageRecord: the status line. Records stdin's rate_limits, as
+              # given, into the running account's folder through a temp file
+              # in that folder and a rename, so a reader never sees half a
+              # file; input without rate_limits writes nothing and keeps the
+              # last file. Always prints a line and exits 0.
+              usageStatusLine = pkgs.writeShellScript "claude-usage-status-line" ''
+                _jq=${pkgs.jq}/bin/jq
+                _cu=${pkgs.coreutils}/bin
+                _input=$($_cu/cat)
+                _dir="''${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+                _rl=$(printf '%s' "$_input" | $_jq -c '.rate_limits // empty' 2>/dev/null) || _rl=
+                if [ -n "$_rl" ] && $_cu/mkdir -p "$_dir" 2>/dev/null \
+                  && _tmp=$($_cu/mktemp "$_dir/usage-latest.json.XXXXXX" 2>/dev/null); then
+                  if printf '%s\n' "$_rl" > "$_tmp" 2>/dev/null; then
+                    $_cu/mv -f "$_tmp" "$_dir/usage-latest.json" 2>/dev/null || $_cu/rm -f "$_tmp"
+                  else
+                    $_cu/rm -f "$_tmp"
+                  fi
+                fi
+                _line=$(printf '%s' "$_input" | $_jq -r '
+                  def pct: if type == "number" then floor else . end | "\(.)%";
+                  [ (.model.display_name // "Claude"),
+                    (.rate_limits.five_hour.used_percentage // empty | "5h \(pct)"),
+                    (.rate_limits.seven_day.used_percentage // empty | "7d \(pct)") ]
+                  | join(" | ")' 2>/dev/null) || _line=
+                printf '%s\n' "''${_line:-Claude}"
+                exit 0
+              '';
+              mergedSettings = cfg.mergedSettings
+                // optionalAttrs cfg.usageRecord.enable {
+                statusLine = { type = "command"; command = "${usageStatusLine}"; };
+              };
             in
             lib.mkIf cfg.enable (lib.mkMerge [
               {
@@ -77,7 +109,7 @@ in
               # through a link), so a settings.json that is a link -- a cloned
               # config repo's -- stays one. Unchanged settings are not
               # rewritten; a file that is not JSON is left as it is.
-              (lib.mkIf (cfg.mergedSettings != { }) {
+              (lib.mkIf (mergedSettings != { }) {
                 home.activation.claudeMergedSettings = lib.hm.dag.entryAfter
                   ([ "writeBoundary" ] ++ lib.optional (cfg.cloneConfigRepo != null) "cloneClaudeConfig")
                   ''
@@ -85,7 +117,7 @@ in
                     _jq=${pkgs.jq}/bin/jq
                     _new=$(mktemp)
                     if [ -s "$_settings" ]; then _cur=$(cat "$_settings"); else _cur='{}'; fi
-                    if printf '%s' "$_cur" | $_jq --argjson m ${escapeShellArg (builtins.toJSON cfg.mergedSettings)} '. * $m' > "$_new" 2>/dev/null; then
+                    if printf '%s' "$_cur" | $_jq --argjson m ${escapeShellArg (builtins.toJSON mergedSettings)} '. * $m' > "$_new" 2>/dev/null; then
                       if [ "$($_jq -S . "$_new")" != "$(printf '%s' "$_cur" | $_jq -S .)" ]; then
                         run mkdir -p "$HOME/.claude"
                         run cp "$_new" "$_settings"
@@ -109,7 +141,7 @@ in
                 home.activation.claudeAccounts = lib.hm.dag.entryAfter
                   ([ "writeBoundary" ]
                     ++ lib.optional (cfg.cloneConfigRepo != null) "cloneClaudeConfig"
-                    ++ lib.optional (cfg.mergedSettings != { }) "claudeMergedSettings")
+                    ++ lib.optional (mergedSettings != { }) "claudeMergedSettings")
                   ''
                     for _acct in ${concatMapStringsSep " " escapeShellArg cfg.accounts}; do
                       _dir="$HOME/.claude-$_acct"

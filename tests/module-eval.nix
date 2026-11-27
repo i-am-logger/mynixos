@@ -176,6 +176,19 @@ let
 
   hmOf = config: config.home-manager.users.muxuser;
 
+  # claude-code's claudeMergedSettings activation step, usageRecord on or
+  # off, and the settings set that step merges (its --argjson argument).
+  usageRecordStep = enable:
+    (hmOf (lib.nixosSystem {
+      inherit specialArgs;
+      modules = baseModules ++ [
+        baseConfig
+        (herdrUser { } { apps.ai.tools.claude-code = { enable = true; usageRecord = { inherit enable; }; }; })
+      ];
+    }).config).home.activation.claudeMergedSettings.data;
+  mergedOfStep = step: builtins.fromJSON (builtins.unsafeDiscardStringContext
+    (lib.head (lib.splitString "'" (lib.elemAt (lib.splitString "--argjson m '" step) 1))));
+
   # A herdr user with claude-code and `accounts`, on the /persist fixture.
   accountsOnPersist = accounts: lib.recursiveUpdate
     (herdrUser { } { apps.ai.tools.claude-code = { enable = true; inherit accounts; }; })
@@ -623,6 +636,69 @@ in
       if [ -s leak ]; then echo "FAIL: stderr leaked past the redirect:"; cat leak; exit 1; fi
 
       echo "PASS: claude-code-merged-settings-step"
+      touch $out
+    '';
+
+  # usageRecord: on, the merged settings the activation step writes carry a
+  # command status line whose command is a store script; off, no statusLine
+  # is added. Read from the JSON the real claudeMergedSettings step merges.
+  claude-code-usage-record =
+    let
+      on = usageRecordStep true;
+      off = usageRecordStep false;
+      line = (mergedOfStep on).statusLine or { };
+    in
+    if (line.type or null) != "command"
+    then builtins.throw "FAIL: module-eval-claude-code-usage-record -- statusLine.type is not \"command\""
+    else if !(lib.hasPrefix "${builtins.storeDir}/" (line.command or ""))
+    then builtins.throw "FAIL: module-eval-claude-code-usage-record -- statusLine.command is not a store path"
+    else if (mergedOfStep off) ? statusLine
+    then builtins.throw "FAIL: module-eval-claude-code-usage-record -- statusLine added with usageRecord off"
+    else pkgs.runCommand "module-eval-claude-code-usage-record" { } "echo PASS: claude-code-usage-record; touch $out";
+
+  # usageRecord: the status-line script itself, taken from the settings.json
+  # the real step writes. Each account writes usage-latest.json into its own
+  # folder (CLAUDE_CONFIG_DIR), the default account into ~/.claude, never
+  # /usage-latest.json; the file is rate_limits as given, written through a
+  # temp file that does not outlive the run. Input without rate_limits still
+  # prints a line, exits 0, and keeps the last file.
+  claude-code-usage-record-step =
+    let step = usageRecordStep true; in
+    pkgs.runCommand "module-eval-claude-code-usage-record-step" { nativeBuildInputs = [ pkgs.jq ]; } ''
+      set -eu
+      run() { "$@"; }
+      export HOME=$(mktemp -d)
+      mkdir -p "$HOME/.claude" "$HOME/.claude-a1"
+      ${step}
+      cmd=$(jq -r .statusLine.command "$HOME/.claude/settings.json")
+      [ -x "$cmd" ]
+      rl='{"five_hour":{"used_percentage":12,"resets_at":1700000000},"seven_day":{"used_percentage":34,"resets_at":1700500000}}'
+      input='{"model":{"display_name":"M"},"rate_limits":'"$rl"'}'
+      same() { [ "$(jq -c -S . "$1")" = "$(printf '%s' "$rl" | jq -c -S .)" ]; }
+      notemp() { ! ls -A "$HOME/.claude" "$HOME/.claude-a1" | grep -q 'usage-latest\.json\.'; }
+
+      # an account: its own folder only
+      shown=$(printf '%s' "$input" | CLAUDE_CONFIG_DIR="$HOME/.claude-a1" "$cmd")
+      [ -n "$shown" ]
+      same "$HOME/.claude-a1/usage-latest.json"
+      [ ! -e "$HOME/.claude/usage-latest.json" ] && [ ! -e /usage-latest.json ]
+      notemp
+
+      # the default account: CLAUDE_CONFIG_DIR unset, so ~/.claude
+      rm "$HOME/.claude-a1/usage-latest.json"
+      shown=$(printf '%s' "$input" | env -u CLAUDE_CONFIG_DIR "$cmd")
+      [ -n "$shown" ]
+      same "$HOME/.claude/usage-latest.json"
+      [ ! -e "$HOME/.claude-a1/usage-latest.json" ] && [ ! -e /usage-latest.json ]
+      notemp
+
+      # no rate_limits: a line, exit 0, the last file kept
+      shown=$(printf '%s' '{"model":{"display_name":"M"}}' | env -u CLAUDE_CONFIG_DIR "$cmd")
+      [ -n "$shown" ]
+      same "$HOME/.claude/usage-latest.json"
+      notemp
+
+      echo "PASS: claude-code-usage-record-step"
       touch $out
     '';
 
