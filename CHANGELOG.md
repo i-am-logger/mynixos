@@ -5,6 +5,13 @@ All notable changes to mynixos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.42.0...mynixos-v0.43.0) (2026-11-27)
+
+
+### Features
+
+* **claude-code:** persisted account folders and their links ([ff7524f](https://github.com/i-am-logger/mynixos/commit/ff7524f7ee84cc73b8e7436eb31f5e0dc2b6e0d8))
+
 ## [0.42.0](https://github.com/i-am-logger/mynixos/compare/mynixos-v0.41.0...mynixos-v0.42.0) (2026-11-27)
 
 
