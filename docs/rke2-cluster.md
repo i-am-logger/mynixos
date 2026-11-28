@@ -1033,7 +1033,7 @@ one that has gaps.
   pre-create it — and **C105** records that a tmpfiles-created directory loses the race to the impermanence
   bind mount silently, with rke2 exiting 0. Copy out of the default directory instead of repointing it.
 - **Secrets work is out of scope for this run** (**C106**). The irreducible sops ciphertext exists on one
-  disk and `/home/logger/.secrets` holds an unrotated plaintext key; both are real and both belong to a
+  disk, and further key material is due for rotation; both are real and both belong to a
   separate session. The cluster's own token still goes into sops from the start, because that costs nothing
   now and is surgery later.
 - **The whole dataplane is off the only CI-tested NixOS path.** `nixos/tests/rancher/default.nix:56-68`

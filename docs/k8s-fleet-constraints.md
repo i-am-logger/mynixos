@@ -190,7 +190,7 @@ policy this repo already enforces for every other secret.
 - **C28.** The shape the policy exists to block is indirect: interpolating a flake input,
   `"${someInput}/secrets.yaml"`, reads as a reference to one file and copies the whole **directory** it
   sits in, publishing whatever else is beside it with nothing in the configuration naming it. This is not
-  hypothetical on this fleet — it is how a seed's plaintext node key ended up world-readable in two store
+  hypothetical on this fleet — it is how a seed's node key ended up world-readable in two store
   paths (`/etc/nixos/systems/yoga/default.nix:144-160`).
 - **C29.** The token must be passed to the distribution through a **file-valued** option, never a
   string-valued one. A string option is rendered into the systemd unit, and the unit is a store path — so a
@@ -1273,7 +1273,7 @@ What is genuinely irreplaceable:
 | etcd snapshot | ~9 MB modelled | does not exist yet | **convenience, not a dependency** |
 | everything else | — | — | reconstructible from Nix or sops |
 
-Verified live: `~/.secrets` is `/dev/nvme0n1p4[/persist/home/logger/.secrets]`, is **not a git repository**,
+Verified live: the host's secrets directory is on that same partition and is **not a git repository**,
 and `/persist/etc/sops/secrets.yaml` is the second copy **on the same partition**. `secrets.yaml` is
 confirmed sops ciphertext.
 
@@ -1291,22 +1291,13 @@ It costs **the ciphertext itself**, which is the only copy of the thing the keys
   `EncryptionConfig`, AES-GCM under PBKDF2 over the token. **Snapshot without token = an unopenable file.**
   Token without snapshot = a fresh cluster, which is fine. Let RKE2 generate it once, then store it.
 
-### C103 — DANGER: `/home/logger/.secrets` holds an unencrypted private key [VERIFIED]
+### C103 — DANGER: the host's secrets directory is not safe to version wholesale [VERIFIED]
 
-Any instinct to `git init && git add -A` in that directory **must not be acted on**. Verified by listing
-(contents never read):
+Any instinct to `git init && git add -A` in that directory **must not be acted on**: it holds key material
+besides the sops ciphertext, and that material belongs to the separate secrets session (C106).
 
-```
--rw-------  399  radicle-node-key.UNENCRYPTED   <- PLAINTEXT ed25519 private key
--rw-------    0  radicle-node-key.enc           <- ZERO BYTES; the .enc is a lie
--rw-------  2452 radicle.json                   <- mode 600, treat as secret
--rw-r--r--  2316 secrets.yaml                   <- SAFE: sops ciphertext
--rw-------  595  .sops.yaml                     <- SAFE: public recipients only
-lrwxrwxrwx       result -> /nix/store/...       <- root-owned symlink, unrelated
-```
-
-This is the **same class of mistake** as the flake-input interpolation that previously copied this key into
-`/nix/store` — and that key has not been rotated.
+This is the **same class of mistake** as the flake-input interpolation that previously copied secrets into
+`/nix/store`.
 
 - **C103.** If the directory is versioned, commit an **explicit allowlist** (`secrets.yaml`, `.sops.yaml`,
   `hosts/`) behind a `.gitignore` of `*` with `!` exceptions, and inspect `git status` before the first push.
@@ -1340,14 +1331,14 @@ Deferred deliberately (C95), but the design is recorded so it is not re-derived:
 
 ### C106 — secrets work is OUT OF SCOPE for this run [DECIDED]
 
-C101–C103 surfaced a real, pre-existing single point of failure and an unrotated plaintext key. **None of it
+C101–C103 surfaced a real, pre-existing single point of failure and key material due for rotation. **None of it
 is actioned here.** The owner's direction: secrets get their own session, when key material is recycled and
 rotated wholesale — first make the cluster work.
 
 That is the right sequencing and it is recorded rather than merely obeyed, because the findings are easy to
 lose:
 
-- **Do not** create a git repository in `/home/logger/.secrets` as part of this work.
+- **Do not** create a git repository in the host's secrets directory as part of this work.
 - **Do not** rotate, move or re-encrypt anything.
 - The cluster's own token still goes into sops from the start (C102) — that is cluster work, not secrets
   work, and it costs nothing now while being surgery later.
