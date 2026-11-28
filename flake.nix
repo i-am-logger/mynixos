@@ -323,6 +323,11 @@
           # The pasta crash itself, INDUCED rather than asserted: the unpatched
           # build must still die, which is how "nixpkgs carries the fix now"
           # announces itself instead of leaving a dead overlay in the tree.
+          # CLAUDE.md and docs/nix-rules.md stay under their byte limits.
+          instructionsSizeTest = import ./tests/instructions-size.nix {
+            inherit lib nixpkgs system;
+          };
+
           passtNullFlowTest = import ./tests/passt-null-flow.nix {
             inherit lib nixpkgs system self inputs;
           };
@@ -363,6 +368,7 @@
         // virtualisationContainersTests
         // passtNullFlowTest
         // singleNixpkgsTest
+        // instructionsSizeTest
         // displayLayoutTests
       );
 
