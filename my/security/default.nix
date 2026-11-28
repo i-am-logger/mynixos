@@ -235,10 +235,23 @@ in
         '';
       };
 
-      # Disable audit-rules services since immutable mode (-e 2 via enable = "lock")
-      # prevents reloading rules during nixos-rebuild switch
-      systemd.services.audit-rules.enable = false;
-      systemd.services.audit-rules-nixos.enable = false;
+      # The locked set (-e 2, enable = "lock") loads once, at boot, from
+      # nixpkgs's audit-rules-nixos. An immutable set can't be reloaded, so a
+      # switch never restarts or stops the loader: changed rules take effect at
+      # the next boot. Turning the loader off meant the rules never loaded (S3).
+      # Watches need their parent directories: auditctl -R stops at the first
+      # missing one (/var/log at sysinit) and then loads nothing, so the loader
+      # waits for the local filesystems and tmpfiles.
+      systemd = {
+        # The upstream augenrules unit stays off; it reads /etc/audit instead.
+        services.audit-rules.enable = false;
+        services.audit-rules-nixos = {
+          restartIfChanged = false;
+          stopIfChanged = false;
+          after = [ "local-fs.target" "systemd-tmpfiles-setup.service" ];
+        };
+        tmpfiles.rules = optional (config.my.system.etcNixos.link == null) "d /etc/nixos 0755 root root -";
+      };
 
       # Disable filter plugin to avoid "line too long" error
       environment.etc."audit/plugins.d/filter.conf".text = mkDefault ''

@@ -1901,6 +1901,39 @@ in
       otherWatchesKept = builtins.elem "-w /boot/ -p wa -k boot" config.security.audit.rules;
     });
 
+  # S3: the locked rule set loads once at boot. A switch must not restart the
+  # loader (an immutable set can't be reloaded), so the unit runs but never
+  # restarts; the upstream augenrules unit stays off.
+  audit-rules-load-at-boot = evalClauses "audit-rules-load-at-boot"
+    {
+      networking.hostName = "test-audit-rules-load-at-boot";
+      my.security = {
+        enable = true;
+        auditRules.enable = true;
+      };
+    }
+    (config: {
+      locked = config.security.audit.enable == "lock";
+      loaderOn = config.systemd.services.audit-rules-nixos.enable;
+      atBoot = builtins.elem "sysinit.target" config.systemd.services.audit-rules-nixos.wantedBy;
+      notOnSwitch = !config.systemd.services.audit-rules-nixos.restartIfChanged;
+      afterPaths = lib.all (u: builtins.elem u config.systemd.services.audit-rules-nixos.after)
+        [ "local-fs.target" "systemd-tmpfiles-setup.service" ];
+      watchedDirExists = builtins.elem "d /etc/nixos 0755 root root -" config.systemd.tmpfiles.rules;
+      augenrulesOff = !(config.systemd.services.audit-rules.enable or false);
+    });
+
+  # Its opposite: without auditRules there is no audit loader at all.
+  audit-rules-off = evalClauses "audit-rules-off"
+    {
+      networking.hostName = "test-audit-rules-off";
+      my.security.enable = true;
+    }
+    (config: {
+      notLocked = config.security.audit.enable != "lock";
+      noRules = config.security.audit.rules == [ ];
+    });
+
   etc-nixos-audit-default = evalClauses "etc-nixos-audit-default"
     {
       networking.hostName = "test-etc-nixos-audit-default";

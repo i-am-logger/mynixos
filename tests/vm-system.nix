@@ -203,10 +203,10 @@ pkgs.testers.runNixOSTest {
         machine.wait_for_unit("NetworkManager.service")
         machine.succeed("nmcli -t -f DEVICE,STATE device | grep -q '^podman0:unmanaged'")
 
-    with subtest("dev base groups (disk/dialout) apply to ALL active users when my.dev.enable"):
+    with subtest("my.dev.enable gives no user disk or dialout (S1: disk is root-equivalent)"):
         for u in ["alice", "carol"]:
             g = machine.succeed(f"id -nG {u}").split()
-            assert "disk" in g and "dialout" in g, f"{u} missing disk/dialout (got: {g})"
+            assert "disk" not in g and "dialout" not in g, f"{u} has disk/dialout (got: {g})"
 
     with subtest("login shell mapped from my.users.alice.shell = fish"):
         machine.succeed("getent passwd alice | grep -q '/fish$'")

@@ -397,6 +397,11 @@
         vm-pcscd-switch = import ./tests/vm-pcscd-switch.nix {
           inherit self inputs system lib nixpkgs;
         };
+        # The locked audit rules load at boot and survive a switch (S3):
+        #   nix build .#tests.<system>.vm-audit-rules -L
+        vm-audit-rules = import ./tests/vm-audit-rules.nix {
+          inherit self inputs system lib nixpkgs;
+        };
         # The Radicle forge end to end: two VMs on an isolated net (a private
         # network by construction), seed + CI + a workstation profile pushing:
         #   nix build .#tests.<system>.vm-radicle -L
