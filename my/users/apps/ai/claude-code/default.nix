@@ -39,8 +39,8 @@ in
             { lib, ... }:
             let
               cfg = userCfg.apps.ai.tools.claude-code;
-              # usageRecord: the status line. Records stdin's rate_limits, as
-              # given, into the running account's folder through a temp file
+              # usageRecord: the status line. Records {saved_at, rate_limits} (stdin's rate_limits as
+              # given; saved_at in epoch seconds) into the running account's folder through a temp file
               # in that folder and a rename, so a reader never sees half a
               # file; input without rate_limits writes nothing and keeps the
               # last file. Always prints a line and exits 0.
@@ -52,7 +52,10 @@ in
                 _rl=$(printf '%s' "$_input" | $_jq -c '.rate_limits // empty' 2>/dev/null) || _rl=
                 if [ -n "$_rl" ] && $_cu/mkdir -p "$_dir" 2>/dev/null \
                   && _tmp=$($_cu/mktemp "$_dir/usage-latest.json.XXXXXX" 2>/dev/null); then
-                  if printf '%s\n' "$_rl" > "$_tmp" 2>/dev/null; then
+                  # account-balance reads .rate_limits.* and .saved_at (epoch
+                  # seconds) to tell fresh usage from stale.
+                  if $_jq -n --argjson rl "$_rl" --argjson t "$($_cu/date +%s)" \
+                      '{saved_at: $t, rate_limits: $rl}' > "$_tmp" 2>/dev/null; then
                     $_cu/mv -f "$_tmp" "$_dir/usage-latest.json" 2>/dev/null || $_cu/rm -f "$_tmp"
                   else
                     $_cu/rm -f "$_tmp"

@@ -693,7 +693,11 @@ in
       [ -x "$cmd" ]
       rl='{"five_hour":{"used_percentage":12,"resets_at":1700000000},"seven_day":{"used_percentage":34,"resets_at":1700500000}}'
       input='{"model":{"display_name":"M"},"rate_limits":'"$rl"'}'
-      same() { [ "$(jq -c -S . "$1")" = "$(printf '%s' "$rl" | jq -c -S .)" ]; }
+      # account-balance reads .rate_limits.* and .saved_at (epoch seconds).
+      same() {
+        [ "$(jq -c -S .rate_limits "$1")" = "$(printf '%s' "$rl" | jq -c -S .)" ] \
+          && jq -e '(.saved_at | type) == "number" and .saved_at > 1700000000 and (.saved_at | floor) == .saved_at' "$1" >/dev/null
+      }
       notemp() { ! ls -A "$HOME/.claude" "$HOME/.claude-a1" | grep -q 'usage-latest\.json\.'; }
 
       # an account: its own folder only
