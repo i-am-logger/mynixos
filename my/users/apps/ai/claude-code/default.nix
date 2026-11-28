@@ -156,6 +156,8 @@ in
                           if [ "$(readlink "$_link" 2>/dev/null)" != "$_target" ]; then
                             run ln -sfn "$_target" "$_link"
                           fi
+                        elif ${lib.getExe' pkgs.util-linux "mountpoint"} -q "$_link"; then
+                          : # bind-mounted on purpose (e.g. a shared projects dir): skipped silently
                         else
                           echo "WARNING: $_link is not a link -- left as it is (Claude account data is never deleted)" >&2
                         fi

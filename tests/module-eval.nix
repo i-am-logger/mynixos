@@ -784,6 +784,7 @@ in
       };
       hm = eval.config.home-manager.users.muxuser;
       step = hm.home.activation.claudeAccounts.data;
+      mountStep = builtins.replaceStrings [ (lib.getExe' pkgs.util-linux "mountpoint") ] [ "mountpoint" ] step;
     in
     pkgs.runCommand "module-eval-claude-code-accounts-links-step" { } ''
       set -eu
@@ -814,6 +815,22 @@ in
       [ ! -L "$HOME/.claude-a1/settings.json" ]
       [ "$(cat "$HOME/.claude-a1/settings.json")" = '{"own":true}' ]
       grep -q "WARNING" warn.log
+
+      # CA2: a bind-mounted projects dir is skipped silently and left alone.
+      # The sandbox can't mount, so mountpoint is a function here.
+      mountpoint() { [ "$2" = "$HOME/.claude-a2/projects" ]; }
+      rm "$HOME/.claude-a2/projects"
+      mkdir "$HOME/.claude-a2/projects"
+      touch "$HOME/.claude-a2/projects/kept"
+      {
+      ${mountStep}
+      } 2> mount.log
+      [ -d "$HOME/.claude-a2/projects" ]
+      [ ! -L "$HOME/.claude-a2/projects" ]
+      [ -e "$HOME/.claude-a2/projects/kept" ]
+      if grep -q "claude-a2/projects" mount.log; then
+        echo "FAIL: a mounted projects dir was reported: $(cat mount.log)"; exit 1
+      fi
 
       echo "PASS: claude-code-accounts-links-step"
       touch $out
