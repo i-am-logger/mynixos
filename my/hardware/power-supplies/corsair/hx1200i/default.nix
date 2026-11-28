@@ -22,6 +22,8 @@ let
   cfg = config.my.hardware.powerSupplies.corsair.hx1200i;
 in
 {
+  imports = [ ./sensors.nix ];
+
   config = lib.mkIf cfg.enable {
     assertions = [
       {

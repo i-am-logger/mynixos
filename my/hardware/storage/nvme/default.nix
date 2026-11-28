@@ -10,6 +10,8 @@ in
     enable = mkEnableOption "NVMe storage support";
   };
 
+  imports = [ ./sensors.nix ];
+
   config = mkIf cfg.enable {
     # NVMe kernel module for boot
     boot.initrd.availableKernelModules = [ "nvme" ];

@@ -43,6 +43,8 @@ let
   '';
 in
 {
+  imports = [ ./sensors.nix ];
+
   config = mkMerge [
     # Generic AMD Radeon GPU enablement - the amdgpu driver + Mesa/VA-API. This
     # module is shared by every AMD-GPU host, so it stays generic: machine- or

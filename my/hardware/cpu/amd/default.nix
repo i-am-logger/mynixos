@@ -6,6 +6,8 @@ let
   cfg = config.my.hardware.cpu;
 in
 {
+  imports = [ ./sensors.nix ];
+
   config = mkIf (cfg == "amd") {
     # KVM virtualization support
     boot.kernelModules = [ "kvm-amd" ];

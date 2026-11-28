@@ -150,6 +150,7 @@ let
     "hardware.memory" = "Linux VM tunables.";
     "hardware.motherboards" = "x86 desktop boards.";
     "hardware.powerSupplies" = "PSU telemetry through Linux hwmon drivers.";
+    "hardware.sensors" = "the hwmon manifest for the desktop; hwmon is Linux's.";
     "hardware.peripherals" = "udev-driven device wiring.";
     "hardware.securityKeys" = "pcscd + udev; see docs/yubikey-on-darwin.md for the deliberate omission.";
     "hardware.storage" = "Linux block-device tuning.";
